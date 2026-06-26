@@ -14,8 +14,16 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVoiceGeneratorRouteImport } from './routes/_app.voice-generator'
+import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
+import { Route as AppStoryboardRouteImport } from './routes/_app.storyboard'
 import { Route as AppStoryGeneratorRouteImport } from './routes/_app.story-generator'
+import { Route as AppSongsRouteImport } from './routes/_app.songs'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
+import { Route as AppHelpRouteImport } from './routes/_app.help'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
@@ -44,14 +52,54 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppVoiceGeneratorRoute = AppVoiceGeneratorRouteImport.update({
+  id: '/voice-generator',
+  path: '/voice-generator',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTemplatesRoute = AppTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStoryboardRoute = AppStoryboardRouteImport.update({
+  id: '/storyboard',
+  path: '/storyboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStoryGeneratorRoute = AppStoryGeneratorRouteImport.update({
   id: '/story-generator',
   path: '/story-generator',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSongsRoute = AppSongsRouteImport.update({
+  id: '/songs',
+  path: '/songs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSeoStudioRoute = AppSeoStudioRouteImport.update({
+  id: '/seo-studio',
+  path: '/seo-studio',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsRoute = AppProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppImagePromptsRoute = AppImagePromptsRouteImport.update({
+  id: '/image-prompts',
+  path: '/image-prompts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHelpRoute = AppHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -77,8 +125,16 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/help': typeof AppHelpRoute
+  '/image-prompts': typeof AppImagePromptsRoute
   '/projects': typeof AppProjectsRouteWithChildren
+  '/seo-studio': typeof AppSeoStudioRoute
+  '/settings': typeof AppSettingsRoute
+  '/songs': typeof AppSongsRoute
   '/story-generator': typeof AppStoryGeneratorRoute
+  '/storyboard': typeof AppStoryboardRoute
+  '/templates': typeof AppTemplatesRoute
+  '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRoutesByTo {
@@ -88,8 +144,16 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/help': typeof AppHelpRoute
+  '/image-prompts': typeof AppImagePromptsRoute
   '/projects': typeof AppProjectsRouteWithChildren
+  '/seo-studio': typeof AppSeoStudioRoute
+  '/settings': typeof AppSettingsRoute
+  '/songs': typeof AppSongsRoute
   '/story-generator': typeof AppStoryGeneratorRoute
+  '/storyboard': typeof AppStoryboardRoute
+  '/templates': typeof AppTemplatesRoute
+  '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRoutesById {
@@ -101,8 +165,16 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/help': typeof AppHelpRoute
+  '/_app/image-prompts': typeof AppImagePromptsRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
+  '/_app/seo-studio': typeof AppSeoStudioRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/songs': typeof AppSongsRoute
   '/_app/story-generator': typeof AppStoryGeneratorRoute
+  '/_app/storyboard': typeof AppStoryboardRoute
+  '/_app/templates': typeof AppTemplatesRoute
+  '/_app/voice-generator': typeof AppVoiceGeneratorRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRouteTypes {
@@ -114,8 +186,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/characters'
     | '/dashboard'
+    | '/help'
+    | '/image-prompts'
     | '/projects'
+    | '/seo-studio'
+    | '/settings'
+    | '/songs'
     | '/story-generator'
+    | '/storyboard'
+    | '/templates'
+    | '/voice-generator'
     | '/projects/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -125,8 +205,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/characters'
     | '/dashboard'
+    | '/help'
+    | '/image-prompts'
     | '/projects'
+    | '/seo-studio'
+    | '/settings'
+    | '/songs'
     | '/story-generator'
+    | '/storyboard'
+    | '/templates'
+    | '/voice-generator'
     | '/projects/new'
   id:
     | '__root__'
@@ -137,8 +225,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_app/characters'
     | '/_app/dashboard'
+    | '/_app/help'
+    | '/_app/image-prompts'
     | '/_app/projects'
+    | '/_app/seo-studio'
+    | '/_app/settings'
+    | '/_app/songs'
     | '/_app/story-generator'
+    | '/_app/storyboard'
+    | '/_app/templates'
+    | '/_app/voice-generator'
     | '/_app/projects/new'
   fileRoutesById: FileRoutesById
 }
@@ -187,6 +283,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/voice-generator': {
+      id: '/_app/voice-generator'
+      path: '/voice-generator'
+      fullPath: '/voice-generator'
+      preLoaderRoute: typeof AppVoiceGeneratorRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/templates': {
+      id: '/_app/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AppTemplatesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/storyboard': {
+      id: '/_app/storyboard'
+      path: '/storyboard'
+      fullPath: '/storyboard'
+      preLoaderRoute: typeof AppStoryboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/story-generator': {
       id: '/_app/story-generator'
       path: '/story-generator'
@@ -194,11 +311,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStoryGeneratorRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/songs': {
+      id: '/_app/songs'
+      path: '/songs'
+      fullPath: '/songs'
+      preLoaderRoute: typeof AppSongsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/seo-studio': {
+      id: '/_app/seo-studio'
+      path: '/seo-studio'
+      fullPath: '/seo-studio'
+      preLoaderRoute: typeof AppSeoStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects': {
       id: '/_app/projects'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/image-prompts': {
+      id: '/_app/image-prompts'
+      path: '/image-prompts'
+      fullPath: '/image-prompts'
+      preLoaderRoute: typeof AppImagePromptsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/help': {
+      id: '/_app/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AppHelpRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -240,15 +392,31 @@ const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
 interface AppRouteChildren {
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppHelpRoute: typeof AppHelpRoute
+  AppImagePromptsRoute: typeof AppImagePromptsRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
+  AppSeoStudioRoute: typeof AppSeoStudioRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppSongsRoute: typeof AppSongsRoute
   AppStoryGeneratorRoute: typeof AppStoryGeneratorRoute
+  AppStoryboardRoute: typeof AppStoryboardRoute
+  AppTemplatesRoute: typeof AppTemplatesRoute
+  AppVoiceGeneratorRoute: typeof AppVoiceGeneratorRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppHelpRoute: AppHelpRoute,
+  AppImagePromptsRoute: AppImagePromptsRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
+  AppSeoStudioRoute: AppSeoStudioRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppSongsRoute: AppSongsRoute,
   AppStoryGeneratorRoute: AppStoryGeneratorRoute,
+  AppStoryboardRoute: AppStoryboardRoute,
+  AppTemplatesRoute: AppTemplatesRoute,
+  AppVoiceGeneratorRoute: AppVoiceGeneratorRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
