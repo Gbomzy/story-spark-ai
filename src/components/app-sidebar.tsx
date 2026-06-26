@@ -13,20 +13,25 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
+  Bot,
+  ChevronLeft,
 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const items = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Projects", to: "/projects", icon: FolderKanban },
-  { label: "Characters", to: "/characters", icon: Users },
+  { label: "My Projects", to: "/projects", icon: FolderKanban },
   { label: "Story Generator", to: "/story-generator", icon: Wand2 },
+  { label: "Character Creator", to: "/characters", icon: Users },
   { label: "Storyboard", to: "/storyboard", icon: Film },
-  { label: "Voice Generator", to: "/voice-generator", icon: Mic },
-  { label: "Songs", to: "/songs", icon: Music },
-  { label: "Image Prompts", to: "/image-prompts", icon: ImageIcon },
+  { label: "Voice Studio", to: "/voice-generator", icon: Mic },
+  { label: "Song Studio", to: "/songs", icon: Music },
+  { label: "Image Prompt Studio", to: "/image-prompts", icon: ImageIcon },
   { label: "SEO Studio", to: "/seo-studio", icon: Search },
   { label: "Templates", to: "/templates", icon: LayoutTemplate },
+  { label: "AI Agents", to: "/ai-agents", icon: Bot },
 ] as const;
 
 const footerItems = [
@@ -36,17 +41,34 @@ const footerItems = [
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
+    <aside
+      className={cn(
+        "flex h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-300",
+        collapsed ? "w-[76px]" : "w-64",
+      )}
+    >
+      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
         <div className="grid h-9 w-9 place-items-center rounded-xl gradient-primary shadow-glow">
           <Sparkles className="h-5 w-5 text-white" />
         </div>
-        <div className="flex flex-col leading-tight">
-          <span className="text-sm font-bold text-sidebar-foreground">StorySpark</span>
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">AI Studio</span>
-        </div>
+        {!collapsed && (
+          <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-sm font-bold text-sidebar-foreground">StorySpark</span>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">AI Studio</span>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Toggle sidebar"
+          onClick={() => setCollapsed((c) => !c)}
+          className="hidden h-7 w-7 rounded-lg md:inline-flex"
+        >
+          <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+        </Button>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -58,15 +80,17 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
               key={item.to}
               to={item.to}
               onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                collapsed && "justify-center px-2",
                 active
                   ? "gradient-primary text-white shadow-glow"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}
@@ -81,15 +105,17 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
               key={item.to}
               to={item.to}
               onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                collapsed && "justify-center px-2",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent",
               )}
             >
               <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
