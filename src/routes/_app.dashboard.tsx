@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,16 @@ import {
   Mic,
   Film,
   Music,
+  Wand2,
+  Users,
+  ImageIcon,
+  Bot,
+  Download,
+  CheckCircle2,
+  Bell,
+  FileVideo,
+  FileText,
+  FileAudio,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -40,6 +49,29 @@ const favoriteCharacters = [
   { name: "Cap. Cabbage", trait: "Goofy hero", color: "gradient-cool", initial: "C" },
   { name: "Pixie", trait: "Magical guide", color: "gradient-primary", initial: "P" },
   { name: "Mango", trait: "Brave explorer", color: "gradient-warm", initial: "M" },
+];
+
+const quickActions = [
+  { label: "New story", icon: Wand2, to: "/story-generator", tone: "gradient-primary" },
+  { label: "New character", icon: Users, to: "/characters", tone: "gradient-warm" },
+  { label: "Storyboard", icon: Film, to: "/storyboard", tone: "gradient-cool" },
+  { label: "Voice over", icon: Mic, to: "/voice-generator", tone: "gradient-primary" },
+  { label: "Image prompts", icon: ImageIcon, to: "/image-prompts", tone: "gradient-warm" },
+  { label: "AI Agents", icon: Bot, to: "/ai-agents", tone: "gradient-cool" },
+] as const;
+
+const activity = [
+  { icon: CheckCircle2, text: "Story Agent finished 'Lila & the Friendly Star'", time: "2m ago", tone: "text-emerald-500" },
+  { icon: Mic, text: "Voiceover render started for 'Tiny Astronauts'", time: "18m ago", tone: "text-primary" },
+  { icon: ImageIcon, text: "12 new image prompts generated", time: "1h ago", tone: "text-primary" },
+  { icon: Bell, text: "Template 'Bedtime Adventures' added to library", time: "Yesterday", tone: "text-muted-foreground" },
+  { icon: Users, text: "Character 'Bubbles' favourited", time: "Yesterday", tone: "text-muted-foreground" },
+];
+
+const recentExports = [
+  { name: "lila-friendly-star.mp4", kind: "Video", size: "184 MB", icon: FileVideo },
+  { name: "tiny-astronauts-script.pdf", kind: "Script", size: "1.2 MB", icon: FileText },
+  { name: "recycling-robots-vo.wav", kind: "Audio", size: "42 MB", icon: FileAudio },
 ];
 
 function StatCard({
@@ -94,6 +126,28 @@ function DashboardPage() {
               <Plus className="mr-2 h-4 w-4" /> Create New Project
             </Link>
           </Button>
+        </div>
+      </section>
+
+      {/* Quick actions */}
+      <section>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link
+                key={a.label}
+                to={a.to}
+                className="glass group flex flex-col items-start gap-3 rounded-2xl p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-glow"
+              >
+                <div className={`grid h-10 w-10 place-items-center rounded-xl ${a.tone} text-white shadow-glow transition group-hover:scale-110`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold">{a.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -197,6 +251,62 @@ function DashboardPage() {
               </div>
             ))}
           </div>
+        </Card>
+      </section>
+
+      {/* Activity timeline + Recent exports */}
+      <section className="grid gap-6 lg:grid-cols-3">
+        <Card className="glass rounded-3xl p-6 shadow-soft lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Activity timeline</h3>
+            <Clock className="h-4 w-4 text-primary" />
+          </div>
+          <ol className="relative space-y-5 pl-5">
+            <span className="absolute left-[7px] top-1 bottom-1 w-px bg-border" />
+            {activity.map((a, i) => {
+              const Icon = a.icon;
+              return (
+                <li key={i} className="relative">
+                  <span className="absolute -left-5 top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full border-2 border-background bg-card shadow-soft">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                  <div className="flex items-start gap-3">
+                    <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${a.tone}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">{a.text}</p>
+                      <p className="text-[11px] text-muted-foreground">{a.time}</p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+
+        <Card className="glass rounded-3xl p-6 shadow-soft">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Recent exports</h3>
+            <Download className="h-4 w-4 text-primary" />
+          </div>
+          <ul className="space-y-3">
+            {recentExports.map((e) => {
+              const Icon = e.icon;
+              return (
+                <li key={e.name} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl gradient-primary text-white shadow-glow">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{e.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{e.kind} • {e.size}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" aria-label="Download">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
         </Card>
       </section>
     </div>

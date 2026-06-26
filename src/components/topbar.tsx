@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, Moon, Sun, Search, Menu, LogOut, User, CreditCard, Settings as SettingsIcon } from "lucide-react";
+import { Bell, Moon, Sun, Search, Menu, LogOut, User, CreditCard, Settings as SettingsIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
@@ -50,6 +50,18 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <Link
+          to="/settings"
+          className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 py-1.5 text-xs font-semibold shadow-soft transition hover:bg-card sm:inline-flex"
+          title="Credits remaining"
+        >
+          <span className="grid h-5 w-5 place-items-center rounded-md gradient-primary text-white">
+            <Zap className="h-3 w-3" />
+          </span>
+          <span className="tabular-nums">8,420</span>
+          <span className="text-muted-foreground">credits</span>
+        </Link>
+
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme" className="rounded-xl">
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
