@@ -26,6 +26,7 @@ import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts
 import { Route as AppHelpRouteImport } from './routes/_app.help'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
+import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 
 const SignupRoute = SignupRouteImport.update({
@@ -112,6 +113,11 @@ const AppCharactersRoute = AppCharactersRouteImport.update({
   path: '/characters',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAiAgentsRoute = AppAiAgentsRouteImport.update({
+  id: '/ai-agents',
+  path: '/ai-agents',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/ai-agents': typeof AppAiAgentsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/ai-agents': typeof AppAiAgentsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/_app/ai-agents': typeof AppAiAgentsRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/help': typeof AppHelpRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/ai-agents'
     | '/characters'
     | '/dashboard'
     | '/help'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/ai-agents'
     | '/characters'
     | '/dashboard'
     | '/help'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/_app/ai-agents'
     | '/_app/characters'
     | '/_app/dashboard'
     | '/_app/help'
@@ -367,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCharactersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ai-agents': {
+      id: '/_app/ai-agents'
+      path: '/ai-agents'
+      fullPath: '/ai-agents'
+      preLoaderRoute: typeof AppAiAgentsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/new': {
       id: '/_app/projects/new'
       path: '/new'
@@ -390,6 +409,7 @@ const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAiAgentsRoute: typeof AppAiAgentsRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppHelpRoute: typeof AppHelpRoute
@@ -405,6 +425,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAiAgentsRoute: AppAiAgentsRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppHelpRoute: AppHelpRoute,
