@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wand2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { generateStory } from "@/lib/qwen.functions";
+import { OutputWorkspace } from "@/components/output-workspace";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
@@ -72,6 +73,11 @@ function StoryGeneratorPage() {
           )}
         </Card>
       </div>
+
+      <OutputWorkspace
+        initialValues={story ? { story } : undefined}
+        status={mutation.isPending ? "generating" : story ? "ready" : "awaiting"}
+      />
     </div>
   );
 }
