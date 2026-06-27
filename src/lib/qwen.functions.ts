@@ -92,3 +92,39 @@ export const generateStory = createServerFn({ method: "POST" })
     ]);
     return { story: content };
   });
+
+const CharactersInput = z.object({
+  prompt: z.string().min(1),
+  story: z.string().optional(),
+  ageGroup: z.string().optional(),
+  language: z.string().optional(),
+  count: z.number().int().min(1).max(8).optional(),
+});
+
+export const generateCharacters = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => CharactersInput.parse(input))
+  .handler(async ({ data }) => {
+    const count = data.count ?? 4;
+    const system = `You are StorySpark AI's Character Agent. Design ${count} memorable, age-appropriate characters for a children's educational story.${
+      data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
+    }${data.language ? ` Write in ${data.language}.` : ""}
+
+For each character output this exact markdown structure, separated by a blank line:
+
+### {Name} — {one-line role}
+- Appearance: {short visual description suitable for an illustrator}
+- Personality: {2-3 traits}
+- Voice: {tone, pace, accent hints}
+- Arc: {how they grow or contribute to the learning goal}
+- Catchphrase: "{short signature line}"
+
+Keep descriptions vivid but concise. Do not add any preamble or closing text.`;
+    const userPrompt = data.story
+      ? `Project brief:\n${data.prompt}\n\nStory draft:\n${data.story}`
+      : `Project brief:\n${data.prompt}`;
+    const content = await callQwen([
+      { role: "system", content: system },
+      { role: "user", content: userPrompt },
+    ]);
+    return { characters: content };
+  });

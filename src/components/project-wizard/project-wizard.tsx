@@ -44,7 +44,7 @@ import { OutputWorkspace } from "@/components/output-workspace";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { generateStory } from "@/lib/qwen.functions";
+import { generateStory, generateCharacters } from "@/lib/qwen.functions";
 
 type AgentKey =
   | "story"
@@ -588,23 +588,44 @@ function StepResults({
       toast.error(err instanceof Error ? err.message : "Failed to generate story"),
   });
 
+  const briefPrompt = `Project: ${form.name || "Untitled"}\nTopic: ${form.topic}\nLearning objective: ${form.objective}\nAnimation style: ${form.style}`;
+
+  const charactersMutation = useMutation({
+    mutationFn: (story?: string) =>
+      generateCharacters({
+        data: {
+          prompt: briefPrompt,
+          story,
+          ageGroup: form.age,
+          language: form.language,
+        },
+      }),
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "Failed to generate characters"),
+  });
+
   useEffect(() => {
     if (enabled.story && !storyMutation.data && !storyMutation.isPending) {
       storyMutation.mutate();
+    }
+    if (enabled.character && !charactersMutation.data && !charactersMutation.isPending) {
+      charactersMutation.mutate(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const story = storyMutation.data?.story ?? "";
+  const characters = charactersMutation.data?.characters ?? "";
+  const anyPending = storyMutation.isPending || charactersMutation.isPending;
   const workspaceStatus: "awaiting" | "generating" | "ready" =
-    storyMutation.isPending ? "generating" : story ? "ready" : "awaiting";
+    anyPending ? "generating" : story || characters ? "ready" : "awaiting";
 
   function exportJson() {
     const payload = {
       project: form,
       agents: Object.entries(enabled).filter(([, v]) => v).map(([k]) => k),
       generatedAt: new Date().toISOString(),
-      assets: { story, characters: "", storyboard: "", voice: "", songs: "", images: "", seo: "" },
+      assets: { story, characters, storyboard: "", voice: "", songs: "", images: "", seo: "" },
       _note: "Asset bodies will be filled by the Qwen generation pipeline.",
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -647,7 +668,10 @@ function StepResults({
       </Card>
 
       <OutputWorkspace
-        initialValues={story ? { story } : undefined}
+        initialValues={{
+          ...(story ? { story } : {}),
+          ...(characters ? { characters } : {}),
+        }}
         status={workspaceStatus}
       />
 
