@@ -573,12 +573,38 @@ function StepResults({
   onRegenerate: () => void;
   onDone: () => void;
 }) {
+  const storyMutation = useMutation({
+    mutationFn: () =>
+      generateStory({
+        data: {
+          prompt: `Project: ${form.name || "Untitled"}\nTopic: ${form.topic}\nLearning objective: ${form.objective}\nAnimation style: ${form.style}`,
+          ageGroup: form.age,
+          language: form.language,
+          length: `${form.duration} minute read-aloud`,
+          learningGoal: form.objective,
+        },
+      }),
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "Failed to generate story"),
+  });
+
+  useEffect(() => {
+    if (enabled.story && !storyMutation.data && !storyMutation.isPending) {
+      storyMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const story = storyMutation.data?.story ?? "";
+  const workspaceStatus: "awaiting" | "generating" | "ready" =
+    storyMutation.isPending ? "generating" : story ? "ready" : "awaiting";
+
   function exportJson() {
     const payload = {
       project: form,
       agents: Object.entries(enabled).filter(([, v]) => v).map(([k]) => k),
       generatedAt: new Date().toISOString(),
-      assets: { story: "", characters: "", storyboard: "", voice: "", songs: "", images: "", seo: "" },
+      assets: { story, characters: "", storyboard: "", voice: "", songs: "", images: "", seo: "" },
       _note: "Asset bodies will be filled by the Qwen generation pipeline.",
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
