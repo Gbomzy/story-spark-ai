@@ -43,6 +43,8 @@ import { AgentCard, type Agent, type AgentStatus } from "@/components/agent-card
 import { OutputWorkspace } from "@/components/output-workspace";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { generateStory } from "@/lib/qwen.functions";
 
 type AgentKey =
   | "story"
