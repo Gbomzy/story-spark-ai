@@ -44,7 +44,7 @@ import { OutputWorkspace } from "@/components/output-workspace";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { generateStory, generateCharacters } from "@/lib/qwen.functions";
+import { generateStory, generateCharacters, generateStoryboard } from "@/lib/qwen.functions";
 
 type AgentKey =
   | "story"
@@ -604,6 +604,21 @@ function StepResults({
       toast.error(err instanceof Error ? err.message : "Failed to generate characters"),
   });
 
+  const storyboardMutation = useMutation({
+    mutationFn: (story?: string) =>
+      generateStoryboard({
+        data: {
+          prompt: briefPrompt,
+          story,
+          ageGroup: form.age,
+          language: form.language,
+          style: form.style,
+        },
+      }),
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "Failed to generate storyboard"),
+  });
+
   useEffect(() => {
     if (enabled.story && !storyMutation.data && !storyMutation.isPending) {
       storyMutation.mutate();
@@ -611,21 +626,26 @@ function StepResults({
     if (enabled.character && !charactersMutation.data && !charactersMutation.isPending) {
       charactersMutation.mutate(undefined);
     }
+    if (enabled.storyboard && !storyboardMutation.data && !storyboardMutation.isPending) {
+      storyboardMutation.mutate(undefined);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const story = storyMutation.data?.story ?? "";
   const characters = charactersMutation.data?.characters ?? "";
-  const anyPending = storyMutation.isPending || charactersMutation.isPending;
+  const storyboard = storyboardMutation.data?.storyboard ?? "";
+  const anyPending =
+    storyMutation.isPending || charactersMutation.isPending || storyboardMutation.isPending;
   const workspaceStatus: "awaiting" | "generating" | "ready" =
-    anyPending ? "generating" : story || characters ? "ready" : "awaiting";
+    anyPending ? "generating" : story || characters || storyboard ? "ready" : "awaiting";
 
   function exportJson() {
     const payload = {
       project: form,
       agents: Object.entries(enabled).filter(([, v]) => v).map(([k]) => k),
       generatedAt: new Date().toISOString(),
-      assets: { story, characters, storyboard: "", voice: "", songs: "", images: "", seo: "" },
+      assets: { story, characters, storyboard, voice: "", songs: "", images: "", seo: "" },
       _note: "Asset bodies will be filled by the Qwen generation pipeline.",
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -671,6 +691,7 @@ function StepResults({
         initialValues={{
           ...(story ? { story } : {}),
           ...(characters ? { characters } : {}),
+          ...(storyboard ? { storyboard } : {}),
         }}
         status={workspaceStatus}
       />
