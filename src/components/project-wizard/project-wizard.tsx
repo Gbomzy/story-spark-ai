@@ -44,6 +44,8 @@ import { OutputWorkspace } from "@/components/output-workspace";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { createProject, updateProject } from "@/lib/projects";
 import {
   generateStory,
   generateCharacters,
@@ -174,7 +176,7 @@ export function ProjectWizard() {
               form={form}
               enabled={enabled}
               onRegenerate={() => setStep(3)}
-              onDone={() => navigate({ to: "/projects" })}
+              onDone={(id) => navigate({ to: "/projects/$id", params: { id } })}
             />
           )}
         </motion.div>
@@ -576,8 +578,12 @@ function StepResults({
   form: ProjectForm;
   enabled: Record<AgentKey, boolean>;
   onRegenerate: () => void;
-  onDone: () => void;
+  onDone: (projectId: string) => void;
 }) {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const projectIdRef = useRef<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const storyMutation = useMutation({
     mutationFn: () =>
       generateStory({
@@ -682,6 +688,44 @@ function StepResults({
   const workspaceStatus: "awaiting" | "generating" | "ready" =
     anyPending ? "generating" : anyContent ? "ready" : "awaiting";
 
+  // Auto-save / sync to database whenever new content arrives.
+  useEffect(() => {
+    if (!anyContent) return;
+    let cancelled = false;
+    (async () => {
+      const patch = {
+        name: form.name || "Untitled project",
+        topic: form.topic || null,
+        age_group: form.age || null,
+        language: form.language || null,
+        duration: form.duration || null,
+        objective: form.objective || null,
+        style: form.style || null,
+        story: story || null,
+        characters: characters || null,
+        storyboard: storyboard || null,
+        voice: voice || null,
+        songs: songs || null,
+        images: images || null,
+        seo: seo || null,
+      };
+      try {
+        if (!projectIdRef.current) {
+          const created = await createProject(patch);
+          projectIdRef.current = created.id;
+          if (!cancelled) setSavedId(created.id);
+        } else {
+          await updateProject(projectIdRef.current, patch);
+        }
+        qc.invalidateQueries({ queryKey: ["projects"] });
+      } catch (e) {
+        console.error("Auto-save failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story, characters, storyboard, voice, songs, images, seo]);
+
   function exportJson() {
     const payload = {
       project: form,
@@ -697,6 +741,22 @@ function StepResults({
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Project JSON downloaded");
+  }
+
+  function exportText(ext: "pdf" | "docx") {
+    const sections: Array<[string, string]> = [
+      ["Story", story], ["Characters", characters], ["Storyboard", storyboard],
+      ["Voice Script", voice], ["Songs", songs], ["Image Prompts", images], ["SEO", seo],
+    ];
+    const body = sections.map(([k, v]) => `=== ${k.toUpperCase()} ===\n\n${v || "(empty)"}\n`).join("\n");
+    const blob = new Blob([`${form.name || "Untitled"}\n${form.topic}\n\n${body}`], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(form.name || "storyspark-project").toLowerCase().replace(/\s+/g, "-")}.${ext === "pdf" ? "txt" : "doc"}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.message(`${ext.toUpperCase()} export`, { description: "Downloaded as plain text — wire up a renderer for formatted output." });
   }
 
   return (
@@ -745,18 +805,10 @@ function StepResults({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Export your project or save it to keep working later.</p>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => toast.message("PDF export", { description: "Coming once Qwen renders are wired in." })}
-            >
+            <Button variant="outline" className="rounded-xl" onClick={() => exportText("pdf")}>
               <FileText className="mr-1.5 h-4 w-4" /> Export PDF
             </Button>
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => toast.message("DOCX export", { description: "Coming once Qwen renders are wired in." })}
-            >
+            <Button variant="outline" className="rounded-xl" onClick={() => exportText("docx")}>
               <FileType2 className="mr-1.5 h-4 w-4" /> Export DOCX
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={exportJson}>
@@ -764,9 +816,14 @@ function StepResults({
             </Button>
             <Button
               onClick={() => {
-                toast.success("Project saved");
-                onDone();
+                if (savedId) {
+                  toast.success("Project saved");
+                  onDone(savedId);
+                } else {
+                  toast.message("Saving…", { description: "Hang tight while we finish generating." });
+                }
               }}
+              disabled={!savedId}
               className="rounded-xl gradient-primary text-white shadow-glow hover:opacity-95"
             >
               <Save className="mr-1.5 h-4 w-4" /> Save Project
