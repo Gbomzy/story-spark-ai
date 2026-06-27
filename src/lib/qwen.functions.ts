@@ -128,3 +128,43 @@ Keep descriptions vivid but concise. Do not add any preamble or closing text.`;
     ]);
     return { characters: content };
   });
+
+const StoryboardInput = z.object({
+  prompt: z.string().min(1),
+  story: z.string().optional(),
+  ageGroup: z.string().optional(),
+  language: z.string().optional(),
+  style: z.string().optional(),
+  scenes: z.number().int().min(3).max(20).optional(),
+});
+
+export const generateStoryboard = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => StoryboardInput.parse(input))
+  .handler(async ({ data }) => {
+    const scenes = data.scenes ?? 6;
+    const system = `You are StorySpark AI's Storyboard Agent. Break the story into ${scenes} cinematic scenes for a children's educational animation.${
+      data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
+    }${data.language ? ` Write in ${data.language}.` : ""}${
+      data.style ? ` Animation style: ${data.style}.` : ""
+    }
+
+For each scene output this exact markdown structure, separated by a blank line:
+
+## Scene {n} — {short title}
+- Setting: {location, time of day, mood}
+- Characters: {who appears}
+- Action: {what happens in 1-2 sentences}
+- Shot: {shot type and camera move, e.g. wide establishing, slow push-in}
+- Dialogue/VO: "{key line or narration beat}"
+- Sound: {ambient sound, music cue or SFX}
+
+Keep scenes tight and visual. Do not add any preamble or closing text.`;
+    const userPrompt = data.story
+      ? `Project brief:\n${data.prompt}\n\nStory draft:\n${data.story}`
+      : `Project brief:\n${data.prompt}`;
+    const content = await callQwen([
+      { role: "system", content: system },
+      { role: "user", content: userPrompt },
+    ]);
+    return { storyboard: content };
+  });
