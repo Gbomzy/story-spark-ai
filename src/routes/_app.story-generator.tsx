@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Wand2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { generateStory } from "@/lib/qwen.functions";
+import { generateStory, generateCharacters } from "@/lib/qwen.functions";
 import { OutputWorkspace } from "@/components/output-workspace";
 
 export const Route = createFileRoute("/_app/story-generator")({
@@ -19,11 +19,23 @@ export const Route = createFileRoute("/_app/story-generator")({
 function StoryGeneratorPage() {
   const [prompt, setPrompt] = useState("A shy fox who wants to make friends at school.");
   const [story, setStory] = useState<string | null>(null);
+  const [characters, setCharacters] = useState<string | null>(null);
   const mutation = useMutation({
-    mutationFn: (p: string) => generateStory({ data: { prompt: p } }),
-    onSuccess: (res) => setStory(res.story),
+    mutationFn: async (p: string) => {
+      setStory(null);
+      setCharacters(null);
+      const [s, c] = await Promise.all([
+        generateStory({ data: { prompt: p } }),
+        generateCharacters({ data: { prompt: p } }),
+      ]);
+      return { story: s.story, characters: c.characters };
+    },
+    onSuccess: (res) => {
+      setStory(res.story);
+      setCharacters(res.characters);
+    },
     onError: (err: unknown) =>
-      toast.error(err instanceof Error ? err.message : "Failed to generate story"),
+      toast.error(err instanceof Error ? err.message : "Failed to generate"),
   });
   function generate() {
     mutation.mutate(prompt);
@@ -75,8 +87,11 @@ function StoryGeneratorPage() {
       </div>
 
       <OutputWorkspace
-        initialValues={story ? { story } : undefined}
-        status={mutation.isPending ? "generating" : story ? "ready" : "awaiting"}
+        initialValues={{
+          ...(story ? { story } : {}),
+          ...(characters ? { characters } : {}),
+        }}
+        status={mutation.isPending ? "generating" : story || characters ? "ready" : "awaiting"}
       />
     </div>
   );
