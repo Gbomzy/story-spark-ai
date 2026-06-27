@@ -14,7 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          age_group: string | null
+          characters: string | null
+          created_at: string
+          duration: number | null
+          id: string
+          images: string | null
+          language: string | null
+          last_opened_at: string | null
+          name: string
+          objective: string | null
+          seo: string | null
+          songs: string | null
+          story: string | null
+          storyboard: string | null
+          style: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string
+          voice: string | null
+        }
+        Insert: {
+          age_group?: string | null
+          characters?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          images?: string | null
+          language?: string | null
+          last_opened_at?: string | null
+          name: string
+          objective?: string | null
+          seo?: string | null
+          songs?: string | null
+          story?: string | null
+          storyboard?: string | null
+          style?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+          voice?: string | null
+        }
+        Update: {
+          age_group?: string | null
+          characters?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          images?: string | null
+          language?: string | null
+          last_opened_at?: string | null
+          name?: string
+          objective?: string | null
+          seo?: string | null
+          songs?: string | null
+          story?: string | null
+          storyboard?: string | null
+          style?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+          voice?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
