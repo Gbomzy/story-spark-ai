@@ -108,13 +108,14 @@ export function OutputWorkspace({
             {t.value === "songs" && (
               <MusicPanel lyrics={values.songs} value={music ?? null} />
             )}
+            {t.value !== "images" && (
             <Textarea
               value={values[t.value]}
               onChange={(e) => setValues((v) => ({ ...v, [t.value]: e.target.value }))}
               placeholder={t.placeholder}
               className="min-h-[220px] rounded-2xl bg-card/60 leading-relaxed"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            />)}
+            {t.value !== "images" && (<div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-[11px] text-muted-foreground">
                 {values[t.value].length} characters
               </p>
@@ -134,7 +135,7 @@ export function OutputWorkspace({
                   <Download className="mr-1.5 h-3.5 w-3.5" /> Export
                 </Button>
               </div>
-            </div>
+            </div>)}
           </TabsContent>
         ))}
       </Tabs>
