@@ -41,13 +41,16 @@ export type Database = {
       projects: {
         Row: {
           age_group: string | null
+          audio: string | null
           characters: string | null
           created_at: string
           duration: number | null
           id: string
+          image_assets: string | null
           images: string | null
           language: string | null
           last_opened_at: string | null
+          music: string | null
           name: string
           objective: string | null
           seo: string | null
@@ -58,17 +61,21 @@ export type Database = {
           topic: string | null
           updated_at: string
           user_id: string
+          video: string | null
           voice: string | null
         }
         Insert: {
           age_group?: string | null
+          audio?: string | null
           characters?: string | null
           created_at?: string
           duration?: number | null
           id?: string
+          image_assets?: string | null
           images?: string | null
           language?: string | null
           last_opened_at?: string | null
+          music?: string | null
           name: string
           objective?: string | null
           seo?: string | null
@@ -79,17 +86,21 @@ export type Database = {
           topic?: string | null
           updated_at?: string
           user_id: string
+          video?: string | null
           voice?: string | null
         }
         Update: {
           age_group?: string | null
+          audio?: string | null
           characters?: string | null
           created_at?: string
           duration?: number | null
           id?: string
+          image_assets?: string | null
           images?: string | null
           language?: string | null
           last_opened_at?: string | null
+          music?: string | null
           name?: string
           objective?: string | null
           seo?: string | null
@@ -100,6 +111,7 @@ export type Database = {
           topic?: string | null
           updated_at?: string
           user_id?: string
+          video?: string | null
           voice?: string | null
         }
         Relationships: []
