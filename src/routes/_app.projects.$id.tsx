@@ -27,7 +27,7 @@ const TABS = [
   { value: "storyboard" as ProjectContentField, label: "Storyboard", icon: Film },
   { value: "voice" as ProjectContentField, label: "Voice Script", icon: Mic },
   { value: "songs" as ProjectContentField, label: "Songs", icon: Music },
-  { value: "images" as ProjectContentField, label: "Image Prompts", icon: ImageIcon },
+  { value: "images" as ProjectContentField, label: "Images", icon: ImageIcon },
   { value: "seo" as ProjectContentField, label: "SEO", icon: Search },
 ];
 
