@@ -708,6 +708,10 @@ function StepResults({
         songs: songs || null,
         images: images || null,
         seo: seo || null,
+        audio: null,
+        music: null,
+        video: null,
+        image_assets: null,
       };
       try {
         if (!projectIdRef.current) {

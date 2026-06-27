@@ -6,6 +6,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Users, Film, Mic, Music, ImageIcon, Search, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
+import { SceneImagesPanel } from "@/components/media/scene-images-panel";
+import { AudioPanel } from "@/components/media/audio-panel";
+import { MusicPanel } from "@/components/media/music-panel";
 
 const TABS = [
   { value: "story", label: "Story", icon: BookOpen, placeholder: "Your generated story will appear here. Connect the Qwen API to populate." },
@@ -13,7 +16,7 @@ const TABS = [
   { value: "storyboard", label: "Storyboard", icon: Film, placeholder: "Scene-by-scene breakdown with camera moves and beats." },
   { value: "voice", label: "Voice Script", icon: Mic, placeholder: "Narrator and character lines, timed for voiceover." },
   { value: "songs", label: "Songs", icon: Music, placeholder: "Lyrics, melody hints and song structure." },
-  { value: "images", label: "Image Prompts", icon: ImageIcon, placeholder: "Prompt-ready descriptions for every key scene." },
+  { value: "images", label: "Images", icon: ImageIcon, placeholder: "Prompt-ready descriptions for every key scene." },
   { value: "seo", label: "SEO", icon: Search, placeholder: "Title, description, tags and hashtags optimised for discovery." },
 ] as const;
 
@@ -24,9 +27,13 @@ export type OutputWorkspaceValues = Partial<Record<TabKey, string>>;
 export function OutputWorkspace({
   initialValues,
   status = "awaiting",
+  audio,
+  music,
 }: {
   initialValues?: OutputWorkspaceValues;
   status?: "awaiting" | "generating" | "ready";
+  audio?: string | null;
+  music?: string | null;
 } = {}) {
   const [values, setValues] = useState<Record<TabKey, string>>(() =>
     TABS.reduce(
@@ -92,13 +99,23 @@ export function OutputWorkspace({
 
         {TABS.map((t) => (
           <TabsContent key={t.value} value={t.value} className="mt-4 space-y-3">
+            {t.value === "images" && (
+              <SceneImagesPanel imagesText={values.images} />
+            )}
+            {t.value === "voice" && (
+              <AudioPanel script={values.voice} value={audio ?? null} />
+            )}
+            {t.value === "songs" && (
+              <MusicPanel lyrics={values.songs} value={music ?? null} />
+            )}
+            {t.value !== "images" && (
             <Textarea
               value={values[t.value]}
               onChange={(e) => setValues((v) => ({ ...v, [t.value]: e.target.value }))}
               placeholder={t.placeholder}
               className="min-h-[220px] rounded-2xl bg-card/60 leading-relaxed"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            />)}
+            {t.value !== "images" && (<div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-[11px] text-muted-foreground">
                 {values[t.value].length} characters
               </p>
@@ -118,7 +135,7 @@ export function OutputWorkspace({
                   <Download className="mr-1.5 h-3.5 w-3.5" /> Export
                 </Button>
               </div>
-            </div>
+            </div>)}
           </TabsContent>
         ))}
       </Tabs>
