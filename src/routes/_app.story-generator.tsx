@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Wand2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { generateStory, generateCharacters, generateStoryboard } from "@/lib/qwen.functions";
+import {
+  generateStory,
+  generateCharacters,
+  generateStoryboard,
+  generateMediaPack,
+} from "@/lib/qwen.functions";
 import { OutputWorkspace } from "@/components/output-workspace";
 
 export const Route = createFileRoute("/_app/story-generator")({
@@ -21,23 +26,44 @@ function StoryGeneratorPage() {
   const [story, setStory] = useState<string | null>(null);
   const [characters, setCharacters] = useState<string | null>(null);
   const [storyboard, setStoryboard] = useState<string | null>(null);
+  const [voice, setVoice] = useState<string | null>(null);
+  const [songs, setSongs] = useState<string | null>(null);
+  const [images, setImages] = useState<string | null>(null);
+  const [seo, setSeo] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: async (p: string) => {
       setStory(null);
       setCharacters(null);
       setStoryboard(null);
+      setVoice(null);
+      setSongs(null);
+      setImages(null);
+      setSeo(null);
       const s = await generateStory({ data: { prompt: p } });
       setStory(s.story);
-      const [c, sb] = await Promise.all([
+      const [c, sb, pack] = await Promise.all([
         generateCharacters({ data: { prompt: p, story: s.story } }),
         generateStoryboard({ data: { prompt: p, story: s.story } }),
+        generateMediaPack({ data: { prompt: p, story: s.story } }),
       ]);
-      return { story: s.story, characters: c.characters, storyboard: sb.storyboard };
+      return {
+        story: s.story,
+        characters: c.characters,
+        storyboard: sb.storyboard,
+        voice: pack.voice,
+        songs: pack.songs,
+        images: pack.images,
+        seo: pack.seo,
+      };
     },
     onSuccess: (res) => {
       setStory(res.story);
       setCharacters(res.characters);
       setStoryboard(res.storyboard);
+      setVoice(res.voice);
+      setSongs(res.songs);
+      setImages(res.images);
+      setSeo(res.seo);
     },
     onError: (err: unknown) =>
       toast.error(err instanceof Error ? err.message : "Failed to generate"),
@@ -96,8 +122,18 @@ function StoryGeneratorPage() {
           ...(story ? { story } : {}),
           ...(characters ? { characters } : {}),
           ...(storyboard ? { storyboard } : {}),
+          ...(voice ? { voice } : {}),
+          ...(songs ? { songs } : {}),
+          ...(images ? { images } : {}),
+          ...(seo ? { seo } : {}),
         }}
-        status={mutation.isPending ? "generating" : story || characters || storyboard ? "ready" : "awaiting"}
+        status={
+          mutation.isPending
+            ? "generating"
+            : story || characters || storyboard || voice || songs || images || seo
+              ? "ready"
+              : "awaiting"
+        }
       />
     </div>
   );

@@ -44,7 +44,12 @@ import { OutputWorkspace } from "@/components/output-workspace";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { generateStory, generateCharacters, generateStoryboard } from "@/lib/qwen.functions";
+import {
+  generateStory,
+  generateCharacters,
+  generateStoryboard,
+  generateMediaPack,
+} from "@/lib/qwen.functions";
 
 type AgentKey =
   | "story"
@@ -619,6 +624,21 @@ function StepResults({
       toast.error(err instanceof Error ? err.message : "Failed to generate storyboard"),
   });
 
+  const mediaMutation = useMutation({
+    mutationFn: (story: string) =>
+      generateMediaPack({
+        data: {
+          prompt: briefPrompt,
+          story,
+          ageGroup: form.age,
+          language: form.language,
+          style: form.style,
+        },
+      }),
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "Failed to generate media pack"),
+  });
+
   useEffect(() => {
     if (enabled.story && !storyMutation.data && !storyMutation.isPending) {
       storyMutation.mutate();
@@ -632,21 +652,42 @@ function StepResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const story = storyMutation.data?.story ?? "";
+  const storyText = storyMutation.data?.story ?? "";
+  const needsMedia = enabled.voice || enabled.song || enabled.image || enabled.seo;
+  useEffect(() => {
+    if (
+      needsMedia &&
+      storyText &&
+      !mediaMutation.data &&
+      !mediaMutation.isPending
+    ) {
+      mediaMutation.mutate(storyText);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyText, needsMedia]);
+
+  const story = storyText;
   const characters = charactersMutation.data?.characters ?? "";
   const storyboard = storyboardMutation.data?.storyboard ?? "";
+  const voice = enabled.voice ? (mediaMutation.data?.voice ?? "") : "";
+  const songs = enabled.song ? (mediaMutation.data?.songs ?? "") : "";
+  const images = enabled.image ? (mediaMutation.data?.images ?? "") : "";
+  const seo = enabled.seo ? (mediaMutation.data?.seo ?? "") : "";
   const anyPending =
-    storyMutation.isPending || charactersMutation.isPending || storyboardMutation.isPending;
+    storyMutation.isPending ||
+    charactersMutation.isPending ||
+    storyboardMutation.isPending ||
+    mediaMutation.isPending;
+  const anyContent = story || characters || storyboard || voice || songs || images || seo;
   const workspaceStatus: "awaiting" | "generating" | "ready" =
-    anyPending ? "generating" : story || characters || storyboard ? "ready" : "awaiting";
+    anyPending ? "generating" : anyContent ? "ready" : "awaiting";
 
   function exportJson() {
     const payload = {
       project: form,
       agents: Object.entries(enabled).filter(([, v]) => v).map(([k]) => k),
       generatedAt: new Date().toISOString(),
-      assets: { story, characters, storyboard, voice: "", songs: "", images: "", seo: "" },
-      _note: "Asset bodies will be filled by the Qwen generation pipeline.",
+      assets: { story, characters, storyboard, voice, songs, images, seo },
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -692,6 +733,10 @@ function StepResults({
           ...(story ? { story } : {}),
           ...(characters ? { characters } : {}),
           ...(storyboard ? { storyboard } : {}),
+          ...(voice ? { voice } : {}),
+          ...(songs ? { songs } : {}),
+          ...(images ? { images } : {}),
+          ...(seo ? { seo } : {}),
         }}
         status={workspaceStatus}
       />
