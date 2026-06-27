@@ -29,6 +29,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
+import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -129,6 +130,11 @@ const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AppProjectsRoute,
 } as any)
+const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppProjectsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
+  '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRoutesByTo {
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
+  '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRoutesById {
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/_app/storyboard': typeof AppStoryboardRoute
   '/_app/templates': typeof AppTemplatesRoute
   '/_app/voice-generator': typeof AppVoiceGeneratorRoute
+  '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
 }
 export interface FileRouteTypes {
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/storyboard'
     | '/templates'
     | '/voice-generator'
+    | '/projects/$id'
     | '/projects/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/storyboard'
     | '/templates'
     | '/voice-generator'
+    | '/projects/$id'
     | '/projects/new'
   id:
     | '__root__'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/_app/storyboard'
     | '/_app/templates'
     | '/_app/voice-generator'
+    | '/_app/projects/$id'
     | '/_app/projects/new'
   fileRoutesById: FileRoutesById
 }
@@ -413,14 +425,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsNewRouteImport
       parentRoute: typeof AppProjectsRoute
     }
+    '/_app/projects/$id': {
+      id: '/_app/projects/$id'
+      path: '/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AppProjectsIdRouteImport
+      parentRoute: typeof AppProjectsRoute
+    }
   }
 }
 
 interface AppProjectsRouteChildren {
+  AppProjectsIdRoute: typeof AppProjectsIdRoute
   AppProjectsNewRoute: typeof AppProjectsNewRoute
 }
 
 const AppProjectsRouteChildren: AppProjectsRouteChildren = {
+  AppProjectsIdRoute: AppProjectsIdRoute,
   AppProjectsNewRoute: AppProjectsNewRoute,
 }
 
