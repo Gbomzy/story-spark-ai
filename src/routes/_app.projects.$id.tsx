@@ -15,6 +15,9 @@ import {
   generateStoryboard,
   generateMediaPack,
 } from "@/lib/qwen.functions";
+import { SceneImagesPanel } from "@/components/media/scene-images-panel";
+import { AudioPanel } from "@/components/media/audio-panel";
+import { MusicPanel } from "@/components/media/music-panel";
 
 export const Route = createFileRoute("/_app/projects/$id")({
   head: () => ({ meta: [{ title: "Project — StorySpark AI" }] }),
@@ -223,6 +226,13 @@ function ProjectDetailPage() {
 
           {TABS.map((t) => (
             <TabsContent key={t.value} value={t.value} className="mt-4 space-y-3">
+              {t.value === "images" && <SceneImagesPanel imagesText={draft.images} />}
+              {t.value === "voice" && (
+                <AudioPanel script={draft.voice} value={project.audio ?? null} />
+              )}
+              {t.value === "songs" && (
+                <MusicPanel lyrics={draft.songs} value={project.music ?? null} />
+              )}
               <Textarea
                 value={draft[t.value]}
                 onChange={(e) => setField(t.value, e.target.value)}
