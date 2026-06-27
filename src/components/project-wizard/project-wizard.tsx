@@ -637,7 +637,8 @@ function StepResults({
             <Button
               variant="outline"
               className="rounded-xl"
-              onClick={() => toast.message("Improve with AI", { description: "Will route through Qwen once the backend is connected." })}
+              onClick={() => storyMutation.mutate()}
+              disabled={storyMutation.isPending}
             >
               <Wand2 className="mr-1.5 h-4 w-4" /> Improve with AI
             </Button>
