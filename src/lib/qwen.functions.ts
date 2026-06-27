@@ -168,3 +168,92 @@ Keep scenes tight and visual. Do not add any preamble or closing text.`;
     ]);
     return { storyboard: content };
   });
+
+const MediaPackInput = z.object({
+  prompt: z.string().min(1),
+  story: z.string().min(1),
+  ageGroup: z.string().optional(),
+  language: z.string().optional(),
+  style: z.string().optional(),
+});
+
+function extractSection(text: string, tag: string): string {
+  const re = new RegExp(`===${tag}===\\s*([\\s\\S]*?)(?=\\n===[A-Z_]+===|$)`);
+  const m = text.match(re);
+  return m ? m[1].trim() : "";
+}
+
+export const generateMediaPack = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => MediaPackInput.parse(input))
+  .handler(async ({ data }) => {
+    const system = `You are StorySpark AI's multi-agent media producer. Given a children's educational story, you will output FOUR assets in a SINGLE response using the exact delimiter format below. Do not add any preamble, closing text, or commentary outside the sections.${
+      data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
+    }${data.language ? ` Write in ${data.language}.` : ""}${
+      data.style ? ` Animation style: ${data.style}.` : ""
+    }
+
+Output format (use these exact delimiter lines, in this exact order):
+
+===VOICE===
+A complete narration script for the story. Include:
+- [NARRATOR] lines for description and transitions
+- [CHARACTER NAME] lines for dialogue with brief tone cues in parentheses, e.g. (warmly), (whispering)
+- [PAUSE 1s] or [SFX: ...] cues where helpful
+Cover the full story from open to close, in order.
+
+===SONGS===
+An original children's song inspired by the story. Use this structure with labeled sections:
+Title: {song title}
+
+[Verse 1]
+...
+
+[Chorus]
+...
+
+[Verse 2]
+...
+
+[Chorus]
+...
+
+[Bridge]
+...
+
+[Ending]
+...
+
+Include a short "Melody hints:" line at the end (tempo, mood, instrumentation).
+
+===IMAGES===
+Detailed cinematic AI image prompts, one per scene, numbered. For each scene output:
+
+## Scene {n} — {short title}
+Prompt: {one rich paragraph describing characters (keep appearance consistent across scenes — repeat key visual traits), environment, lighting, camera angle, art style, mood, and color palette. Suitable for an image model.}
+Negative prompt: {short comma list of things to avoid}
+
+Keep character descriptions consistent across every scene so the same character looks the same.
+
+===SEO===
+Produce discovery metadata as a markdown list with these exact labels:
+- SEO Title: {<=60 chars}
+- SEO Description: {<=160 chars}
+- YouTube Title: {<=70 chars, engaging}
+- YouTube Description: {2-3 short paragraphs, include a call to subscribe}
+- Keywords: {comma-separated, 10-15 items}
+- Tags: {comma-separated, 10-15 items}
+- Hashtags: {space-separated #tags, 8-12 items}`;
+
+    const userPrompt = `Project brief:\n${data.prompt}\n\nStory:\n${data.story}`;
+    const content = await callQwen([
+      { role: "system", content: system },
+      { role: "user", content: userPrompt },
+    ]);
+    return {
+      voice: extractSection(content, "VOICE"),
+      songs: extractSection(content, "SONGS"),
+      images: extractSection(content, "IMAGES"),
+      seo: extractSection(content, "SEO"),
+      raw: content,
+    };
+  });
