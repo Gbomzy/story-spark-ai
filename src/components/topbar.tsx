@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Bell, Moon, Sun, Search, Menu, LogOut, User, CreditCard, Settings as SettingsIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 const notifications = [
   { id: 1, title: "Your story 'Lila & the Star' rendered successfully", time: "2m ago" },
@@ -30,6 +32,22 @@ const notifications = [
 export function TopBar() {
   const { theme, toggle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "Storyteller";
+  const initials = (profile?.display_name || user?.email || "U")
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("") || "U";
+
+  async function handleSignOut() {
+    await signOut();
+    toast.success("Signed out");
+    navigate({ to: "/login" });
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl md:px-6">
@@ -90,11 +108,15 @@ export function TopBar() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-muted">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="gradient-primary text-xs font-bold text-white">AS</AvatarFallback>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <AvatarFallback className="gradient-primary text-xs font-bold text-white">{initials}</AvatarFallback>
+                )}
               </Avatar>
               <div className="hidden text-left leading-tight sm:block">
-                <p className="text-sm font-semibold">Alex Storyteller</p>
-                <p className="text-xs text-muted-foreground">Pro plan</p>
+                <p className="text-sm font-semibold">{displayName}</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
               </div>
             </button>
           </DropdownMenuTrigger>
@@ -111,8 +133,8 @@ export function TopBar() {
               <CreditCard className="mr-2 h-4 w-4" />Billing
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/login"><LogOut className="mr-2 h-4 w-4" />Sign out</Link>
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
