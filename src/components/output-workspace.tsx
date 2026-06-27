@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,10 +19,42 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["value"];
 
-export function OutputWorkspace() {
-  const [values, setValues] = useState<Record<TabKey, string>>(
-    () => TABS.reduce((acc, t) => ({ ...acc, [t.value]: "" }), {} as Record<TabKey, string>),
+export type OutputWorkspaceValues = Partial<Record<TabKey, string>>;
+
+export function OutputWorkspace({
+  initialValues,
+  status = "awaiting",
+}: {
+  initialValues?: OutputWorkspaceValues;
+  status?: "awaiting" | "generating" | "ready";
+} = {}) {
+  const [values, setValues] = useState<Record<TabKey, string>>(() =>
+    TABS.reduce(
+      (acc, t) => ({ ...acc, [t.value]: initialValues?.[t.value] ?? "" }),
+      {} as Record<TabKey, string>,
+    ),
   );
+
+  useEffect(() => {
+    if (!initialValues) return;
+    setValues((prev) => {
+      const next = { ...prev };
+      for (const t of TABS) {
+        const incoming = initialValues[t.value];
+        if (typeof incoming === "string" && incoming.length > 0) {
+          next[t.value] = incoming;
+        }
+      }
+      return next;
+    });
+  }, [initialValues]);
+
+  const badge =
+    status === "ready"
+      ? { label: "Qwen ready", className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" }
+      : status === "generating"
+        ? { label: "Generating…", className: "bg-primary/15 text-primary" }
+        : { label: "Awaiting Qwen", className: "" };
 
   return (
     <Card className="glass rounded-3xl p-5 shadow-soft sm:p-6">
@@ -31,7 +63,12 @@ export function OutputWorkspace() {
           <h3 className="text-lg font-semibold">Output workspace</h3>
           <p className="text-xs text-muted-foreground">Edit each asset before exporting to your project pipeline.</p>
         </div>
-        <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-wider">Awaiting Qwen</Badge>
+        <Badge
+          variant="secondary"
+          className={`rounded-full text-[10px] uppercase tracking-wider ${badge.className}`}
+        >
+          {badge.label}
+        </Badge>
       </div>
 
       <Tabs defaultValue="story">
