@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth-shell";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Reset password — StorySpark AI" }] }),
@@ -14,11 +16,21 @@ export const Route = createFileRoute("/forgot-password")({
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setSent(true);
-    toast.success("Reset link sent (placeholder)");
+    toast.success("Reset link sent");
   }
 
   return (
@@ -44,8 +56,8 @@ function ForgotPasswordPage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
           </div>
-          <Button type="submit" className="w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
-            Send reset link
+          <Button type="submit" disabled={loading} className="w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Send reset link"}
           </Button>
         </form>
       )}

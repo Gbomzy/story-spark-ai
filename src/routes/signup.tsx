@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth-shell";
 import { GoogleButton } from "@/components/google-button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — StorySpark AI" }] }),
@@ -14,14 +17,34 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard" });
+  }, [user, navigate]);
 
   function set<K extends keyof typeof form>(k: K) {
     return (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: { display_name: form.name },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Account created! Let's spark some stories.");
     navigate({ to: "/dashboard" });
   }
@@ -61,8 +84,8 @@ function SignupPage() {
           <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
         </div>
 
-        <Button type="submit" className="w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
-          Create account
+        <Button type="submit" disabled={loading} className="w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
+          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account…</> : "Create account"}
         </Button>
       </form>
     </AuthShell>

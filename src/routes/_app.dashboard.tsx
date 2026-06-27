@@ -1,4 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { listProjects } from "@/lib/projects";
+import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,12 +35,7 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
 });
 
-const recentProjects = [
-  { name: "Lila & the Friendly Star", topic: "Astronomy basics", age: "5–7", status: "Rendering", color: "gradient-primary" },
-  { name: "Counting with Captain Cabbage", topic: "Math: counting 1–10", age: "3–5", status: "Draft", color: "gradient-warm" },
-  { name: "Tiny Astronauts on Mars", topic: "Space exploration", age: "6–8", status: "Published", color: "gradient-cool" },
-  { name: "The Recycling Robots", topic: "Sustainability", age: "5–7", status: "Voiceover", color: "gradient-primary" },
-];
+const PROJECT_COLORS = ["gradient-primary", "gradient-warm", "gradient-cool"];
 
 const savedStories = [
   { title: "Bubbles the Brave Whale", chapters: 6 },
@@ -105,6 +104,19 @@ function StatCard({
 }
 
 function DashboardPage() {
+  const { profile, user } = useAuth();
+  const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: listProjects });
+
+  const recent = useMemo(() => projects.slice(0, 4), [projects]);
+  const counts = useMemo(() => {
+    return {
+      stories: projects.filter((p) => p.story).length,
+      voice: projects.filter((p) => p.voice).length,
+      storyboards: projects.filter((p) => p.storyboard).length,
+      songs: projects.filter((p) => p.songs).length,
+    };
+  }, [projects]);
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "creator";
   return (
     <div className="space-y-8">
       {/* Welcome */}
@@ -116,7 +128,7 @@ function DashboardPage() {
             <Badge className="mb-3 rounded-full border-0 bg-white/20 text-white backdrop-blur">
               <Sparkles className="mr-1 h-3 w-3" /> 7-day creative streak
             </Badge>
-            <h2 className="text-2xl font-bold sm:text-3xl">Welcome back, Alex ✨</h2>
+            <h2 className="text-2xl font-bold sm:text-3xl">Welcome back, {displayName} ✨</h2>
             <p className="mt-2 max-w-lg text-sm text-white/85 sm:text-base">
               You're three sparks away from your next milestone. What story do you want to tell today?
             </p>
@@ -153,10 +165,10 @@ function DashboardPage() {
 
       {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Stories generated" value="42" hint="+8 this week" icon={BookOpen} tone="primary" />
-        <StatCard label="Voiceovers" value="128" hint="3 in queue" icon={Mic} tone="warm" />
-        <StatCard label="Storyboards" value="17" hint="Auto-synced" icon={Film} tone="cool" />
-        <StatCard label="Songs composed" value="24" hint="Stems ready" icon={Music} tone="primary" />
+        <StatCard label="Total projects" value={String(projects.length)} hint="Across your library" icon={BookOpen} tone="primary" />
+        <StatCard label="Voice scripts" value={String(counts.voice)} hint="Ready to record" icon={Mic} tone="warm" />
+        <StatCard label="Storyboards" value={String(counts.storyboards)} hint="Scene-by-scene" icon={Film} tone="cool" />
+        <StatCard label="Songs composed" value={String(counts.songs)} hint="Lyrics generated" icon={Music} tone="primary" />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
@@ -169,20 +181,21 @@ function DashboardPage() {
             </Button>
           </div>
           <ul className="space-y-3">
-            {recentProjects.map((p) => (
-              <li
-                key={p.name}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-border/60 bg-card/60 p-4 transition hover:bg-card hover:shadow-soft"
-              >
-                <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${p.color} text-white shadow-glow`}>
+            {recent.length === 0 ? (
+              <li className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                No projects yet. <Link to="/projects/new" className="font-medium text-primary hover:underline">Create your first project</Link>.
+              </li>
+            ) : recent.map((p, i) => (
+              <li key={p.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-border/60 bg-card/60 p-4 transition hover:bg-card hover:shadow-soft">
+                <Link to="/projects/$id" params={{ id: p.id }} className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${PROJECT_COLORS[i % 3]} text-white shadow-glow`}>
                   <Film className="h-5 w-5" />
-                </div>
+                </Link>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{p.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{p.topic} • Ages {p.age}</p>
+                  <Link to="/projects/$id" params={{ id: p.id }} className="block truncate font-semibold hover:underline">{p.name}</Link>
+                  <p className="truncate text-xs text-muted-foreground">{p.topic || "Untitled topic"}{p.age_group ? ` • Ages ${p.age_group}` : ""}</p>
                 </div>
                 <Badge variant="secondary" className="shrink-0 rounded-full">
-                  {p.status}
+                  {new Date(p.updated_at).toLocaleDateString()}
                 </Badge>
               </li>
             ))}

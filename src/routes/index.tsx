@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Wand2, Film, Mic, ArrowRight, BookOpen, Music, Palette } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,6 +26,12 @@ const features = [
 ];
 
 function Index() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && user) navigate({ to: "/dashboard" });
+  }, [user, loading, navigate]);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="pointer-events-none absolute inset-0 opacity-50">
