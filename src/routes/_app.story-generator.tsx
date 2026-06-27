@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Sparkles } from "lucide-react";
+import { Wand2, Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { generateStory } from "@/lib/qwen.functions";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
@@ -15,12 +18,14 @@ export const Route = createFileRoute("/_app/story-generator")({
 function StoryGeneratorPage() {
   const [prompt, setPrompt] = useState("A shy fox who wants to make friends at school.");
   const [story, setStory] = useState<string | null>(null);
-
+  const mutation = useMutation({
+    mutationFn: (p: string) => generateStory({ data: { prompt: p } }),
+    onSuccess: (res) => setStory(res.story),
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "Failed to generate story"),
+  });
   function generate() {
-    // TODO: call Qwen story API.
-    setStory(
-      `Once upon a time, in a forest of golden leaves, there was a little fox named Fenn.\n\nFenn loved books, autumn pies, and the soft hum of crickets — but when it came to meeting new friends, his tail went still as stone…`,
-    );
+    mutation.mutate(prompt);
   }
 
   return (
@@ -47,8 +52,12 @@ function StoryGeneratorPage() {
               <Badge key={t} variant="secondary" className="cursor-pointer rounded-full" onClick={() => setPrompt((p) => p + ` (theme: ${t})`)}>{t}</Badge>
             ))}
           </div>
-          <Button onClick={generate} className="mt-4 w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
-            <Sparkles className="mr-2 h-4 w-4" /> Generate story
+          <Button onClick={generate} disabled={mutation.isPending} className="mt-4 w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
+            {mutation.isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
+            ) : (
+              <><Sparkles className="mr-2 h-4 w-4" /> Generate story</>
+            )}
           </Button>
         </Card>
 
