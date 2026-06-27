@@ -645,7 +645,10 @@ function StepResults({
         </div>
       </Card>
 
-      <OutputWorkspace />
+      <OutputWorkspace
+        initialValues={story ? { story } : undefined}
+        status={workspaceStatus}
+      />
 
       <Card className="glass rounded-3xl p-5 shadow-soft sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
