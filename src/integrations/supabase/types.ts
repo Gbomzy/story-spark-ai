@@ -64,6 +64,69 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          project_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          project_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          project_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          flag_key: string
+          id: string
+          metadata: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          flag_key: string
+          id?: string
+          metadata?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          flag_key?: string
+          id?: string
+          metadata?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_history: {
         Row: {
           asset_id: string | null
@@ -266,31 +329,47 @@ export type Database = {
       projects: {
         Row: {
           age_group: string | null
+          animation_style: string | null
+          archived_at: string | null
           audio: string | null
           background_music: Json | null
+          category: string | null
           characters: string | null
+          color_label: string | null
+          cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           duration: number | null
           generated_images: Json | null
           id: string
           image_assets: string | null
           images: string | null
+          is_archived: boolean
+          is_favorite: boolean
+          is_pinned: boolean
           language: string | null
           last_opened_at: string | null
           media_pipeline: Json | null
           music: string | null
           name: string
           objective: string | null
+          preferred_ai_provider: string | null
           render_duration: number | null
           render_progress: number | null
           render_status: string | null
           seo: string | null
+          settings: Json
           songs: string | null
           story: string | null
           storyboard: string | null
           style: string | null
           subtitle_file: Json | null
+          tags: string[]
+          target_age: string | null
+          target_platform: string | null
+          theme: string | null
           thumbnail: Json | null
+          thumbnail_url: string | null
           topic: string | null
           updated_at: string
           user_id: string
@@ -299,34 +378,51 @@ export type Database = {
           video_provider: string | null
           voice: string | null
           voice_audio: Json | null
+          voice_preference: string | null
         }
         Insert: {
           age_group?: string | null
+          animation_style?: string | null
+          archived_at?: string | null
           audio?: string | null
           background_music?: Json | null
+          category?: string | null
           characters?: string | null
+          color_label?: string | null
+          cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           duration?: number | null
           generated_images?: Json | null
           id?: string
           image_assets?: string | null
           images?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_pinned?: boolean
           language?: string | null
           last_opened_at?: string | null
           media_pipeline?: Json | null
           music?: string | null
           name: string
           objective?: string | null
+          preferred_ai_provider?: string | null
           render_duration?: number | null
           render_progress?: number | null
           render_status?: string | null
           seo?: string | null
+          settings?: Json
           songs?: string | null
           story?: string | null
           storyboard?: string | null
           style?: string | null
           subtitle_file?: Json | null
+          tags?: string[]
+          target_age?: string | null
+          target_platform?: string | null
+          theme?: string | null
           thumbnail?: Json | null
+          thumbnail_url?: string | null
           topic?: string | null
           updated_at?: string
           user_id: string
@@ -335,34 +431,51 @@ export type Database = {
           video_provider?: string | null
           voice?: string | null
           voice_audio?: Json | null
+          voice_preference?: string | null
         }
         Update: {
           age_group?: string | null
+          animation_style?: string | null
+          archived_at?: string | null
           audio?: string | null
           background_music?: Json | null
+          category?: string | null
           characters?: string | null
+          color_label?: string | null
+          cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           duration?: number | null
           generated_images?: Json | null
           id?: string
           image_assets?: string | null
           images?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_pinned?: boolean
           language?: string | null
           last_opened_at?: string | null
           media_pipeline?: Json | null
           music?: string | null
           name?: string
           objective?: string | null
+          preferred_ai_provider?: string | null
           render_duration?: number | null
           render_progress?: number | null
           render_status?: string | null
           seo?: string | null
+          settings?: Json
           songs?: string | null
           story?: string | null
           storyboard?: string | null
           style?: string | null
           subtitle_file?: Json | null
+          tags?: string[]
+          target_age?: string | null
+          target_platform?: string | null
+          theme?: string | null
           thumbnail?: Json | null
+          thumbnail_url?: string | null
           topic?: string | null
           updated_at?: string
           user_id?: string
@@ -371,6 +484,7 @@ export type Database = {
           video_provider?: string | null
           voice?: string | null
           voice_audio?: Json | null
+          voice_preference?: string | null
         }
         Relationships: []
       }
