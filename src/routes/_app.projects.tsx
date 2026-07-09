@@ -37,9 +37,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Film, Search, MoreVertical, Pencil, Copy, Trash2, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, Film, Search, MoreVertical, Pencil, Copy, Trash2, FolderOpen, Loader2, Star, Pin, Archive, ArchiveRestore, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteProject, duplicateProject, listProjects, updateProject, type ProjectRow } from "@/lib/projects";
+import {
+  deleteProject,
+  duplicateProject,
+  hardDeleteProject,
+  listProjects,
+  listTrash,
+  restoreProject,
+  toggleArchive,
+  toggleFavorite,
+  togglePin,
+  updateProject,
+  type ProjectRow,
+} from "@/lib/projects";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/projects")({
@@ -57,33 +69,40 @@ function ProjectsPage() {
   const qc = useQueryClient();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"newest" | "oldest" | "alpha">("newest");
+  const [view, setView] = useState<"active" | "favorites" | "archived" | "trash">("active");
   const [renameTarget, setRenameTarget] = useState<ProjectRow | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ProjectRow | null>(null);
 
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["projects"],
-    queryFn: listProjects,
+    queryKey: ["projects", view],
+    queryFn: view === "trash" ? listTrash : listProjects,
   });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? projects.filter(
+    let list = [...projects];
+    if (view === "favorites") list = list.filter((p) => p.is_favorite);
+    else if (view === "archived") list = list.filter((p) => p.is_archived);
+    else if (view === "active") list = list.filter((p) => !p.is_archived);
+    if (q) {
+      list = list.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.topic ?? "").toLowerCase().includes(q) ||
-            (p.objective ?? "").toLowerCase().includes(q),
-        )
-      : [...projects];
+            (p.objective ?? "").toLowerCase().includes(q) ||
+            (p.tags ?? []).some((t) => t.toLowerCase().includes(q)),
+      );
+    }
     list.sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
       if (sort === "alpha") return a.name.localeCompare(b.name);
       const da = new Date(a.updated_at).getTime();
       const db = new Date(b.updated_at).getTime();
       return sort === "newest" ? db - da : da - db;
     });
     return list;
-  }, [projects, query, sort]);
+  }, [projects, query, sort, view]);
 
   const renameMut = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => updateProject(id, { name }),
@@ -105,13 +124,37 @@ function ProjectsPage() {
   });
 
   const delMut = useMutation({
-    mutationFn: (id: string) => deleteProject(id),
+    mutationFn: (id: string) =>
+      view === "trash" ? hardDeleteProject(id) : deleteProject(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Project deleted");
+      toast.success(view === "trash" ? "Permanently deleted" : "Moved to trash");
       setDeleteTarget(null);
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+  });
+
+  const favMut = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: boolean }) => toggleFavorite(id, value),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+  const pinMut = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: boolean }) => togglePin(id, value),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+  const archMut = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: boolean }) => toggleArchive(id, value),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success(v.value ? "Archived" : "Unarchived");
+    },
+  });
+  const restoreMut = useMutation({
+    mutationFn: (id: string) => restoreProject(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project restored");
+    },
   });
 
   return (
@@ -132,10 +175,19 @@ function ProjectsPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search projects…"
+            placeholder="Search name, topic or tag…"
             className="rounded-xl pl-9"
           />
         </div>
+        <Select value={view} onValueChange={(v) => setView(v as typeof view)}>
+          <SelectTrigger className="w-full rounded-xl sm:w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="favorites">Favorites</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="trash">Trash</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger className="w-full rounded-xl sm:w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -198,27 +250,59 @@ function ProjectsPage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem onClick={() => navigate({ to: "/projects/$id", params: { id: p.id } })}>
-                        <FolderOpen className="mr-2 h-4 w-4" /> Open
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setRenameTarget(p); setRenameValue(p.name); }}>
-                        <Pencil className="mr-2 h-4 w-4" /> Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => dupMut.mutate(p.id)}>
-                        <Copy className="mr-2 h-4 w-4" /> Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {view !== "trash" ? (
+                        <>
+                          <DropdownMenuItem onClick={() => navigate({ to: "/projects/$id", params: { id: p.id } })}>
+                            <FolderOpen className="mr-2 h-4 w-4" /> Open
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => favMut.mutate({ id: p.id, value: !p.is_favorite })}>
+                            <Star className={`mr-2 h-4 w-4 ${p.is_favorite ? "fill-yellow-400 text-yellow-500" : ""}`} />
+                            {p.is_favorite ? "Unfavorite" : "Favorite"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => pinMut.mutate({ id: p.id, value: !p.is_pinned })}>
+                            <Pin className={`mr-2 h-4 w-4 ${p.is_pinned ? "fill-primary text-primary" : ""}`} />
+                            {p.is_pinned ? "Unpin" : "Pin"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setRenameTarget(p); setRenameValue(p.name); }}>
+                            <Pencil className="mr-2 h-4 w-4" /> Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => dupMut.mutate(p.id)}>
+                            <Copy className="mr-2 h-4 w-4" /> Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => archMut.mutate({ id: p.id, value: !p.is_archived })}>
+                            {p.is_archived ? <ArchiveRestore className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+                            {p.is_archived ? "Unarchive" : "Archive"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Move to trash
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <>
+                          <DropdownMenuItem onClick={() => restoreMut.mutate(p.id)}>
+                            <RotateCcw className="mr-2 h-4 w-4" /> Restore
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete permanently
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-[11px]">
+                  {p.is_pinned && <Badge className="rounded-full bg-primary/15 text-primary">Pinned</Badge>}
+                  {p.is_favorite && <Badge className="rounded-full bg-yellow-400/15 text-yellow-600 dark:text-yellow-400">★ Favorite</Badge>}
+                  {p.is_archived && <Badge variant="secondary" className="rounded-full">Archived</Badge>}
                   {p.age_group && <Badge variant="secondary" className="rounded-full">Ages {p.age_group}</Badge>}
                   {p.duration && <Badge variant="secondary" className="rounded-full">{p.duration} min</Badge>}
                   {p.style && <Badge variant="secondary" className="rounded-full">{p.style}</Badge>}
+                  {(p.tags ?? []).slice(0, 3).map((tag) => (
+                    <Badge key={tag} variant="outline" className="rounded-full">#{tag}</Badge>
+                  ))}
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <p className="text-[11px] text-muted-foreground">
