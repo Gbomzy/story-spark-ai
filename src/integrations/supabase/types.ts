@@ -42,77 +42,110 @@ export type Database = {
         Row: {
           age_group: string | null
           audio: string | null
+          background_music: Json | null
           characters: string | null
           created_at: string
           duration: number | null
+          generated_images: Json | null
           id: string
           image_assets: string | null
           images: string | null
           language: string | null
           last_opened_at: string | null
+          media_pipeline: Json | null
           music: string | null
           name: string
           objective: string | null
+          render_duration: number | null
+          render_progress: number | null
+          render_status: string | null
           seo: string | null
           songs: string | null
           story: string | null
           storyboard: string | null
           style: string | null
+          subtitle_file: Json | null
+          thumbnail: Json | null
           topic: string | null
           updated_at: string
           user_id: string
           video: string | null
+          video_file: Json | null
+          video_provider: string | null
           voice: string | null
+          voice_audio: Json | null
         }
         Insert: {
           age_group?: string | null
           audio?: string | null
+          background_music?: Json | null
           characters?: string | null
           created_at?: string
           duration?: number | null
+          generated_images?: Json | null
           id?: string
           image_assets?: string | null
           images?: string | null
           language?: string | null
           last_opened_at?: string | null
+          media_pipeline?: Json | null
           music?: string | null
           name: string
           objective?: string | null
+          render_duration?: number | null
+          render_progress?: number | null
+          render_status?: string | null
           seo?: string | null
           songs?: string | null
           story?: string | null
           storyboard?: string | null
           style?: string | null
+          subtitle_file?: Json | null
+          thumbnail?: Json | null
           topic?: string | null
           updated_at?: string
           user_id: string
           video?: string | null
+          video_file?: Json | null
+          video_provider?: string | null
           voice?: string | null
+          voice_audio?: Json | null
         }
         Update: {
           age_group?: string | null
           audio?: string | null
+          background_music?: Json | null
           characters?: string | null
           created_at?: string
           duration?: number | null
+          generated_images?: Json | null
           id?: string
           image_assets?: string | null
           images?: string | null
           language?: string | null
           last_opened_at?: string | null
+          media_pipeline?: Json | null
           music?: string | null
           name?: string
           objective?: string | null
+          render_duration?: number | null
+          render_progress?: number | null
+          render_status?: string | null
           seo?: string | null
           songs?: string | null
           story?: string | null
           storyboard?: string | null
           style?: string | null
+          subtitle_file?: Json | null
+          thumbnail?: Json | null
           topic?: string | null
           updated_at?: string
           user_id?: string
           video?: string | null
+          video_file?: Json | null
+          video_provider?: string | null
           voice?: string | null
+          voice_audio?: Json | null
         }
         Relationships: []
       }
