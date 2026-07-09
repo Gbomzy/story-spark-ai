@@ -17,6 +17,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVoiceGeneratorRouteImport } from './routes/_app.voice-generator'
 import { Route as AppVideoStudioRouteImport } from './routes/_app.video-studio'
+import { Route as AppTimelineRouteImport } from './routes/_app.timeline'
 import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
 import { Route as AppStoryboardRouteImport } from './routes/_app.storyboard'
 import { Route as AppStoryGeneratorRouteImport } from './routes/_app.story-generator'
@@ -73,6 +74,11 @@ const AppVoiceGeneratorRoute = AppVoiceGeneratorRouteImport.update({
 const AppVideoStudioRoute = AppVideoStudioRouteImport.update({
   id: '/video-studio',
   path: '/video-studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTimelineRoute = AppTimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTemplatesRoute = AppTemplatesRouteImport.update({
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/$id': typeof AppProjectsIdRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/$id': typeof AppProjectsIdRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/_app/story-generator': typeof AppStoryGeneratorRoute
   '/_app/storyboard': typeof AppStoryboardRoute
   '/_app/templates': typeof AppTemplatesRoute
+  '/_app/timeline': typeof AppTimelineRoute
   '/_app/video-studio': typeof AppVideoStudioRoute
   '/_app/voice-generator': typeof AppVoiceGeneratorRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/story-generator'
     | '/storyboard'
     | '/templates'
+    | '/timeline'
     | '/video-studio'
     | '/voice-generator'
     | '/projects/$id'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/story-generator'
     | '/storyboard'
     | '/templates'
+    | '/timeline'
     | '/video-studio'
     | '/voice-generator'
     | '/projects/$id'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/_app/story-generator'
     | '/_app/storyboard'
     | '/_app/templates'
+    | '/_app/timeline'
     | '/_app/video-studio'
     | '/_app/voice-generator'
     | '/_app/projects/$id'
@@ -399,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/video-studio'
       fullPath: '/video-studio'
       preLoaderRoute: typeof AppVideoStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/timeline': {
+      id: '/_app/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof AppTimelineRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/templates': {
@@ -561,6 +580,7 @@ interface AppRouteChildren {
   AppStoryGeneratorRoute: typeof AppStoryGeneratorRoute
   AppStoryboardRoute: typeof AppStoryboardRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
+  AppTimelineRoute: typeof AppTimelineRoute
   AppVideoStudioRoute: typeof AppVideoStudioRoute
   AppVoiceGeneratorRoute: typeof AppVoiceGeneratorRoute
 }
@@ -582,6 +602,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppStoryGeneratorRoute: AppStoryGeneratorRoute,
   AppStoryboardRoute: AppStoryboardRoute,
   AppTemplatesRoute: AppTemplatesRoute,
+  AppTimelineRoute: AppTimelineRoute,
   AppVideoStudioRoute: AppVideoStudioRoute,
   AppVoiceGeneratorRoute: AppVoiceGeneratorRoute,
 }
