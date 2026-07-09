@@ -24,6 +24,7 @@ import { Route as AppStoryGeneratorRouteImport } from './routes/_app.story-gener
 import { Route as AppSongsRouteImport } from './routes/_app.songs'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
+import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
@@ -113,6 +114,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppSeoStudioRoute = AppSeoStudioRouteImport.update({
   id: '/seo-studio',
   path: '/seo-studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSearchRoute = AppSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => AppRoute,
 } as any)
 const AppQueueRoute = AppQueueRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
+  '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
   '/songs': typeof AppSongsRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
+  '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
   '/songs': typeof AppSongsRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/queue': typeof AppQueueRoute
+  '/_app/search': typeof AppSearchRoute
   '/_app/seo-studio': typeof AppSeoStudioRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/songs': typeof AppSongsRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/projects'
     | '/queue'
+    | '/search'
     | '/seo-studio'
     | '/settings'
     | '/songs'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/projects'
     | '/queue'
+    | '/search'
     | '/seo-studio'
     | '/settings'
     | '/songs'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/_app/media-studio'
     | '/_app/projects'
     | '/_app/queue'
+    | '/_app/search'
     | '/_app/seo-studio'
     | '/_app/settings'
     | '/_app/songs'
@@ -508,6 +520,13 @@ declare module '@tanstack/react-router' {
       path: '/seo-studio'
       fullPath: '/seo-studio'
       preLoaderRoute: typeof AppSeoStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/search': {
+      id: '/_app/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/queue': {
@@ -653,6 +672,7 @@ interface AppRouteChildren {
   AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppQueueRoute: typeof AppQueueRoute
+  AppSearchRoute: typeof AppSearchRoute
   AppSeoStudioRoute: typeof AppSeoStudioRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppSongsRoute: typeof AppSongsRoute
@@ -679,6 +699,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMediaStudioRoute: AppMediaStudioRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppQueueRoute: AppQueueRoute,
+  AppSearchRoute: AppSearchRoute,
   AppSeoStudioRoute: AppSeoStudioRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppSongsRoute: AppSongsRoute,
