@@ -14,6 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_versions: {
+        Row: {
+          asset_id: string
+          content: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string | null
+          payload: Json | null
+          provider: string | null
+          updated_at: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          asset_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          payload?: Json | null
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          asset_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          payload?: Json | null
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_versions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "project_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generation_history: {
+        Row: {
+          asset_id: string | null
+          asset_type: string
+          created_at: string
+          credits_used: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          provider: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_type: string
+          created_at?: string
+          credits_used?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          provider?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          asset_type?: string
+          created_at?: string
+          credits_used?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          provider?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_history_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "project_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generation_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generation_queue: {
+        Row: {
+          asset_type: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          estimated_seconds: number | null
+          id: string
+          payload: Json | null
+          progress: number
+          project_id: string | null
+          provider: string | null
+          retry_count: number
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_seconds?: number | null
+          id?: string
+          payload?: Json | null
+          progress?: number
+          project_id?: string | null
+          provider?: string | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_seconds?: number | null
+          id?: string
+          payload?: Json | null
+          progress?: number
+          project_id?: string | null
+          provider?: string | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_queue_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -37,6 +209,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_assets: {
+        Row: {
+          active_version_id: string | null
+          asset_type: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          provider: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_version_id?: string | null
+          asset_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          provider?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_version_id?: string | null
+          asset_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          provider?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
