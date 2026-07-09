@@ -18,6 +18,10 @@ import {
   Clapperboard,
   MonitorPlay,
   Cpu,
+  Boxes,
+  History,
+  ListChecks,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -35,6 +39,10 @@ const items = [
   { label: "SEO Studio", to: "/seo-studio", icon: Search },
   { label: "Media Studio", to: "/media-studio", icon: Clapperboard },
   { label: "Video Studio", to: "/video-studio", icon: MonitorPlay },
+  { label: "Assets", to: "/assets", icon: Boxes },
+  { label: "Timeline", to: "/timeline", icon: Activity },
+  { label: "Queue", to: "/queue", icon: ListChecks },
+  { label: "History", to: "/history", icon: History },
   { label: "Templates", to: "/templates", icon: LayoutTemplate },
   { label: "AI Agents", to: "/ai-agents", icon: Bot },
 ] as const;

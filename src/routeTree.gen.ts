@@ -32,6 +32,7 @@ import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppHelpRouteImport } from './routes/_app.help'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
+import { Route as AppAssetsRouteImport } from './routes/_app.assets'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
@@ -151,6 +152,11 @@ const AppCharactersRoute = AppCharactersRouteImport.update({
   path: '/characters',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssetsRoute = AppAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAiProvidersRoute = AppAiProvidersRouteImport.update({
   id: '/ai-providers',
   path: '/ai-providers',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
+  '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
+  '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_app/ai-agents': typeof AppAiAgentsRoute
   '/_app/ai-providers': typeof AppAiProvidersRoute
+  '/_app/assets': typeof AppAssetsRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/help': typeof AppHelpRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/ai-agents'
     | '/ai-providers'
+    | '/assets'
     | '/characters'
     | '/dashboard'
     | '/help'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/ai-agents'
     | '/ai-providers'
+    | '/assets'
     | '/characters'
     | '/dashboard'
     | '/help'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_app/ai-agents'
     | '/_app/ai-providers'
+    | '/_app/assets'
     | '/_app/characters'
     | '/_app/dashboard'
     | '/_app/help'
@@ -518,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCharactersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/assets': {
+      id: '/_app/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AppAssetsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/ai-providers': {
       id: '/_app/ai-providers'
       path: '/ai-providers'
@@ -566,6 +585,7 @@ const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
 interface AppRouteChildren {
   AppAiAgentsRoute: typeof AppAiAgentsRoute
   AppAiProvidersRoute: typeof AppAiProvidersRoute
+  AppAssetsRoute: typeof AppAssetsRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppHelpRoute: typeof AppHelpRoute
@@ -588,6 +608,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAiAgentsRoute: AppAiAgentsRoute,
   AppAiProvidersRoute: AppAiProvidersRoute,
+  AppAssetsRoute: AppAssetsRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppHelpRoute: AppHelpRoute,
