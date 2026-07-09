@@ -30,6 +30,7 @@ import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
 import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppHelpRouteImport } from './routes/_app.help'
+import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
@@ -143,6 +144,11 @@ const AppHelpRoute = AppHelpRouteImport.update({
   path: '/help',
   getParentRoute: () => AppRoute,
 } as any)
+const AppExportRoute = AppExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/export': typeof AppExportRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/export': typeof AppExportRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/_app/assets': typeof AppAssetsRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/export': typeof AppExportRoute
   '/_app/help': typeof AppHelpRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/image-prompts': typeof AppImagePromptsRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/characters'
     | '/dashboard'
+    | '/export'
     | '/help'
     | '/history'
     | '/image-prompts'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/characters'
     | '/dashboard'
+    | '/export'
     | '/help'
     | '/history'
     | '/image-prompts'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/_app/assets'
     | '/_app/characters'
     | '/_app/dashboard'
+    | '/_app/export'
     | '/_app/help'
     | '/_app/history'
     | '/_app/image-prompts'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHelpRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/export': {
+      id: '/_app/export'
+      path: '/export'
+      fullPath: '/export'
+      preLoaderRoute: typeof AppExportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -607,6 +626,7 @@ interface AppRouteChildren {
   AppAssetsRoute: typeof AppAssetsRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppExportRoute: typeof AppExportRoute
   AppHelpRoute: typeof AppHelpRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppImagePromptsRoute: typeof AppImagePromptsRoute
@@ -631,6 +651,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssetsRoute: AppAssetsRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppExportRoute: AppExportRoute,
   AppHelpRoute: AppHelpRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppImagePromptsRoute: AppImagePromptsRoute,
