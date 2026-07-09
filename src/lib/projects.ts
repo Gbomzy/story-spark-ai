@@ -20,6 +20,7 @@ export async function listProjects() {
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -59,8 +60,54 @@ export async function updateProject(id: string, patch: ProjectUpdate) {
 }
 
 export async function deleteProject(id: string) {
+  // Soft delete by default
+  const { error } = await supabase
+    .from("projects")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function hardDeleteProject(id: string) {
   const { error } = await supabase.from("projects").delete().eq("id", id);
   if (error) throw error;
+}
+
+export async function restoreProject(id: string) {
+  await supabase.from("projects").update({ deleted_at: null }).eq("id", id);
+}
+
+export async function listTrash() {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function toggleFavorite(id: string, value: boolean) {
+  await supabase.from("projects").update({ is_favorite: value }).eq("id", id);
+}
+
+export async function togglePin(id: string, value: boolean) {
+  await supabase.from("projects").update({ is_pinned: value }).eq("id", id);
+}
+
+export async function toggleArchive(id: string, value: boolean) {
+  await supabase
+    .from("projects")
+    .update({ is_archived: value, archived_at: value ? new Date().toISOString() : null })
+    .eq("id", id);
+}
+
+export async function updateTags(id: string, tags: string[]) {
+  await supabase.from("projects").update({ tags }).eq("id", id);
+}
+
+export async function updateCategory(id: string, category: string | null) {
+  await supabase.from("projects").update({ category }).eq("id", id);
 }
 
 export async function duplicateProject(id: string) {
