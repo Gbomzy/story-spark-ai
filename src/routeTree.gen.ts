@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVoiceGeneratorRouteImport } from './routes/_app.voice-generator'
+import { Route as AppVideoStudioRouteImport } from './routes/_app.video-studio'
 import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
 import { Route as AppStoryboardRouteImport } from './routes/_app.storyboard'
 import { Route as AppStoryGeneratorRouteImport } from './routes/_app.story-generator'
@@ -23,10 +24,12 @@ import { Route as AppSongsRouteImport } from './routes/_app.songs'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
 import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
 import { Route as AppHelpRouteImport } from './routes/_app.help'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
+import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
@@ -65,6 +68,11 @@ const AppVoiceGeneratorRoute = AppVoiceGeneratorRouteImport.update({
   path: '/voice-generator',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVideoStudioRoute = AppVideoStudioRouteImport.update({
+  id: '/video-studio',
+  path: '/video-studio',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTemplatesRoute = AppTemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
@@ -100,6 +108,11 @@ const AppProjectsRoute = AppProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMediaStudioRoute = AppMediaStudioRouteImport.update({
+  id: '/media-studio',
+  path: '/media-studio',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppImagePromptsRoute = AppImagePromptsRouteImport.update({
   id: '/image-prompts',
   path: '/image-prompts',
@@ -118,6 +131,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppCharactersRoute = AppCharactersRouteImport.update({
   id: '/characters',
   path: '/characters',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiProvidersRoute = AppAiProvidersRouteImport.update({
+  id: '/ai-providers',
+  path: '/ai-providers',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAiAgentsRoute = AppAiAgentsRouteImport.update({
@@ -143,10 +161,12 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/ai-agents': typeof AppAiAgentsRoute
+  '/ai-providers': typeof AppAiProvidersRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
   '/image-prompts': typeof AppImagePromptsRoute
+  '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
@@ -154,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
@@ -165,10 +186,12 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/ai-agents': typeof AppAiAgentsRoute
+  '/ai-providers': typeof AppAiProvidersRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
   '/help': typeof AppHelpRoute
   '/image-prompts': typeof AppImagePromptsRoute
+  '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
@@ -176,6 +199,7 @@ export interface FileRoutesByTo {
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
@@ -189,10 +213,12 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_app/ai-agents': typeof AppAiAgentsRoute
+  '/_app/ai-providers': typeof AppAiProvidersRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/help': typeof AppHelpRoute
   '/_app/image-prompts': typeof AppImagePromptsRoute
+  '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/seo-studio': typeof AppSeoStudioRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -200,6 +226,7 @@ export interface FileRoutesById {
   '/_app/story-generator': typeof AppStoryGeneratorRoute
   '/_app/storyboard': typeof AppStoryboardRoute
   '/_app/templates': typeof AppTemplatesRoute
+  '/_app/video-studio': typeof AppVideoStudioRoute
   '/_app/voice-generator': typeof AppVoiceGeneratorRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
@@ -213,10 +240,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/ai-agents'
+    | '/ai-providers'
     | '/characters'
     | '/dashboard'
     | '/help'
     | '/image-prompts'
+    | '/media-studio'
     | '/projects'
     | '/seo-studio'
     | '/settings'
@@ -224,6 +253,7 @@ export interface FileRouteTypes {
     | '/story-generator'
     | '/storyboard'
     | '/templates'
+    | '/video-studio'
     | '/voice-generator'
     | '/projects/$id'
     | '/projects/new'
@@ -235,10 +265,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/ai-agents'
+    | '/ai-providers'
     | '/characters'
     | '/dashboard'
     | '/help'
     | '/image-prompts'
+    | '/media-studio'
     | '/projects'
     | '/seo-studio'
     | '/settings'
@@ -246,6 +278,7 @@ export interface FileRouteTypes {
     | '/story-generator'
     | '/storyboard'
     | '/templates'
+    | '/video-studio'
     | '/voice-generator'
     | '/projects/$id'
     | '/projects/new'
@@ -258,10 +291,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_app/ai-agents'
+    | '/_app/ai-providers'
     | '/_app/characters'
     | '/_app/dashboard'
     | '/_app/help'
     | '/_app/image-prompts'
+    | '/_app/media-studio'
     | '/_app/projects'
     | '/_app/seo-studio'
     | '/_app/settings'
@@ -269,6 +304,7 @@ export interface FileRouteTypes {
     | '/_app/story-generator'
     | '/_app/storyboard'
     | '/_app/templates'
+    | '/_app/video-studio'
     | '/_app/voice-generator'
     | '/_app/projects/$id'
     | '/_app/projects/new'
@@ -334,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVoiceGeneratorRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/video-studio': {
+      id: '/_app/video-studio'
+      path: '/video-studio'
+      fullPath: '/video-studio'
+      preLoaderRoute: typeof AppVideoStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/templates': {
       id: '/_app/templates'
       path: '/templates'
@@ -383,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/media-studio': {
+      id: '/_app/media-studio'
+      path: '/media-studio'
+      fullPath: '/media-studio'
+      preLoaderRoute: typeof AppMediaStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/image-prompts': {
       id: '/_app/image-prompts'
       path: '/image-prompts'
@@ -409,6 +459,13 @@ declare module '@tanstack/react-router' {
       path: '/characters'
       fullPath: '/characters'
       preLoaderRoute: typeof AppCharactersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai-providers': {
+      id: '/_app/ai-providers'
+      path: '/ai-providers'
+      fullPath: '/ai-providers'
+      preLoaderRoute: typeof AppAiProvidersRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ai-agents': {
@@ -451,10 +508,12 @@ const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAiAgentsRoute: typeof AppAiAgentsRoute
+  AppAiProvidersRoute: typeof AppAiProvidersRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppHelpRoute: typeof AppHelpRoute
   AppImagePromptsRoute: typeof AppImagePromptsRoute
+  AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppSeoStudioRoute: typeof AppSeoStudioRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -462,15 +521,18 @@ interface AppRouteChildren {
   AppStoryGeneratorRoute: typeof AppStoryGeneratorRoute
   AppStoryboardRoute: typeof AppStoryboardRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
+  AppVideoStudioRoute: typeof AppVideoStudioRoute
   AppVoiceGeneratorRoute: typeof AppVoiceGeneratorRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAiAgentsRoute: AppAiAgentsRoute,
+  AppAiProvidersRoute: AppAiProvidersRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppHelpRoute: AppHelpRoute,
   AppImagePromptsRoute: AppImagePromptsRoute,
+  AppMediaStudioRoute: AppMediaStudioRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppSeoStudioRoute: AppSeoStudioRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -478,6 +540,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppStoryGeneratorRoute: AppStoryGeneratorRoute,
   AppStoryboardRoute: AppStoryboardRoute,
   AppTemplatesRoute: AppTemplatesRoute,
+  AppVideoStudioRoute: AppVideoStudioRoute,
   AppVoiceGeneratorRoute: AppVoiceGeneratorRoute,
 }
 

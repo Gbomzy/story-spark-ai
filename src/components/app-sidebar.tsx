@@ -15,6 +15,9 @@ import {
   Sparkles,
   Bot,
   ChevronLeft,
+  Clapperboard,
+  MonitorPlay,
+  Cpu,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -30,11 +33,14 @@ const items = [
   { label: "Song Studio", to: "/songs", icon: Music },
   { label: "Image Prompt Studio", to: "/image-prompts", icon: ImageIcon },
   { label: "SEO Studio", to: "/seo-studio", icon: Search },
+  { label: "Media Studio", to: "/media-studio", icon: Clapperboard },
+  { label: "Video Studio", to: "/video-studio", icon: MonitorPlay },
   { label: "Templates", to: "/templates", icon: LayoutTemplate },
   { label: "AI Agents", to: "/ai-agents", icon: Bot },
 ] as const;
 
 const footerItems = [
+  { label: "AI Providers", to: "/ai-providers", icon: Cpu },
   { label: "Settings", to: "/settings", icon: Settings },
   { label: "Help", to: "/help", icon: HelpCircle },
 ] as const;
