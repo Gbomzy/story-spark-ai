@@ -20,20 +20,24 @@ export type VideoRenderJob = {
   aspectRatio?: string;
 };
 
+import { generateWanVideo } from "@/lib/wanVideo.functions";
+
 export const videoService = {
   isConfigured(): boolean {
-    return false;
+    return true;
   },
   defaultProvider(): VideoRenderJob["provider"] {
     return "wan";
   },
-  async render(_input: {
-    images?: Array<{ url: string; durationSeconds?: number }>;
-    audio?: string;
-    music?: string;
-    provider?: VideoRenderJob["provider"];
+  async render(input: {
+    prompt: string;
+    projectId?: string;
+    imageUrl?: string;
+    mode?: "t2v" | "i2v" | "ref2v" | "edit";
+    duration?: number;
   }): Promise<VideoAsset> {
-    throw new Error("Video renderer not connected yet.");
+    const r = await generateWanVideo({ data: input });
+    return { url: r.url, status: "ready", durationSeconds: input.duration, resolution: "1280x720" };
   },
   parseAsset(value: string | null | undefined): VideoAsset {
     if (!value) return { url: null, status: "idle" };
