@@ -27,6 +27,7 @@ import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppMonitoringRouteImport } from './routes/_app.monitoring'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
 import { Route as AppJobsRouteImport } from './routes/_app.jobs'
 import { Route as AppImportRouteImport } from './routes/_app.import'
@@ -132,6 +133,11 @@ const AppProjectsRoute = AppProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMonitoringRoute = AppMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMediaStudioRoute = AppMediaStudioRouteImport.update({
   id: '/media-studio',
   path: '/media-studio',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
+  '/monitoring': typeof AppMonitoringRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
   '/search': typeof AppSearchRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
+  '/monitoring': typeof AppMonitoringRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
   '/search': typeof AppSearchRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/_app/import': typeof AppImportRoute
   '/_app/jobs': typeof AppJobsRoute
   '/_app/media-studio': typeof AppMediaStudioRoute
+  '/_app/monitoring': typeof AppMonitoringRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/queue': typeof AppQueueRoute
   '/_app/search': typeof AppSearchRoute
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/jobs'
     | '/media-studio'
+    | '/monitoring'
     | '/projects'
     | '/queue'
     | '/search'
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/jobs'
     | '/media-studio'
+    | '/monitoring'
     | '/projects'
     | '/queue'
     | '/search'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/_app/import'
     | '/_app/jobs'
     | '/_app/media-studio'
+    | '/_app/monitoring'
     | '/_app/projects'
     | '/_app/queue'
     | '/_app/search'
@@ -555,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/monitoring': {
+      id: '/_app/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof AppMonitoringRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/media-studio': {
       id: '/_app/media-studio'
       path: '/media-studio'
@@ -690,6 +709,7 @@ interface AppRouteChildren {
   AppImportRoute: typeof AppImportRoute
   AppJobsRoute: typeof AppJobsRoute
   AppMediaStudioRoute: typeof AppMediaStudioRoute
+  AppMonitoringRoute: typeof AppMonitoringRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppQueueRoute: typeof AppQueueRoute
   AppSearchRoute: typeof AppSearchRoute
@@ -718,6 +738,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppImportRoute: AppImportRoute,
   AppJobsRoute: AppJobsRoute,
   AppMediaStudioRoute: AppMediaStudioRoute,
+  AppMonitoringRoute: AppMonitoringRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppQueueRoute: AppQueueRoute,
   AppSearchRoute: AppSearchRoute,
