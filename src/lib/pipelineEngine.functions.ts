@@ -48,6 +48,8 @@ export type MovieManifest = {
   aspectRatio?: "16:9" | "9:16" | "1:1" | "4:5";
   fps?: number;
   quality?: "standard" | "high" | "ultra";
+  burnSubtitles?: boolean;
+  subtitlePosition?: "bottom" | "middle" | "top";
 };
 
 /** Run the media portion of the pipeline for a project (images → voice → video). */
