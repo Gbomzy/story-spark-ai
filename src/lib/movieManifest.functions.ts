@@ -36,6 +36,8 @@ const ManifestSchema = z.object({
   aspectRatio: z.enum(["16:9", "9:16", "1:1", "4:5"]).optional(),
   fps: z.number().optional(),
   quality: z.enum(["standard", "high", "ultra"]).optional(),
+  burnSubtitles: z.boolean().optional(),
+  subtitlePosition: z.enum(["bottom", "middle", "top"]).optional(),
 });
 
 function recompute(clips: SceneClip[]): number {
