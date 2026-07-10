@@ -25,11 +25,11 @@ function parsePrompts(text: string): Prompt[] {
     try {
       const j = JSON.parse(trimmed);
       const arr = Array.isArray(j) ? j : Array.isArray(j?.prompts) ? j.prompts : [];
-      return arr.slice(0, 30).map((it: unknown, i: number) => {
+      return (arr as unknown[]).slice(0, 30).map((it: unknown, i: number) => {
         const o = (it ?? {}) as Record<string, unknown>;
         const p = String(o.prompt ?? o.description ?? o.text ?? it ?? "").trim();
         return { id: String(o.id ?? `prompt-${i + 1}`), prompt: p };
-      }).filter((p) => p.prompt);
+      }).filter((p: Prompt) => Boolean(p.prompt));
     } catch { /* fallthrough */ }
   }
   return trimmed.split(/\n\s*\n/).slice(0, 30).map((p, i) => ({ id: `prompt-${i + 1}`, prompt: p.trim() })).filter((p) => p.prompt);
