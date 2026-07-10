@@ -39,11 +39,11 @@ export const PIPELINE: PipelineStage[] = [
   { id: "songs", label: "Songs", description: "Original lyrics", sourceField: "songs", assetField: "songs", isMedia: false, comingSoon: false },
   { id: "image_prompts", label: "Image Prompts", description: "Prompts per scene", sourceField: "images", assetField: "images", isMedia: false, comingSoon: false },
   { id: "generated_images", label: "Images", description: "Rendered scene stills", sourceField: "images", assetField: "generated_images", isMedia: true, comingSoon: false },
-  { id: "narration", label: "Narration", description: "Voice-over MP3", sourceField: "voice", assetField: "voice_audio", isMedia: true, comingSoon: true },
+  { id: "narration", label: "Narration", description: "Voice-over MP3", sourceField: "voice", assetField: "voice_audio", isMedia: true, comingSoon: false },
   { id: "music", label: "Music", description: "Background song MP3", sourceField: "songs", assetField: "background_music", isMedia: true, comingSoon: true },
-  { id: "subtitles", label: "Subtitles", description: "SRT captions", sourceField: "voice", assetField: "subtitle_file", isMedia: true, comingSoon: true },
-  { id: "thumbnail", label: "Thumbnail", description: "Cover image", sourceField: "story", assetField: "thumbnail", isMedia: true, comingSoon: true },
-  { id: "video", label: "Video", description: "Final MP4 render", assetField: "video_file", isMedia: true, comingSoon: true },
+  { id: "subtitles", label: "Subtitles", description: "SRT captions", sourceField: "voice", assetField: "subtitle_file", isMedia: true, comingSoon: false },
+  { id: "thumbnail", label: "Thumbnail", description: "Cover image", sourceField: "story", assetField: "thumbnail", isMedia: true, comingSoon: false },
+  { id: "video", label: "Video", description: "Final MP4 render", assetField: "video_file", isMedia: true, comingSoon: false },
 ];
 
 /** Ordered flow shown as a workflow diagram in the UI. */
