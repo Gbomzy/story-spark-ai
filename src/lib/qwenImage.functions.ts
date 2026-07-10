@@ -54,12 +54,10 @@ export const generateQwenImage = createServerFn({ method: "POST" })
         base,
         models: preferred,
         buildBody: (m) => ({
-          model,
+          model: m,
           input: { prompt: data.prompt, negative_prompt: data.negativePrompt },
           parameters: { size, n: data.n ?? 1, ...(data.seed != null ? { seed: data.seed } : {}) },
-          // shadowed by builder param below
-          _m: m,
-        } as unknown as { model: string }),
+        }),
       });
       // rebuild with the model actually used
       model = res.model;
