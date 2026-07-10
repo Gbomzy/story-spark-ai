@@ -93,6 +93,62 @@ export async function runAsyncTask(input: {
   throw new Error("DashScope task timed out.");
 }
 
+/**
+ * Detect DashScope errors that mean "the requested model is unavailable
+ * for this account" (deprecated / not enabled / typo). Callers use this
+ * to iterate a fallback list of equivalent models.
+ */
+export function isModelUnavailableError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    /Model not exist/i.test(msg) ||
+    /model_not_found/i.test(msg) ||
+    /InvalidParameter/i.test(msg) ||
+    /invalid[_ ]?model/i.test(msg) ||
+    /not\s+authorized/i.test(msg) ||
+    /AccessDenied/i.test(msg) ||
+    /\b400\b/.test(msg)
+  );
+}
+
+/**
+ * Try a list of candidate model ids in order; the caller supplies a builder
+ * that returns the DashScope request body for a given model. The first
+ * model that DashScope accepts wins. Non-model errors bubble immediately.
+ */
+export async function runAsyncTaskWithFallback<T extends { model: string }>(input: {
+  submitUrl: string;
+  base?: string;
+  models: string[];
+  buildBody: (model: string) => T;
+  pollIntervalMs?: number;
+  timeoutMs?: number;
+}): Promise<{ output: Record<string, unknown>; model: string; attempts: string[] }> {
+  const attempts: string[] = [];
+  let lastErr: unknown = new Error("No models supplied");
+  for (const model of input.models) {
+    attempts.push(model);
+    try {
+      const output = await runAsyncTask({
+        submitUrl: input.submitUrl,
+        base: input.base,
+        pollIntervalMs: input.pollIntervalMs,
+        timeoutMs: input.timeoutMs,
+        body: input.buildBody(model),
+      });
+      return { output, model, attempts };
+    } catch (e) {
+      lastErr = e;
+      if (isModelUnavailableError(e)) continue;
+      throw e;
+    }
+  }
+  const detail = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  throw new Error(
+    `DashScope: none of the candidate models were accepted (${attempts.join(", ")}). Last error: ${detail}`,
+  );
+}
+
 export function getEnabledFlags(): {
   image: boolean;
   video: boolean;

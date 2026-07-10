@@ -19,34 +19,49 @@ const Input = z.object({
   size: z.string().optional(),
   seed: z.number().int().optional(),
   n: z.number().int().min(1).max(4).optional(),
-  model: z.enum(["wanx2.1-t2i-turbo", "wanx2.1-t2i-plus", "wan2.2-t2i-flash", "wan2.2-t2i-plus"]).optional(),
+  model: z.string().optional(),
   projectId: z.string().optional(),
   sceneId: z.string().optional(),
 });
+
+// Ordered from cheapest/fastest to highest quality. DashScope silently
+// deprecates model IDs; iterating a fallback list keeps the pipeline alive
+// when the primary ID returns "Model not exist" / InvalidParameter.
+const IMAGE_MODEL_FALLBACKS = [
+  "wan2.2-t2i-flash",
+  "wan2.2-t2i-plus",
+  "wanx2.1-t2i-turbo",
+  "wanx2.1-t2i-plus",
+  "wanx-v1",
+];
 
 export const generateQwenImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
-    const { runAsyncTask, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
-    const model = data.model ?? "wanx2.1-t2i-turbo";
+    const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
+    const preferred = data.model ? [data.model, ...IMAGE_MODEL_FALLBACKS.filter((m) => m !== data.model)] : IMAGE_MODEL_FALLBACKS;
     const size = data.size || ASPECT_TO_SIZE[data.aspect ?? "16:9"] || "1280*720";
     const base = getBase("QWEN_BASE_URL", DEFAULT_DASHSCOPE_BASE);
 
     let url = "";
     let providerError: string | null = null;
+    let model = preferred[0];
     try {
-      const output = await runAsyncTask({
+      const res = await runAsyncTaskWithFallback({
         submitUrl: `${base}/api/v1/services/aigc/text2image/image-synthesis`,
         base,
-        body: {
-          model,
+        models: preferred,
+        buildBody: (m) => ({
+          model: m,
           input: { prompt: data.prompt, negative_prompt: data.negativePrompt },
           parameters: { size, n: data.n ?? 1, ...(data.seed != null ? { seed: data.seed } : {}) },
-        },
+        }),
       });
-      const results = (output.results as Array<{ url?: string }> | undefined) ?? [];
+      // rebuild with the model actually used
+      model = res.model;
+      const results = (res.output.results as Array<{ url?: string }> | undefined) ?? [];
       url = results[0]?.url ?? "";
       if (!url) throw new Error("DashScope returned no image URL.");
     } catch (e) {

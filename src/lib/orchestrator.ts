@@ -47,7 +47,7 @@ export async function orchestrateImage(input: {
   negativePrompt?: string;
   aspect?: string;
   seed?: number;
-  model?: "wanx2.1-t2i-turbo" | "wanx2.1-t2i-plus" | "wan2.2-t2i-flash" | "wan2.2-t2i-plus";
+  model?: string;
 }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
   return await generateQwenImage({ data: input });
 }
