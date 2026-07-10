@@ -6,6 +6,8 @@ export const PLATFORMS = ["youtube", "facebook", "instagram", "tiktok", "linkedi
 export type Platform = (typeof PLATFORMS)[number];
 const PlatformEnum = z.enum(PLATFORMS);
 
+type JsonValue = string | number | boolean | null | { [k: string]: JsonValue } | JsonValue[];
+
 export type PublishConnection = {
   id: string;
   platform: Platform;
@@ -16,7 +18,7 @@ export type PublishConnection = {
   connected_at: string | null;
   disconnected_at: string | null;
   expires_at: string | null;
-  meta: unknown;
+  meta: JsonValue;
 };
 
 export type PublishHistoryRow = {
@@ -36,7 +38,7 @@ export type PublishHistoryRow = {
   published_at: string | null;
   error_message: string | null;
   created_at: string;
-  meta: unknown;
+  meta: JsonValue;
 };
 
 export const listPublishConnections = createServerFn({ method: "GET" })
