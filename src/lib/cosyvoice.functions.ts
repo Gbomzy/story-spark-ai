@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const Input = z.object({
   script: z.string().min(1),
   voice: z.string().optional(),
-  model: z.enum(["cosyvoice-v1", "cosyvoice-v2", "qwen-tts", "qwen-tts-latest"]).optional(),
+  model: z.string().optional(),
   speed: z.number().min(0.5).max(2).optional(),
   pitch: z.number().min(0.5).max(2).optional(),
   volume: z.number().min(0).max(100).optional(),
@@ -15,30 +15,53 @@ const Input = z.object({
   projectId: z.string().optional(),
 });
 
+// DashScope TTS models, ordered from preferred to legacy. Any ID that
+// returns "Model not exist"/InvalidParameter is skipped and the next one
+// is tried. Voices are model-specific — CosyVoice uses `longxiaochun`
+// et al., Qwen-TTS uses `Cherry` etc. — so we pick a safe default per family.
+const TTS_MODEL_FALLBACKS = [
+  "cosyvoice-v2",
+  "cosyvoice-v1",
+  "qwen-tts-latest",
+  "qwen-tts",
+  "sambert-zhichu-v1",
+];
+
+function defaultVoiceFor(model: string): string {
+  if (model.startsWith("qwen-tts")) return "Cherry";
+  if (model.startsWith("sambert")) return "zhichu";
+  return "longxiaochun";
+}
+
 export const generateCosyVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
-    const { runAsyncTask, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
-    const model = data.model ?? "cosyvoice-v1";
-    const voice = data.voice ?? (model.startsWith("qwen-tts") ? "Cherry" : "longxiaochun");
+    const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
+    const preferred = data.model
+      ? [data.model, ...TTS_MODEL_FALLBACKS.filter((m) => m !== data.model)]
+      : TTS_MODEL_FALLBACKS;
     const format = data.format ?? "mp3";
     const base = getBase("COSYVOICE_BASE_URL", DEFAULT_DASHSCOPE_BASE);
 
     let providerError: string | null = null;
     let audioUrl = "";
     let bytes = 0;
+    let model = preferred[0];
+    let voice = data.voice ?? defaultVoiceFor(model);
 
     try {
-      const output = await runAsyncTask({
-        submitUrl: `${base}/api/v1/services/audio/tts/`,
+      const res = await runAsyncTaskWithFallback({
+        // No trailing slash — DashScope rejects `/tts/` with 400.
+        submitUrl: `${base}/api/v1/services/audio/tts`,
         base,
-        body: {
-          model,
+        models: preferred,
+        buildBody: (m) => ({
+          model: m,
           input: { text: data.script },
           parameters: {
-            voice,
+            voice: data.voice ?? defaultVoiceFor(m),
             format,
             ...(data.sampleRate ? { sample_rate: data.sampleRate } : {}),
             ...(data.speed != null ? { rate: data.speed } : {}),
@@ -46,9 +69,11 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
             ...(data.volume != null ? { volume: data.volume } : {}),
             ...(data.language ? { language: data.language } : {}),
           },
-        },
+        }),
       });
-      const rawAudio = output.audio as { url?: string } | undefined;
+      model = res.model;
+      voice = data.voice ?? defaultVoiceFor(model);
+      const rawAudio = res.output.audio as { url?: string } | undefined;
       audioUrl = rawAudio?.url ?? "";
       if (!audioUrl) throw new Error("DashScope returned no audio URL.");
     } catch (e) {
