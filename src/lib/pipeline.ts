@@ -38,7 +38,7 @@ export const PIPELINE: PipelineStage[] = [
   { id: "voice_script", label: "Voice Script", description: "Narration script", sourceField: "voice", assetField: "voice", isMedia: false, comingSoon: false },
   { id: "songs", label: "Songs", description: "Original lyrics", sourceField: "songs", assetField: "songs", isMedia: false, comingSoon: false },
   { id: "image_prompts", label: "Image Prompts", description: "Prompts per scene", sourceField: "images", assetField: "images", isMedia: false, comingSoon: false },
-  { id: "generated_images", label: "Images", description: "Rendered scene stills", sourceField: "images", assetField: "generated_images", isMedia: true, comingSoon: true },
+  { id: "generated_images", label: "Images", description: "Rendered scene stills", sourceField: "images", assetField: "generated_images", isMedia: true, comingSoon: false },
   { id: "narration", label: "Narration", description: "Voice-over MP3", sourceField: "voice", assetField: "voice_audio", isMedia: true, comingSoon: true },
   { id: "music", label: "Music", description: "Background song MP3", sourceField: "songs", assetField: "background_music", isMedia: true, comingSoon: true },
   { id: "subtitles", label: "Subtitles", description: "SRT captions", sourceField: "voice", assetField: "subtitle_file", isMedia: true, comingSoon: true },
