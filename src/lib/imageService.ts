@@ -18,9 +18,8 @@ export type SceneImage = {
 
 export const imageService = {
   isConfigured(): boolean {
-    // The gateway route reads LOVABLE_API_KEY on the server. From the client
-    // side we optimistically assume it's available — errors surface clearly.
-    return true;
+    // Qwen Cloud does not currently expose image generation to this project.
+    return false;
   },
   async generateForScene(scene: { title: string; prompt: string; sceneId?: string; projectId?: string }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
     return orchestrateImage({ prompt: scene.prompt, sceneId: scene.sceneId, projectId: scene.projectId });

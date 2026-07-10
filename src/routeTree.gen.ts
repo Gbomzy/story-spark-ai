@@ -15,8 +15,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiGenerateVoiceRouteImport } from './routes/api/generate-voice'
-import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-image'
 import { Route as AppVoiceGeneratorRouteImport } from './routes/_app.voice-generator'
 import { Route as AppVideoStudioRouteImport } from './routes/_app.video-studio'
 import { Route as AppTimelineRouteImport } from './routes/_app.timeline'
@@ -76,16 +74,6 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGenerateVoiceRoute = ApiGenerateVoiceRouteImport.update({
-  id: '/api/generate-voice',
-  path: '/api/generate-voice',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGenerateImageRoute = ApiGenerateImageRouteImport.update({
-  id: '/api/generate-image',
-  path: '/api/generate-image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppVoiceGeneratorRoute = AppVoiceGeneratorRouteImport.update({
@@ -278,8 +266,6 @@ export interface FileRoutesByFullPath {
   '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
-  '/api/generate-voice': typeof ApiGenerateVoiceRoute
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
@@ -318,8 +304,6 @@ export interface FileRoutesByTo {
   '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
-  '/api/generate-voice': typeof ApiGenerateVoiceRoute
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
@@ -360,8 +344,6 @@ export interface FileRoutesById {
   '/_app/timeline': typeof AppTimelineRoute
   '/_app/video-studio': typeof AppVideoStudioRoute
   '/_app/voice-generator': typeof AppVoiceGeneratorRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
-  '/api/generate-voice': typeof ApiGenerateVoiceRoute
   '/_app/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
@@ -402,8 +384,6 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/video-studio'
     | '/voice-generator'
-    | '/api/generate-image'
-    | '/api/generate-voice'
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
@@ -442,8 +422,6 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/video-studio'
     | '/voice-generator'
-    | '/api/generate-image'
-    | '/api/generate-voice'
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
@@ -483,8 +461,6 @@ export interface FileRouteTypes {
     | '/_app/timeline'
     | '/_app/video-studio'
     | '/_app/voice-generator'
-    | '/api/generate-image'
-    | '/api/generate-voice'
     | '/_app/project-settings/$id'
     | '/_app/projects/$id'
     | '/_app/projects/new'
@@ -497,8 +473,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  ApiGenerateImageRoute: typeof ApiGenerateImageRoute
-  ApiGenerateVoiceRoute: typeof ApiGenerateVoiceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -543,20 +517,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/generate-voice': {
-      id: '/api/generate-voice'
-      path: '/api/generate-voice'
-      fullPath: '/api/generate-voice'
-      preLoaderRoute: typeof ApiGenerateVoiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/generate-image': {
-      id: '/api/generate-image'
-      path: '/api/generate-image'
-      fullPath: '/api/generate-image'
-      preLoaderRoute: typeof ApiGenerateImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/voice-generator': {
@@ -866,8 +826,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  ApiGenerateImageRoute: ApiGenerateImageRoute,
-  ApiGenerateVoiceRoute: ApiGenerateVoiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
