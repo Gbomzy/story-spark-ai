@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ChevronLeft, Save, FileJson, FileText, FileType2, RefreshCw, BookOpen, Users, Film, Mic, Music, ImageIcon, Search, Copy, Settings2, Download } from "lucide-react";
+import { Loader2, ChevronLeft, Save, FileJson, RefreshCw, BookOpen, Users, Film, Mic, Music, ImageIcon, Search, Copy, Settings2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, touchOpened, updateProject, type ProjectContentField } from "@/lib/projects";
 import {
@@ -132,17 +132,6 @@ function ProjectDetailPage() {
     download(`${slug(project.name)}.json`, JSON.stringify(payload, null, 2), "application/json");
   }
 
-  function exportText(ext: "pdf" | "docx") {
-    if (!project) return;
-    // Plain-text export with .pdf/.docx extension as a placeholder until binary rendering is wired.
-    const body = TABS.map((t) => `=== ${t.label.toUpperCase()} ===\n\n${draft[t.value] || "(empty)"}\n`).join("\n");
-    const header = `${project.name}\n${project.topic ?? ""}\n\n`;
-    download(`${slug(project.name)}.${ext === "pdf" ? "txt" : "doc"}`, header + body, "text/plain");
-    toast.message(`${ext.toUpperCase()} export`, {
-      description: "Downloaded as text. Wire up a renderer for fully formatted output.",
-    });
-  }
-
   if (isLoading) {
     return (
       <div className="grid place-items-center py-24 text-sm text-muted-foreground">
@@ -183,12 +172,6 @@ function ProjectDetailPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={() => exportText("pdf")}>
-              <FileText className="mr-1.5 h-4 w-4" /> Export PDF
-            </Button>
-            <Button variant="outline" className="rounded-xl" onClick={() => exportText("docx")}>
-              <FileType2 className="mr-1.5 h-4 w-4" /> Export DOCX
-            </Button>
             <Button variant="outline" className="rounded-xl" onClick={exportJson}>
               <FileJson className="mr-1.5 h-4 w-4" /> Export JSON
             </Button>
