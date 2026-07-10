@@ -93,9 +93,9 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     return { translated, provider: "qwen-mt-turbo", durationMs: Date.now() - t0 };
   });
 
-async function logTr(context: { supabase: { from: (t: string) => { insert: (v: unknown) => Promise<unknown> } }; userId: string }, projectId: string | undefined, provider: string, t0: number) {
+async function logTr(context: { supabase: { from: (t: string) => { insert: (v: Record<string, unknown>) => { then?: unknown } } }; userId: string }, projectId: string | undefined, provider: string, t0: number) {
   try {
-    await context.supabase.from("generation_history").insert({
+    await (context.supabase.from("generation_history").insert({
       user_id: context.userId,
       project_id: projectId ?? null,
       asset_type: "translation",
@@ -103,6 +103,6 @@ async function logTr(context: { supabase: { from: (t: string) => { insert: (v: u
       status: "completed",
       duration_ms: Date.now() - t0,
       credits_used: 1,
-    });
+    }) as unknown as Promise<unknown>);
   } catch { /* best-effort */ }
 }
