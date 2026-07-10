@@ -83,11 +83,11 @@ export function SceneImagesPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs text-muted-foreground">
-            {scenes.length} scene{scenes.length === 1 ? "" : "s"} · Qwen Image
+            {scenes.length} scene{scenes.length === 1 ? "" : "s"} · Qwen Image 2.0 · DashScope
           </p>
           {!configured && (
             <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
-              Unavailable with current Qwen capabilities.
+              Set DASHSCOPE_API_KEY or QWEN_API_KEY to enable image generation.
             </p>
           )}
         </div>

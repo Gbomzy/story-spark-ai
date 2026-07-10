@@ -5,7 +5,7 @@
 // metrics; this module keeps the parse helpers and the "isConfigured" flag
 // so the UI can gate buttons consistently.
 
-import { orchestrateImage } from "@/lib/orchestrator";
+import { generateQwenImage } from "@/lib/qwenImage.functions";
 
 export type SceneImage = {
   sceneId: string;
@@ -18,17 +18,18 @@ export type SceneImage = {
 
 export const imageService = {
   isConfigured(): boolean {
-    // Qwen Cloud does not currently expose image generation to this project.
-    return false;
+    // Wired to DashScope (Qwen Image 2.0 / Wan T2I). The server function
+    // reads DASHSCOPE_API_KEY / QWEN_API_KEY at call time; UI is enabled.
+    return true;
   },
-  async generateForScene(scene: { title: string; prompt: string; sceneId?: string; projectId?: string }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
-    return orchestrateImage({ prompt: scene.prompt, sceneId: scene.sceneId, projectId: scene.projectId });
+  async generateForScene(scene: { title: string; prompt: string; sceneId?: string; projectId?: string; negativePrompt?: string; aspect?: string; seed?: number }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
+    return generateQwenImage({ data: { prompt: scene.prompt, sceneId: scene.sceneId, projectId: scene.projectId, negativePrompt: scene.negativePrompt, aspect: scene.aspect, seed: scene.seed } });
   },
-  async generateAll(scenes: Array<{ title: string; prompt: string; sceneId?: string; projectId?: string }>): Promise<SceneImage[]> {
+  async generateAll(scenes: Array<{ title: string; prompt: string; sceneId?: string; projectId?: string; aspect?: string }>): Promise<SceneImage[]> {
     const out: SceneImage[] = [];
     for (const s of scenes) {
       try {
-        const r = await orchestrateImage({ prompt: s.prompt, sceneId: s.sceneId, projectId: s.projectId });
+        const r = await generateQwenImage({ data: { prompt: s.prompt, sceneId: s.sceneId, projectId: s.projectId, aspect: s.aspect } });
         out.push({ sceneId: s.sceneId ?? s.title, title: s.title, prompt: s.prompt, url: r.url, status: "ready" });
       } catch (err) {
         out.push({ sceneId: s.sceneId ?? s.title, title: s.title, prompt: s.prompt, status: "error", error: err instanceof Error ? err.message : String(err) });
