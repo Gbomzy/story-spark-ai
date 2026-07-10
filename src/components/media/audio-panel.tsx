@@ -92,8 +92,13 @@ export function AudioPanel({
           <div>
             <p className="text-sm font-semibold">Voice over</p>
             <p className="text-[11px] text-muted-foreground">
-              Lovable AI · OpenAI TTS · voice “{voice}”
+              Qwen Voice · voice “{voice}”
             </p>
+            {!configured && (
+              <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
+                Unavailable with current Qwen capabilities.
+              </p>
+            )}
           </div>
         </div>
         <Badge className={`rounded-full text-[10px] uppercase tracking-wider ${badgeClass}`}>
