@@ -28,7 +28,7 @@ function VideoStudioPage() {
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader
         title="Video Studio"
-        description="Preview and render the final animated video for your project. Powered by Wan (coming soon)."
+        description="Preview and render the final animated video for your project. Powered by Alibaba Cloud Wan."
       />
 
       {isLoading ? (
@@ -98,7 +98,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               </div>
             )}
             <Badge className="absolute left-3 top-3 rounded-full bg-emerald-500/15 text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Wan · DashScope
+              Connected · Alibaba Cloud Wan
             </Badge>
           </div>
           <div className="space-y-4 p-6">
@@ -111,6 +111,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               <Field label="Resolution" value="1280×720" />
               <Field label="Aspect ratio" value="16:9" />
               <Field label="Provider" value={provider} />
+              <Field label="Model" value="wanx2.1-t2v-turbo" />
               <Field label="Status" value={status} />
               <Field label="Progress" value={`${progress}%`} />
             </dl>

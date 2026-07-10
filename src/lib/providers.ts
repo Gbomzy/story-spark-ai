@@ -28,8 +28,8 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "qwen-tts", name: "Qwen TTS", vendor: "Alibaba Cloud", capabilities: ["voice"], status: "connected", description: "Qwen TTS via DashScope — expressive multilingual voices." },
   { id: "fun-asr", name: "Fun-ASR", vendor: "Alibaba Cloud", capabilities: ["subtitles"], status: "connected", description: "Fun-ASR (paraformer-v2) speech recognition with sentence timestamps." },
   { id: "qwen-asr", name: "Qwen ASR", vendor: "Alibaba Cloud", capabilities: ["subtitles"], status: "connected", description: "Qwen speech recognition via DashScope." },
-  { id: "qwen-ocr", name: "Qwen OCR", vendor: "Alibaba Cloud", capabilities: ["text"], status: "api_ready", description: "Qwen OCR — extract text from images, comics, PDFs." },
-  { id: "qwen-translate", name: "Qwen Translation", vendor: "Alibaba Cloud", capabilities: ["text"], status: "api_ready", description: "Qwen translation across dozens of languages." },
+  { id: "qwen-ocr", name: "Qwen OCR", vendor: "Alibaba Cloud", capabilities: ["text"], status: "connected", description: "Qwen OCR — extract text from images, comics, PDFs." },
+  { id: "qwen-translate", name: "Qwen Translation", vendor: "Alibaba Cloud", capabilities: ["text"], status: "connected", description: "Qwen translation across dozens of languages." },
 ];
 
 export function providerLabel(status: ProviderStatus): string {

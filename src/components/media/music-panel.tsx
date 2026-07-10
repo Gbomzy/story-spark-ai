@@ -23,8 +23,8 @@ export function MusicPanel({ lyrics, value }: { lyrics: string; value?: string |
             </p>
           </div>
         </div>
-        <Badge className="rounded-full bg-amber-500/15 text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400">
-          Coming soon
+        <Badge className="rounded-full bg-muted text-[10px] uppercase tracking-wider text-muted-foreground">
+          Unavailable
         </Badge>
       </div>
 
@@ -32,8 +32,8 @@ export function MusicPanel({ lyrics, value }: { lyrics: string; value?: string |
         {asset.url ? (
           <audio controls src={asset.url} className="w-full" />
         ) : (
-          <div className="grid h-14 place-items-center rounded-xl border border-dashed border-border text-[11px] text-muted-foreground">
-            Music player will appear here once a song file is generated.
+          <div className="grid place-items-center rounded-xl border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+            Music generation is currently unavailable under the configured Qwen Cloud capabilities. Lyrics remain available for export.
           </div>
         )}
       </div>
