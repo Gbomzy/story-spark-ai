@@ -337,3 +337,39 @@ function UsageBar({ label, value, hint }: { label: string; value: number; hint: 
     </div>
   );
 }
+
+const MONTHLY_ALLOWANCE = 1000;
+
+function LiveUsage() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["credits-history"], queryFn: () => listHistory({ limit: 1000 }), refetchInterval: 5000 });
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-credits")
+      .on("postgres_changes", { event: "*", schema: "public", table: "generation_history" }, () => {
+        qc.invalidateQueries({ queryKey: ["credits-history"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+  const rows = q.data ?? [];
+  const now = Date.now();
+  const inRange = (d: string, h: number) => now - new Date(d).getTime() < h * 3600 * 1000;
+  const monthly = rows.filter((r) => inRange(r.created_at, 24 * 30)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const daily = rows.filter((r) => inRange(r.created_at, 24)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const balance = Math.max(0, MONTHLY_ALLOWANCE - monthly);
+  const byType = (t: string) => rows.filter((r) => (r.asset_type ?? "").includes(t)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const voice = byType("voice");
+  const image = byType("image");
+  const video = byType("video");
+  const pct = (n: number, d: number) => Math.min(100, Math.round((n / d) * 100));
+  return (
+    <>
+      <UsageBar label="Credits balance" value={pct(balance, MONTHLY_ALLOWANCE)} hint={`${balance} / ${MONTHLY_ALLOWANCE} remaining`} />
+      <UsageBar label="Today" value={pct(daily, MONTHLY_ALLOWANCE)} hint={`${daily} credits`} />
+      <UsageBar label="Voice generations" value={pct(voice, MONTHLY_ALLOWANCE)} hint={`${voice} credits`} />
+      <UsageBar label="Image generations" value={pct(image, MONTHLY_ALLOWANCE)} hint={`${image} credits`} />
+      <UsageBar label="Video renders" value={pct(video, MONTHLY_ALLOWANCE)} hint={`${video} credits`} />
+    </>
+  );
+}
