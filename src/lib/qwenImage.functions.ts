@@ -2,16 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ASPECT_TO_SIZE: Record<string, string> = {
-  "1:1": "1024*1024",
-  "16:9": "1280*720",
-  "9:16": "720*1280",
-  "4:5": "1024*1280",
-  portrait: "832*1216",
-  landscape: "1216*832",
-  ultra: "1440*1440",
-};
-
 const Input = z.object({
   prompt: z.string().min(1),
   negativePrompt: z.string().optional(),

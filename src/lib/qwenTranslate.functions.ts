@@ -63,20 +63,16 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const translated = json.choices?.[0]?.message?.content ?? "";
-    await logTr(context, data.projectId, "qwen-mt-flash", t0);
+    try {
+      await context.supabase.from("generation_history").insert({
+        user_id: context.userId,
+        project_id: data.projectId ?? null,
+        asset_type: "translation",
+        provider: "qwen-mt-flash",
+        status: "completed",
+        duration_ms: Date.now() - t0,
+        credits_used: 1,
+      });
+    } catch { /* best-effort */ }
     return { translated, provider: "qwen-mt-flash", durationMs: Date.now() - t0 };
   });
-
-async function logTr(context: { supabase: { from: (t: string) => { insert: (v: Record<string, unknown>) => { then?: unknown } } }; userId: string }, projectId: string | undefined, provider: string, t0: number) {
-  try {
-    await (context.supabase.from("generation_history").insert({
-      user_id: context.userId,
-      project_id: projectId ?? null,
-      asset_type: "translation",
-      provider,
-      status: "completed",
-      duration_ms: Date.now() - t0,
-      credits_used: 1,
-    }) as unknown as Promise<unknown>);
-  } catch { /* best-effort */ }
-}
