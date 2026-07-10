@@ -20,7 +20,7 @@ export const audioService = {
   },
   async generateFromScript(
     script: string,
-    opts?: { voice?: string; language?: string; speed?: number; pitch?: number; projectId?: string; model?: "cosyvoice-v1" | "cosyvoice-v2" | "qwen-tts" | "qwen-tts-latest" },
+    opts?: { voice?: string; language?: string; speed?: number; pitch?: number; projectId?: string; model?: string },
   ): Promise<AudioAsset> {
     const r = await generateCosyVoice({
       data: {
