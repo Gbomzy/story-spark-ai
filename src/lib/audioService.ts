@@ -16,7 +16,8 @@ export type AudioAsset = {
 
 export const audioService = {
   isConfigured(): boolean {
-    return true;
+    // Qwen Cloud does not currently expose speech synthesis to this project.
+    return false;
   },
   async generateFromScript(
     script: string,
