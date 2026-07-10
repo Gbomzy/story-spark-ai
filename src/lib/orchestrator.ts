@@ -8,6 +8,7 @@
 
 import type { ProviderCapability } from "@/lib/providers";
 import { generateQwenImage } from "@/lib/qwenImage.functions";
+import { generateCosyVoice } from "@/lib/cosyvoice.functions";
 
 export const UNAVAILABLE_MESSAGE = "Unavailable with current Qwen capabilities.";
 
@@ -23,10 +24,10 @@ export type OrchestratorProvider = {
 export const ORCHESTRATOR: Record<ProviderCapability, OrchestratorProvider> = {
   text: { id: "qwen", label: "Qwen", capability: "text", status: "connected" },
   images: { id: "qwen-image", label: "Qwen Image 2.0", capability: "images", status: "connected" },
-  voice: { id: "cosyvoice", label: "CosyVoice", capability: "voice", status: "coming_soon" },
+  voice: { id: "cosyvoice", label: "CosyVoice", capability: "voice", status: "connected" },
   music: { id: "wan-music", label: "Wan Music", capability: "music", status: "coming_soon" },
   video: { id: "wan-t2v", label: "Wan Video", capability: "video", status: "coming_soon" },
-  subtitles: { id: "auto-subtitles", label: "Auto Subtitles (local)", capability: "subtitles", status: "connected" },
+  subtitles: { id: "fun-asr", label: "Fun-ASR / Local", capability: "subtitles", status: "connected" },
 };
 
 export function isCapabilityAvailable(cap: ProviderCapability): boolean {
@@ -57,6 +58,6 @@ export async function orchestrateVoice(input: {
   speed?: number;
   projectId?: string;
 }): Promise<{ url: string; provider: string; durationMs: number; bytes: number }> {
-  void input;
-  throw new Error(UNAVAILABLE_MESSAGE);
+  const r = await generateCosyVoice({ data: input });
+  return { url: r.url, provider: r.provider, durationMs: r.durationMs, bytes: r.bytes };
 }
