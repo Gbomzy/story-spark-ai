@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
 import { generateWanVideo } from "@/lib/wanVideo.functions";
-import { runFullMoviePipeline } from "@/lib/pipelineEngine.functions";
+import { runFullMoviePipeline, type MovieManifest, type SceneClip } from "@/lib/pipelineEngine.functions";
 import { PIPELINE, stageStatus, type PipelineState } from "@/lib/pipeline";
 
 export const Route = createFileRoute("/_app/video-studio")({
@@ -57,7 +58,11 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const status = (project.render_status ?? "pending") as "pending" | "generating" | "completed" | "failed";
   const progress = project.render_progress ?? 0;
   const provider = project.video_provider ?? videoService.defaultProvider();
-  const videoUrl = extractUrl(project.video_file);
+  const manifest = parseManifest(project.video_file);
+  const clips = manifest?.clips ?? [];
+  const videoUrl = manifest?.url ?? extractUrl(project.video_file);
+  const narrationUrl = manifest?.narrationUrl ?? extractUrl(project.voice_audio);
+  const [perScene, setPerScene] = useState<number>(5);
 
   const videoMut = useMutation({
     mutationFn: () =>
@@ -66,7 +71,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           projectId: project.id,
           prompt: (typeof project.story === "string" ? project.story : String(project.story ?? "")).slice(0, 800) || project.name || "Cinematic short film",
           mode: "t2v",
-          duration: 5,
+          duration: perScene,
         },
       }),
     onSuccess: () => { toast.success("Video ready."); qc.invalidateQueries({ queryKey: ["projects"] }); },
@@ -74,8 +79,12 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   });
 
   const pipelineMut = useMutation({
-    mutationFn: () => runPipeline({ data: { projectId: project.id } }),
-    onSuccess: () => { toast.success("Full movie pipeline complete."); qc.invalidateQueries({ queryKey: ["projects"] }); },
+    mutationFn: () => runPipeline({ data: { projectId: project.id, perSceneDuration: perScene, chainScenes: true } }),
+    onSuccess: (r) => {
+      const n = r?.results?.clips?.length ?? 0;
+      toast.success(n > 1 ? `Movie built from ${n} scene clips.` : "Movie ready.");
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
@@ -87,7 +96,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
       <Card className="glass overflow-hidden rounded-3xl p-0 shadow-soft">
         <div className="grid gap-0 md:grid-cols-[2fr,1fr]">
           <div className="relative aspect-video w-full bg-gradient-to-br from-primary/15 via-muted/40 to-accent/15">
-            {videoUrl ? (
+            {clips.length > 1 ? (
+              <ChainedMoviePlayer clips={clips} narrationUrl={narrationUrl ?? undefined} />
+            ) : videoUrl ? (
               <video src={videoUrl} controls className="h-full w-full object-cover" />
             ) : (
               <div className="absolute inset-0 grid place-items-center text-muted-foreground">
@@ -107,14 +118,32 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               <h3 className="text-lg font-bold">{project.name}</h3>
             </div>
             <dl className="grid grid-cols-2 gap-3 text-xs">
-              <Field label="Duration" value={project.render_duration ? `${project.render_duration}s` : project.duration ? `${project.duration} min` : "—"} />
+              <Field label="Total length" value={manifest ? `${manifest.totalDurationSeconds}s` : project.render_duration ? `${project.render_duration}s` : "—"} />
+              <Field label="Scene clips" value={clips.length ? String(clips.length) : "—"} />
               <Field label="Resolution" value="1280×720" />
-              <Field label="Aspect ratio" value="16:9" />
               <Field label="Provider" value={provider} />
               <Field label="Model" value="wan2.7-t2v" />
               <Field label="Status" value={status} />
-              <Field label="Progress" value={`${progress}%`} />
             </dl>
+            <div className="rounded-2xl border border-border bg-card/60 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Seconds per scene clip</p>
+              <div className="flex gap-1.5">
+                {[5, 8, 10].map((n) => (
+                  <Button
+                    key={n}
+                    size="sm"
+                    variant={perScene === n ? "default" : "outline"}
+                    onClick={() => setPerScene(n)}
+                    className="rounded-lg"
+                  >
+                    {n}s
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Wan clips max out at ~10s. Longer movies are built by chaining one clip per storyboard scene.
+              </p>
+            </div>
             <div>
               <Progress value={progress} className="h-2" />
             </div>
@@ -174,6 +203,66 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   );
 }
 
+function ChainedMoviePlayer({ clips, narrationUrl }: { clips: SceneClip[]; narrationUrl?: string }) {
+  const [idx, setIdx] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const current = clips[idx];
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = 0;
+    if (playing) v.play().catch(() => { /* ignore */ });
+  }, [idx, playing]);
+
+  const play = async () => {
+    setPlaying(true);
+    setIdx(0);
+    const v = videoRef.current;
+    const a = audioRef.current;
+    if (a) { a.currentTime = 0; a.play().catch(() => { /* ignore */ }); }
+    if (v) { v.currentTime = 0; await v.play().catch(() => { /* ignore */ }); }
+  };
+  const pause = () => {
+    setPlaying(false);
+    videoRef.current?.pause();
+    audioRef.current?.pause();
+  };
+  const onEnded = () => {
+    if (idx < clips.length - 1) setIdx(idx + 1);
+    else { setPlaying(false); audioRef.current?.pause(); }
+  };
+
+  if (!current) return null;
+  return (
+    <div className="relative h-full w-full bg-black">
+      <video
+        ref={videoRef}
+        key={current.url}
+        src={current.url}
+        onEnded={onEnded}
+        playsInline
+        muted
+        className="h-full w-full object-cover"
+      />
+      {narrationUrl ? <audio ref={audioRef} src={narrationUrl} preload="auto" /> : null}
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-black/70 to-transparent p-3 text-white">
+        <div className="text-[11px] uppercase tracking-widest opacity-80">
+          Scene {idx + 1} / {clips.length} · {current.durationSeconds}s
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={playing ? pause : play}>
+            {playing ? "Pause" : "Play movie"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -199,4 +288,11 @@ function extractUrl(v: unknown): string | null {
     if (typeof o.url === "string") return o.url;
   }
   return null;
+}
+
+function parseManifest(v: unknown): MovieManifest | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (!Array.isArray(o.clips)) return null;
+  return v as unknown as MovieManifest;
 }
