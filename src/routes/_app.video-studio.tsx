@@ -128,9 +128,6 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
                 {videoUrl ? <a href={videoUrl} download><Download className="mr-1.5 h-4 w-4" /> Download MP4</a> : <span><Download className="mr-1.5 h-4 w-4" /> Download MP4</span>}
               </Button>
               <Button disabled={!videoUrl} variant="outline" className="rounded-xl">
-                <Download className="mr-1.5 h-4 w-4" /> Download MP4
-              </Button>
-              <Button disabled={!videoUrl} variant="outline" className="rounded-xl">
                 <Share2 className="mr-1.5 h-4 w-4" /> Publish
               </Button>
             </div>
