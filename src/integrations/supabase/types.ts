@@ -529,6 +529,120 @@ export type Database = {
           },
         ]
       }
+      publish_connections: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          connected_at: string | null
+          created_at: string
+          disconnected_at: string | null
+          expires_at: string | null
+          id: string
+          meta: Json
+          platform: string
+          scopes: string[] | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          meta?: Json
+          platform: string
+          scopes?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          meta?: Json
+          platform?: string
+          scopes?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      publish_history: {
+        Row: {
+          created_at: string
+          description: string | null
+          error_message: string | null
+          external_post_id: string | null
+          hashtags: string[] | null
+          id: string
+          meta: Json
+          platform: string
+          project_id: string | null
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          video_url: string | null
+          visibility: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          error_message?: string | null
+          external_post_id?: string | null
+          hashtags?: string[] | null
+          id?: string
+          meta?: Json
+          platform: string
+          project_id?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          error_message?: string | null
+          external_post_id?: string | null
+          hashtags?: string[] | null
+          id?: string
+          meta?: Json
+          platform?: string
+          project_id?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
