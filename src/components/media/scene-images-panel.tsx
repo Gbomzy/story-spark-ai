@@ -83,8 +83,13 @@ export function SceneImagesPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs text-muted-foreground">
-            {scenes.length} scene{scenes.length === 1 ? "" : "s"} · Lovable AI · Gemini Image
+            {scenes.length} scene{scenes.length === 1 ? "" : "s"} · Qwen Image
           </p>
+          {!configured && (
+            <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+              Unavailable with current Qwen capabilities.
+            </p>
+          )}
         </div>
         <Button
           type="button"
