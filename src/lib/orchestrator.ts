@@ -6,8 +6,8 @@
 // these capabilities to this project. Subtitles remain a local, non-AI
 // utility. Music and video remain deferred.
 
-import { logGeneration } from "@/lib/assets";
 import type { ProviderCapability } from "@/lib/providers";
+import { generateQwenImage } from "@/lib/qwenImage.functions";
 
 export const UNAVAILABLE_MESSAGE = "Unavailable with current Qwen capabilities.";
 
@@ -22,10 +22,10 @@ export type OrchestratorProvider = {
 // hits our own /api/generate-image route which reads LOVABLE_API_KEY.
 export const ORCHESTRATOR: Record<ProviderCapability, OrchestratorProvider> = {
   text: { id: "qwen", label: "Qwen", capability: "text", status: "connected" },
-  images: { id: "qwen-image", label: "Qwen Image", capability: "images", status: "coming_soon" },
-  voice: { id: "qwen-voice", label: "Qwen Voice", capability: "voice", status: "coming_soon" },
-  music: { id: "qwen-music", label: "Qwen Music", capability: "music", status: "coming_soon" },
-  video: { id: "qwen-video", label: "Qwen Video", capability: "video", status: "coming_soon" },
+  images: { id: "qwen-image", label: "Qwen Image 2.0", capability: "images", status: "connected" },
+  voice: { id: "cosyvoice", label: "CosyVoice", capability: "voice", status: "coming_soon" },
+  music: { id: "wan-music", label: "Wan Music", capability: "music", status: "coming_soon" },
+  video: { id: "wan-t2v", label: "Wan Video", capability: "video", status: "coming_soon" },
   subtitles: { id: "auto-subtitles", label: "Auto Subtitles (local)", capability: "subtitles", status: "connected" },
 };
 
@@ -37,21 +37,17 @@ export function providerFor(cap: ProviderCapability): OrchestratorProvider {
   return ORCHESTRATOR[cap];
 }
 
-/** Generate a scene image through the server-side gateway proxy. */
+/** Generate a scene image via DashScope (Qwen Image 2.0 / Wan T2I). */
 export async function orchestrateImage(input: {
   prompt: string;
   projectId?: string;
   sceneId?: string;
+  negativePrompt?: string;
+  aspect?: string;
+  seed?: number;
+  model?: "wanx2.1-t2i-turbo" | "wanx2.1-t2i-plus" | "wan2.2-t2i-flash" | "wan2.2-t2i-plus";
 }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
-  void logGeneration({
-    project_id: input.projectId,
-    asset_type: "generated_image",
-    provider: ORCHESTRATOR.images.id,
-    status: "failed",
-    error_message: UNAVAILABLE_MESSAGE,
-    metadata: { sceneId: input.sceneId },
-  }).catch(() => undefined);
-  throw new Error(UNAVAILABLE_MESSAGE);
+  return await generateQwenImage({ data: input });
 }
 
 /** Generate narration MP3 through the server-side voice proxy. */
@@ -61,13 +57,6 @@ export async function orchestrateVoice(input: {
   speed?: number;
   projectId?: string;
 }): Promise<{ url: string; provider: string; durationMs: number; bytes: number }> {
-  void logGeneration({
-    project_id: input.projectId,
-    asset_type: "voice_audio",
-    provider: ORCHESTRATOR.voice.id,
-    status: "failed",
-    error_message: UNAVAILABLE_MESSAGE,
-    metadata: { voice: input.voice ?? null },
-  }).catch(() => undefined);
+  void input;
   throw new Error(UNAVAILABLE_MESSAGE);
 }
