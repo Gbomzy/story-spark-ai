@@ -28,6 +28,7 @@ import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
+import { Route as AppJobsRouteImport } from './routes/_app.jobs'
 import { Route as AppImportRouteImport } from './routes/_app.import'
 import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
@@ -136,6 +137,11 @@ const AppMediaStudioRoute = AppMediaStudioRouteImport.update({
   path: '/media-studio',
   getParentRoute: () => AppRoute,
 } as any)
+const AppJobsRoute = AppJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppImportRoute = AppImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
   '/import': typeof AppImportRoute
+  '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
   '/import': typeof AppImportRoute
+  '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/_app/history': typeof AppHistoryRoute
   '/_app/image-prompts': typeof AppImagePromptsRoute
   '/_app/import': typeof AppImportRoute
+  '/_app/jobs': typeof AppJobsRoute
   '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/queue': typeof AppQueueRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/image-prompts'
     | '/import'
+    | '/jobs'
     | '/media-studio'
     | '/projects'
     | '/queue'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/image-prompts'
     | '/import'
+    | '/jobs'
     | '/media-studio'
     | '/projects'
     | '/queue'
@@ -388,6 +399,7 @@ export interface FileRouteTypes {
     | '/_app/history'
     | '/_app/image-prompts'
     | '/_app/import'
+    | '/_app/jobs'
     | '/_app/media-studio'
     | '/_app/projects'
     | '/_app/queue'
@@ -550,6 +562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMediaStudioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/jobs': {
+      id: '/_app/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/import': {
       id: '/_app/import'
       path: '/import'
@@ -669,6 +688,7 @@ interface AppRouteChildren {
   AppHistoryRoute: typeof AppHistoryRoute
   AppImagePromptsRoute: typeof AppImagePromptsRoute
   AppImportRoute: typeof AppImportRoute
+  AppJobsRoute: typeof AppJobsRoute
   AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppQueueRoute: typeof AppQueueRoute
@@ -696,6 +716,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHistoryRoute: AppHistoryRoute,
   AppImagePromptsRoute: AppImagePromptsRoute,
   AppImportRoute: AppImportRoute,
+  AppJobsRoute: AppJobsRoute,
   AppMediaStudioRoute: AppMediaStudioRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppQueueRoute: AppQueueRoute,
