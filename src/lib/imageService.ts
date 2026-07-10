@@ -1,6 +1,11 @@
-// Image generation service. Stub — no provider connected yet.
-// Future: wire to an image provider (e.g. Qwen-VL, Flux, etc.) and persist
-// generated URLs back onto projects.image_assets.
+// Image generation service.
+//
+// Wired to the Lovable AI Gateway via the /api/generate-image server route.
+// The orchestrator (src/lib/orchestrator.ts) owns the actual routing and
+// metrics; this module keeps the parse helpers and the "isConfigured" flag
+// so the UI can gate buttons consistently.
+
+import { orchestrateImage } from "@/lib/orchestrator";
 
 export type SceneImage = {
   sceneId: string;
@@ -13,13 +18,24 @@ export type SceneImage = {
 
 export const imageService = {
   isConfigured(): boolean {
-    return false;
+    // The gateway route reads LOVABLE_API_KEY on the server. From the client
+    // side we optimistically assume it's available — errors surface clearly.
+    return true;
   },
-  async generateForScene(_scene: { title: string; prompt: string }): Promise<{ url: string }> {
-    throw new Error("Image provider not connected yet.");
+  async generateForScene(scene: { title: string; prompt: string; sceneId?: string; projectId?: string }): Promise<{ url: string; provider: string; durationMs: number; creditsUsed: number }> {
+    return orchestrateImage({ prompt: scene.prompt, sceneId: scene.sceneId, projectId: scene.projectId });
   },
-  async generateAll(_scenes: Array<{ title: string; prompt: string }>): Promise<SceneImage[]> {
-    throw new Error("Image provider not connected yet.");
+  async generateAll(scenes: Array<{ title: string; prompt: string; sceneId?: string; projectId?: string }>): Promise<SceneImage[]> {
+    const out: SceneImage[] = [];
+    for (const s of scenes) {
+      try {
+        const r = await orchestrateImage({ prompt: s.prompt, sceneId: s.sceneId, projectId: s.projectId });
+        out.push({ sceneId: s.sceneId ?? s.title, title: s.title, prompt: s.prompt, url: r.url, status: "ready" });
+      } catch (err) {
+        out.push({ sceneId: s.sceneId ?? s.title, title: s.title, prompt: s.prompt, status: "error", error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return out;
   },
   /** Parse the markdown produced by the Qwen image-prompts agent into scenes. */
   parseScenes(images: string | null | undefined): Array<{ sceneId: string; title: string; prompt: string }> {
