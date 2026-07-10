@@ -46,14 +46,13 @@ export const PIPELINE: PipelineStage[] = [
   { id: "video", label: "Video", description: "Final MP4 render", assetField: "video_file", isMedia: true, comingSoon: false },
 ];
 
-/** Ordered flow shown as a workflow diagram in the UI. */
+/** Ordered flow shown as a workflow diagram in the UI. Music is a future capability and is skipped. */
 export const PIPELINE_FLOW: PipelineStageId[] = [
   "story",
   "characters",
   "storyboard",
   "generated_images",
   "narration",
-  "music",
   "video",
 ];
 
@@ -61,6 +60,7 @@ export type PipelineState = Partial<Record<PipelineStageId, PipelineStatus>>;
 
 export function stageStatus(project: Record<string, unknown> | null | undefined, stage: PipelineStage): PipelineStatus {
   if (!project) return "pending";
+  if (stage.id === "music") return "pending";
   const stored = (project.media_pipeline as PipelineState | null | undefined)?.[stage.id];
   if (stored) return stored;
   const val = stage.assetField ? project[stage.assetField] : undefined;
