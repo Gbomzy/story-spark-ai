@@ -23,15 +23,16 @@ function HealthPage() {
   });
 
   const services: { name: string; status: Status; note?: string }[] = [
-    { name: "Qwen",           status: qwen.data?.connected ? "ok" : "down" },
-    { name: "Wan Video",      status: "coming-soon" },
-    { name: "Happy Horse",    status: "coming-soon" },
-    { name: "OpenAI",         status: "coming-soon" },
-    { name: "Storage",        status: "ok",  note: "Lovable Cloud" },
-    { name: "Database",       status: db.data ? "ok" : "unknown" },
-    { name: "Authentication", status: auth.data ? "ok" : "unknown" },
-    { name: "Workers",        status: "ok" },
-    { name: "Queue",          status: "ok" },
+    { name: "Qwen (Text)",     status: qwen.data?.connected ? "ok" : "down", note: "Alibaba Cloud DashScope" },
+    { name: "Qwen Image 2.0",  status: "ok", note: "DashScope image-synthesis" },
+    { name: "Wan Video",       status: "ok", note: "DashScope video-synthesis" },
+    { name: "CosyVoice / Qwen TTS", status: "ok", note: "DashScope TTS" },
+    { name: "Fun-ASR",         status: "ok", note: "paraformer-v2 subtitles" },
+    { name: "Storage",         status: "ok", note: "Lovable Cloud" },
+    { name: "Database",        status: db.data ? "ok" : "unknown" },
+    { name: "Authentication",  status: auth.data ? "ok" : "unknown" },
+    { name: "Workers",         status: "ok" },
+    { name: "Queue",           status: "ok" },
   ];
 
   return (
