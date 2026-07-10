@@ -28,6 +28,8 @@ export type SceneClip = {
   durationSeconds: number;
   provider: string;
   model?: string;
+  trimStart?: number;
+  trimEnd?: number;
 };
 
 export type MovieManifest = {
@@ -40,6 +42,12 @@ export type MovieManifest = {
   totalDurationSeconds: number;
   wordsPerSecond?: number;
   maxClipSeconds?: number;
+  transition?: "cut" | "fade" | "crossfade" | "slide" | "dissolve";
+  transitionDuration?: number;
+  resolution?: "720p" | "1080p";
+  aspectRatio?: "16:9" | "9:16" | "1:1" | "4:5";
+  fps?: number;
+  quality?: "standard" | "high" | "ultra";
 };
 
 /** Run the media portion of the pipeline for a project (images → voice → video). */
