@@ -1,5 +1,10 @@
-// Voice / narration audio service. Stub — no TTS provider connected yet.
-// Future: wire to a TTS provider, upload MP3 to storage, persist URL on projects.audio.
+// Voice / narration audio service.
+//
+// Wired to the Lovable AI Gateway (openai/gpt-4o-mini-tts) via the
+// /api/generate-voice server route. The orchestrator (src/lib/orchestrator.ts)
+// owns routing and metrics; this module keeps parse helpers and the flag.
+
+import { orchestrateVoice } from "@/lib/orchestrator";
 
 export type AudioAsset = {
   url: string | null;
@@ -11,10 +16,19 @@ export type AudioAsset = {
 
 export const audioService = {
   isConfigured(): boolean {
-    return false;
+    return true;
   },
-  async generateFromScript(_script: string, _opts?: { voice?: string; language?: string }): Promise<AudioAsset> {
-    throw new Error("Voice provider not connected yet.");
+  async generateFromScript(
+    script: string,
+    opts?: { voice?: string; language?: string; speed?: number; projectId?: string },
+  ): Promise<AudioAsset> {
+    const r = await orchestrateVoice({
+      script,
+      voice: opts?.voice,
+      speed: opts?.speed,
+      projectId: opts?.projectId,
+    });
+    return { url: r.url, voice: opts?.voice, status: "ready" };
   },
   parseAsset(value: string | null | undefined): AudioAsset {
     if (!value) return { url: null, status: "idle" };
