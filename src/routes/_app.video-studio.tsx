@@ -97,7 +97,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
         <div className="grid gap-0 md:grid-cols-[2fr,1fr]">
           <div className="relative aspect-video w-full bg-gradient-to-br from-primary/15 via-muted/40 to-accent/15">
             {clips.length > 1 ? (
-              <ChainedMoviePlayer clips={clips} narrationUrl={narrationUrl} />
+              <ChainedMoviePlayer clips={clips} narrationUrl={narrationUrl ?? undefined} />
             ) : videoUrl ? (
               <video src={videoUrl} controls className="h-full w-full object-cover" />
             ) : (
