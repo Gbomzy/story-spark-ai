@@ -9,6 +9,7 @@
 import type { ProviderCapability } from "@/lib/providers";
 import { generateQwenImage } from "@/lib/qwenImage.functions";
 import { generateCosyVoice } from "@/lib/cosyvoice.functions";
+import { generateWanVideo } from "@/lib/wanVideo.functions";
 
 export const UNAVAILABLE_MESSAGE = "Unavailable with current Qwen capabilities.";
 
@@ -26,7 +27,7 @@ export const ORCHESTRATOR: Record<ProviderCapability, OrchestratorProvider> = {
   images: { id: "qwen-image", label: "Qwen Image 2.0", capability: "images", status: "connected" },
   voice: { id: "cosyvoice", label: "CosyVoice", capability: "voice", status: "connected" },
   music: { id: "wan-music", label: "Wan Music", capability: "music", status: "coming_soon" },
-  video: { id: "wan-t2v", label: "Wan Video", capability: "video", status: "coming_soon" },
+  video: { id: "wan-t2v", label: "Wan Video", capability: "video", status: "connected" },
   subtitles: { id: "fun-asr", label: "Fun-ASR / Local", capability: "subtitles", status: "connected" },
 };
 
@@ -60,4 +61,18 @@ export async function orchestrateVoice(input: {
 }): Promise<{ url: string; provider: string; durationMs: number; bytes: number }> {
   const r = await generateCosyVoice({ data: input });
   return { url: r.url, provider: r.provider, durationMs: r.durationMs, bytes: r.bytes };
+}
+
+/** Render a final MP4 via Wan text-to-video / image-to-video. */
+export async function orchestrateVideo(input: {
+  prompt: string;
+  projectId?: string;
+  imageUrl?: string;
+  refImageUrl?: string;
+  mode?: "t2v" | "i2v" | "ref2v" | "edit";
+  duration?: number;
+  size?: string;
+}): Promise<{ url: string; provider: string; durationMs: number; bytes: number; cover: string }> {
+  const r = await generateWanVideo({ data: input });
+  return { url: r.url, provider: r.provider, durationMs: r.durationMs, bytes: r.bytes, cover: r.cover };
 }
