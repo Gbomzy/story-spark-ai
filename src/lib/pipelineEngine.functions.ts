@@ -5,10 +5,33 @@ import { generateQwenImage } from "@/lib/qwenImage.functions";
 import { generateCosyVoice } from "@/lib/cosyvoice.functions";
 import { generateWanVideo } from "@/lib/wanVideo.functions";
 
-const Input = z.object({ projectId: z.string() });
+const Input = z.object({
+  projectId: z.string(),
+  perSceneDuration: z.number().int().min(2).max(10).optional(),
+  chainScenes: z.boolean().optional(),
+});
 
 type Stage = "generated_images" | "narration" | "video";
 type StageState = "pending" | "generating" | "completed" | "failed";
+
+export type SceneClip = {
+  sceneId: string;
+  prompt: string;
+  url: string;
+  cover?: string;
+  durationSeconds: number;
+  provider: string;
+};
+
+export type MovieManifest = {
+  kind: "chained" | "single";
+  url: string; // first clip (or single clip) — keeps existing UI working
+  clips: SceneClip[];
+  narrationUrl?: string;
+  subtitleUrl?: string;
+  provider: string;
+  totalDurationSeconds: number;
+};
 
 /** Run the media portion of the pipeline for a project (images → voice → video). */
 export const runFullMoviePipeline = createServerFn({ method: "POST" })
@@ -30,7 +53,14 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     };
 
     const scenes = parseScenes(proj.images);
-    const results: { images?: Array<{ id: string; url: string }>; voiceUrl?: string; videoUrl?: string } = {};
+    const perScene = data.perSceneDuration ?? 5;
+    const chain = data.chainScenes !== false; // default: chain
+    const results: {
+      images?: Array<{ id: string; url: string }>;
+      voiceUrl?: string;
+      videoUrl?: string;
+      clips?: SceneClip[];
+    } = {};
 
     // 1. Images
     if (scenes.length > 0 && pipeline.generated_images !== "completed") {
@@ -65,14 +95,59 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       }
     }
 
-    // 3. Video (text-to-video from story summary)
-    const videoPrompt = summarize(proj.story) || proj.name || "Cinematic short film";
+    // 3. Video — either one clip per scene (chained movie) or a single Wan clip.
     if (pipeline.video === "completed") return { ok: true, results, resumed: true };
     await setStage("video", "generating");
     try {
-      const v = await generateWanVideo({ data: { prompt: videoPrompt, projectId: proj.id, mode: "t2v", duration: 5 } });
+      const clips: SceneClip[] = [];
+      let providerLabel = "wan";
+      if (chain && scenes.length > 0) {
+        for (const scene of scenes) {
+          const r = await generateWanVideo({
+            data: { prompt: scene.prompt, projectId: proj.id, mode: "t2v", duration: perScene },
+          });
+          providerLabel = r.provider;
+          clips.push({
+            sceneId: scene.id,
+            prompt: scene.prompt,
+            url: r.url,
+            cover: r.cover,
+            durationSeconds: perScene,
+            provider: r.provider,
+          });
+        }
+      } else {
+        const videoPrompt = summarize(proj.story) || proj.name || "Cinematic short film";
+        const r = await generateWanVideo({
+          data: { prompt: videoPrompt, projectId: proj.id, mode: "t2v", duration: perScene },
+        });
+        providerLabel = r.provider;
+        clips.push({
+          sceneId: "main",
+          prompt: videoPrompt,
+          url: r.url,
+          cover: r.cover,
+          durationSeconds: perScene,
+          provider: r.provider,
+        });
+      }
+
+      const manifest: MovieManifest = {
+        kind: clips.length > 1 ? "chained" : "single",
+        url: clips[0]?.url ?? "",
+        clips,
+        narrationUrl: results.voiceUrl,
+        provider: providerLabel,
+        totalDurationSeconds: clips.reduce((sum, c) => sum + c.durationSeconds, 0),
+      };
+
       pipeline.video = "completed";
-      results.videoUrl = v.url;
+      await context.supabase
+        .from("projects")
+        .update({ media_pipeline: pipeline, video_file: manifest, render_status: "completed", render_progress: 100, video_provider: providerLabel })
+        .eq("id", proj.id);
+      results.clips = clips;
+      results.videoUrl = manifest.url;
     } catch (e) {
       await setStage("video", "failed");
       throw e;
