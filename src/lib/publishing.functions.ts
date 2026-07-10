@@ -16,7 +16,7 @@ export type PublishConnection = {
   connected_at: string | null;
   disconnected_at: string | null;
   expires_at: string | null;
-  meta: Record<string, unknown>;
+  meta: unknown;
 };
 
 export type PublishHistoryRow = {
@@ -36,7 +36,7 @@ export type PublishHistoryRow = {
   published_at: string | null;
   error_message: string | null;
   created_at: string;
-  meta: Record<string, unknown>;
+  meta: unknown;
 };
 
 export const listPublishConnections = createServerFn({ method: "GET" })
@@ -59,7 +59,7 @@ export const connectPlatform = createServerFn({ method: "POST" })
       account_id: z.string().max(120).optional(),
       scopes: z.array(z.string()).optional(),
       expires_at: z.string().datetime().optional(),
-      meta: z.record(z.string(), z.unknown()).optional(),
+      meta: z.record(z.string(), z.any()).optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -73,7 +73,7 @@ export const connectPlatform = createServerFn({ method: "POST" })
       expires_at: data.expires_at ?? null,
       connected_at: new Date().toISOString(),
       disconnected_at: null,
-      meta: data.meta ?? {},
+      meta: (data.meta ?? {}) as never,
     };
     const { error } = await context.supabase
       .from("publish_connections")
@@ -151,7 +151,7 @@ export const publishPost = createServerFn({ method: "POST" })
       published_at: null as string | null,
       external_post_id: null as string | null,
       error_message: null as string | null,
-      meta: { account: conn.account_name ?? null, submitted_at: now },
+      meta: { account: conn.account_name ?? null, submitted_at: now } as never,
     };
     const { data: row, error } = await context.supabase
       .from("publish_history")
@@ -173,10 +173,12 @@ export const updatePublishStatus = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = { status: data.status };
-    if (data.external_post_id) patch.external_post_id = data.external_post_id;
-    if (data.error_message) patch.error_message = data.error_message;
-    if (data.status === "published") patch.published_at = new Date().toISOString();
+    const patch = {
+      status: data.status,
+      external_post_id: data.external_post_id ?? undefined,
+      error_message: data.error_message ?? undefined,
+      published_at: data.status === "published" ? new Date().toISOString() : undefined,
+    };
     const { error } = await context.supabase.from("publish_history").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
