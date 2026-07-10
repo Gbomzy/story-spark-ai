@@ -30,7 +30,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     };
 
     const scenes = parseScenes(proj.images);
-    const results: Record<string, unknown> = {};
+    const results: { images?: Array<{ id: string; url: string }>; voiceUrl?: string; videoUrl?: string } = {};
 
     // 1. Images
     if (scenes.length > 0) {
@@ -58,7 +58,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       try {
         const v = await generateCosyVoice({ data: { script: voiceScript, projectId: proj.id } });
         await setStage("narration", "completed", { voice_audio: { url: v.url, provider: v.provider, bytes: v.bytes } });
-        results.voice = v;
+        results.voiceUrl = v.url;
       } catch (e) {
         await setStage("narration", "failed");
         throw e;
@@ -71,7 +71,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     try {
       const v = await generateWanVideo({ data: { prompt: videoPrompt, projectId: proj.id, mode: "t2v", duration: 5 } });
       pipeline.video = "completed";
-      results.video = v;
+      results.videoUrl = v.url;
     } catch (e) {
       await setStage("video", "failed");
       throw e;
