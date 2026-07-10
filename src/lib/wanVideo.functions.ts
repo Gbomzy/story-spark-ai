@@ -14,11 +14,14 @@ const Input = z.object({
   projectId: z.string().optional(),
 });
 
-const DEFAULT_MODEL: Record<string, string> = {
-  t2v: "wanx2.1-t2v-turbo",
-  i2v: "wanx2.1-i2v-turbo",
-  ref2v: "wanx2.1-ref2v-plus",
-  edit: "wanx2.1-vace-plus",
+// Ordered fallback lists per mode. DashScope silently deprecates model
+// IDs; iterating candidates keeps rendering alive when the primary returns
+// "Model not exist" / InvalidParameter.
+const MODEL_FALLBACKS: Record<string, string[]> = {
+  t2v: ["wan2.2-t2v-plus", "wanx2.1-t2v-turbo", "wanx2.1-t2v-plus", "wanx-v1"],
+  i2v: ["wan2.2-i2v-flash", "wan2.2-i2v-plus", "wanx2.1-i2v-turbo", "wanx2.1-i2v-plus"],
+  ref2v: ["wanx2.1-ref2v-plus"],
+  edit: ["wanx2.1-vace-plus"],
 };
 
 const ENDPOINT: Record<string, string> = {
@@ -33,9 +36,12 @@ export const generateWanVideo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
-    const { runAsyncTask, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
+    const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
     const mode = data.mode ?? (data.imageUrl ? "i2v" : "t2v");
-    const model = data.model ?? DEFAULT_MODEL[mode];
+    const preferred = data.model
+      ? [data.model, ...(MODEL_FALLBACKS[mode] ?? []).filter((m) => m !== data.model)]
+      : (MODEL_FALLBACKS[mode] ?? []);
+    let model = preferred[0];
     const base = getBase("WAN_BASE_URL", DEFAULT_DASHSCOPE_BASE);
     const size = data.size ?? "1280*720";
 
@@ -54,26 +60,28 @@ export const generateWanVideo = createServerFn({ method: "POST" })
     let videoUrl = "";
     let coverUrl = "";
     try {
-      const input: Record<string, unknown> = { prompt: data.prompt };
-      if (mode === "i2v" && data.imageUrl) input.img_url = data.imageUrl;
-      if (mode === "ref2v" && data.refImageUrl) input.ref_images_url = [data.refImageUrl];
-      const output = await runAsyncTask({
+      const inputBody: Record<string, unknown> = { prompt: data.prompt };
+      if (mode === "i2v" && data.imageUrl) inputBody.img_url = data.imageUrl;
+      if (mode === "ref2v" && data.refImageUrl) inputBody.ref_images_url = [data.refImageUrl];
+      const res = await runAsyncTaskWithFallback({
         submitUrl: `${base}${ENDPOINT[mode]}`,
         base,
         timeoutMs: 12 * 60_000,
         pollIntervalMs: 4000,
-        body: {
-          model,
-          input,
+        models: preferred,
+        buildBody: (m) => ({
+          model: m,
+          input: inputBody,
           parameters: {
             size,
             ...(data.duration ? { duration: data.duration } : {}),
             ...(data.seed != null ? { seed: data.seed } : {}),
           },
-        },
+        }),
       });
-      videoUrl = (output.video_url as string | undefined) ?? "";
-      coverUrl = (output.cover_image_url as string | undefined) ?? "";
+      model = res.model;
+      videoUrl = (res.output.video_url as string | undefined) ?? "";
+      coverUrl = (res.output.cover_image_url as string | undefined) ?? "";
       if (!videoUrl) throw new Error("DashScope returned no video URL.");
     } catch (e) {
       providerError = e instanceof Error ? e.message : String(e);
