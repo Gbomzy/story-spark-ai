@@ -35,6 +35,7 @@ import { Route as AppImportRouteImport } from './routes/_app.import'
 import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppHelpRouteImport } from './routes/_app.help'
+import { Route as AppFeatureFlagsRouteImport } from './routes/_app.feature-flags'
 import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -175,6 +176,11 @@ const AppHelpRoute = AppHelpRouteImport.update({
   path: '/help',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFeatureFlagsRoute = AppFeatureFlagsRouteImport.update({
+  id: '/feature-flags',
+  path: '/feature-flags',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppExportRoute = AppExportRouteImport.update({
   id: '/export',
   path: '/export',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
   '/export': typeof AppExportRoute
+  '/feature-flags': typeof AppFeatureFlagsRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
@@ -276,6 +283,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
   '/export': typeof AppExportRoute
+  '/feature-flags': typeof AppFeatureFlagsRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/error-log': typeof AppErrorLogRoute
   '/_app/export': typeof AppExportRoute
+  '/_app/feature-flags': typeof AppFeatureFlagsRoute
   '/_app/help': typeof AppHelpRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/image-prompts': typeof AppImagePromptsRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/error-log'
     | '/export'
+    | '/feature-flags'
     | '/help'
     | '/history'
     | '/image-prompts'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/error-log'
     | '/export'
+    | '/feature-flags'
     | '/help'
     | '/history'
     | '/image-prompts'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/error-log'
     | '/_app/export'
+    | '/_app/feature-flags'
     | '/_app/help'
     | '/_app/history'
     | '/_app/image-prompts'
@@ -647,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHelpRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/feature-flags': {
+      id: '/_app/feature-flags'
+      path: '/feature-flags'
+      fullPath: '/feature-flags'
+      preLoaderRoute: typeof AppFeatureFlagsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/export': {
       id: '/_app/export'
       path: '/export'
@@ -742,6 +761,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppErrorLogRoute: typeof AppErrorLogRoute
   AppExportRoute: typeof AppExportRoute
+  AppFeatureFlagsRoute: typeof AppFeatureFlagsRoute
   AppHelpRoute: typeof AppHelpRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppImagePromptsRoute: typeof AppImagePromptsRoute
@@ -773,6 +793,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppErrorLogRoute: AppErrorLogRoute,
   AppExportRoute: AppExportRoute,
+  AppFeatureFlagsRoute: AppFeatureFlagsRoute,
   AppHelpRoute: AppHelpRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppImagePromptsRoute: AppImagePromptsRoute,
