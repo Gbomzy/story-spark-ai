@@ -9,18 +9,25 @@ const Input = z.object({
   projectId: z.string(),
   perSceneDuration: z.number().int().min(2).max(10).optional(),
   chainScenes: z.boolean().optional(),
+  wordsPerSecond: z.number().min(1).max(6).optional(),
+  maxClipSeconds: z.number().int().min(2).max(10).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
 type StageState = "pending" | "generating" | "completed" | "failed";
 
 export type SceneClip = {
+  sceneNumber: number;
+  clipNumber: number;
   sceneId: string;
   prompt: string;
   url: string;
   cover?: string;
+  startTime: number;
+  endTime: number;
   durationSeconds: number;
   provider: string;
+  model?: string;
 };
 
 export type MovieManifest = {
@@ -31,6 +38,8 @@ export type MovieManifest = {
   subtitleUrl?: string;
   provider: string;
   totalDurationSeconds: number;
+  wordsPerSecond?: number;
+  maxClipSeconds?: number;
 };
 
 /** Run the media portion of the pipeline for a project (images → voice → video). */
@@ -54,6 +63,8 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
 
     const scenes = parseScenes(proj.images);
     const perScene = data.perSceneDuration ?? 5;
+    const wps = data.wordsPerSecond ?? 2.5; // ~150 wpm narration pace
+    const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
     const results: {
       images?: Array<{ id: string; url: string }>;
@@ -102,19 +113,37 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       const clips: SceneClip[] = [];
       let providerLabel = "wan";
       if (chain && scenes.length > 0) {
-        for (const scene of scenes) {
-          const r = await generateWanVideo({
-            data: { prompt: scene.prompt, projectId: proj.id, mode: "t2v", duration: perScene },
-          });
-          providerLabel = r.provider;
-          clips.push({
-            sceneId: scene.id,
-            prompt: scene.prompt,
-            url: r.url,
-            cover: r.cover,
-            durationSeconds: perScene,
-            provider: r.provider,
-          });
+        // Split narration text across scenes evenly (respecting per-scene narration if present).
+        const perSceneWords = splitWordsAcrossScenes(voiceScript, scenes);
+        let cursor = 0;
+        for (let i = 0; i < scenes.length; i++) {
+          const scene = scenes[i];
+          const words = scene.narrationWords ?? perSceneWords[i] ?? 0;
+          const estimated = Math.max(perScene, Math.ceil(words / wps));
+          const segments = segmentDuration(estimated, maxClip);
+          for (let j = 0; j < segments.length; j++) {
+            const dur = segments[j];
+            const promptText = segments.length > 1
+              ? `${scene.prompt} — continuous shot, part ${j + 1} of ${segments.length}`
+              : scene.prompt;
+            const r = await generateWanVideo({
+              data: { prompt: promptText, projectId: proj.id, mode: "t2v", duration: dur },
+            });
+            providerLabel = r.provider;
+            clips.push({
+              sceneNumber: i + 1,
+              clipNumber: j + 1,
+              sceneId: scene.id,
+              prompt: promptText,
+              url: r.url,
+              cover: r.cover,
+              startTime: cursor,
+              endTime: cursor + dur,
+              durationSeconds: dur,
+              provider: r.provider,
+            });
+            cursor += dur;
+          }
         }
       } else {
         const videoPrompt = summarize(proj.story) || proj.name || "Cinematic short film";
@@ -123,10 +152,14 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         });
         providerLabel = r.provider;
         clips.push({
+          sceneNumber: 1,
+          clipNumber: 1,
           sceneId: "main",
           prompt: videoPrompt,
           url: r.url,
           cover: r.cover,
+          startTime: 0,
+          endTime: perScene,
           durationSeconds: perScene,
           provider: r.provider,
         });
@@ -139,6 +172,8 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         narrationUrl: results.voiceUrl,
         provider: providerLabel,
         totalDurationSeconds: clips.reduce((sum, c) => sum + c.durationSeconds, 0),
+        wordsPerSecond: wps,
+        maxClipSeconds: maxClip,
       };
 
       pipeline.video = "completed";
@@ -156,7 +191,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     return { ok: true, results };
   });
 
-function parseScenes(images: unknown): Array<{ id: string; prompt: string }> {
+function parseScenes(images: unknown): Array<{ id: string; prompt: string; narrationWords?: number }> {
   if (!images) return [];
   try {
     const parsed = typeof images === "string" ? JSON.parse(images) : images;
@@ -166,12 +201,35 @@ function parseScenes(images: unknown): Array<{ id: string; prompt: string }> {
         const o = (s ?? {}) as Record<string, unknown>;
         const prompt = String(o.prompt ?? o.description ?? o.text ?? "").trim();
         const id = String(o.id ?? `scene-${i + 1}`);
-        return prompt ? { id, prompt } : null;
+        const narration = String(o.narration ?? o.voiceover ?? o.script ?? "").trim();
+        const narrationWords = narration ? narration.split(/\s+/).filter(Boolean).length : undefined;
+        return prompt ? { id, prompt, narrationWords } : null;
       })
-      .filter(Boolean) as Array<{ id: string; prompt: string }>;
+      .filter(Boolean) as Array<{ id: string; prompt: string; narrationWords?: number }>;
   } catch {
     return [];
   }
+}
+
+function splitWordsAcrossScenes(script: string, scenes: Array<{ narrationWords?: number }>): number[] {
+  if (!script || scenes.length === 0) return scenes.map(() => 0);
+  const words = script.split(/\s+/).filter(Boolean).length;
+  const per = Math.ceil(words / scenes.length);
+  return scenes.map(() => per);
+}
+
+function segmentDuration(totalSeconds: number, maxClip: number): number[] {
+  if (totalSeconds <= maxClip) return [Math.max(2, totalSeconds)];
+  const out: number[] = [];
+  let remaining = totalSeconds;
+  while (remaining > 0) {
+    const take = Math.min(maxClip, remaining);
+    // avoid a tiny <2s tail — merge into previous
+    if (take < 2 && out.length > 0) { out[out.length - 1] += take; break; }
+    out.push(take);
+    remaining -= take;
+  }
+  return out;
 }
 
 function extractText(v: unknown): string {

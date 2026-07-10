@@ -63,6 +63,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const videoUrl = manifest?.url ?? extractUrl(project.video_file);
   const narrationUrl = manifest?.narrationUrl ?? extractUrl(project.voice_audio);
   const [perScene, setPerScene] = useState<number>(5);
+  const [previewClip, setPreviewClip] = useState<SceneClip | null>(null);
 
   const videoMut = useMutation({
     mutationFn: () =>
@@ -120,6 +121,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             <dl className="grid grid-cols-2 gap-3 text-xs">
               <Field label="Total length" value={manifest ? `${manifest.totalDurationSeconds}s` : project.render_duration ? `${project.render_duration}s` : "—"} />
               <Field label="Scene clips" value={clips.length ? String(clips.length) : "—"} />
+              <Field label="Scenes" value={clips.length ? String(new Set(clips.map((c) => c.sceneNumber)).size) : "—"} />
               <Field label="Resolution" value="1280×720" />
               <Field label="Provider" value={provider} />
               <Field label="Model" value="wan2.7-t2v" />
@@ -164,6 +166,40 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           </div>
         </div>
       </Card>
+
+      {clips.length > 0 ? (
+        <Card className="glass rounded-3xl p-5 shadow-soft">
+          <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Scene clips ({clips.length})</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {clips.map((c) => (
+              <button
+                key={`${c.sceneNumber}-${c.clipNumber}-${c.url}`}
+                onClick={() => setPreviewClip(c)}
+                className="group flex flex-col gap-2 rounded-2xl border border-border bg-card/60 p-3 text-left transition hover:border-primary/60"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold">Scene {c.sceneNumber} · Part {c.clipNumber}</span>
+                  <span className="text-[10px] text-muted-foreground">{c.durationSeconds}s</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {formatTime(c.startTime)} → {formatTime(c.endTime)}
+                </div>
+                <p className="line-clamp-2 text-[11px] text-muted-foreground">{c.prompt}</p>
+                <span className="text-[10px] uppercase tracking-widest text-primary opacity-0 transition group-hover:opacity-100">Preview →</span>
+              </button>
+            ))}
+          </div>
+          {previewClip ? (
+            <div className="mt-4 rounded-2xl border border-border bg-card/60 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold">Preview · Scene {previewClip.sceneNumber} · Part {previewClip.clipNumber}</span>
+                <Button size="sm" variant="ghost" onClick={() => setPreviewClip(null)}>Close</Button>
+              </div>
+              <video src={previewClip.url} controls autoPlay className="aspect-video w-full rounded-xl bg-black" />
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card className="glass rounded-3xl p-5 shadow-soft">
         <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Pipeline stages</p>
@@ -261,6 +297,12 @@ function ChainedMoviePlayer({ clips, narrationUrl }: { clips: SceneClip[]; narra
       </div>
     </div>
   );
+}
+
+function formatTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const r = Math.round(s % 60);
+  return `${m}:${String(r).padStart(2, "0")}`;
 }
 
 function Field({ label, value }: { label: string; value: string }) {

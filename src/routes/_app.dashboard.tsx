@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { listProjects } from "@/lib/projects";
+import { listHistory } from "@/lib/assets";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -209,10 +212,7 @@ function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <div className="space-y-5">
-            <UsageBar label="Story tokens" value={68} hint="6.8K / 10K used" />
-            <UsageBar label="Voice minutes" value={42} hint="84 / 200 min" />
-            <UsageBar label="Images generated" value={81} hint="162 / 200" />
-            <UsageBar label="Render credits" value={23} hint="46 / 200" />
+            <LiveUsage />
           </div>
           <div className="mt-6 rounded-2xl border border-dashed border-border p-4">
             <p className="text-xs text-muted-foreground">
@@ -335,5 +335,41 @@ function UsageBar({ label, value, hint }: { label: string; value: number; hint: 
       </div>
       <Progress value={value} className="h-2 rounded-full" />
     </div>
+  );
+}
+
+const MONTHLY_ALLOWANCE = 1000;
+
+function LiveUsage() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["credits-history"], queryFn: () => listHistory({ limit: 1000 }), refetchInterval: 5000 });
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-credits")
+      .on("postgres_changes", { event: "*", schema: "public", table: "generation_history" }, () => {
+        qc.invalidateQueries({ queryKey: ["credits-history"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+  const rows = q.data ?? [];
+  const now = Date.now();
+  const inRange = (d: string, h: number) => now - new Date(d).getTime() < h * 3600 * 1000;
+  const monthly = rows.filter((r) => inRange(r.created_at, 24 * 30)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const daily = rows.filter((r) => inRange(r.created_at, 24)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const balance = Math.max(0, MONTHLY_ALLOWANCE - monthly);
+  const byType = (t: string) => rows.filter((r) => (r.asset_type ?? "").includes(t)).reduce((n, r) => n + (r.credits_used ?? 0), 0);
+  const voice = byType("voice");
+  const image = byType("image");
+  const video = byType("video");
+  const pct = (n: number, d: number) => Math.min(100, Math.round((n / d) * 100));
+  return (
+    <>
+      <UsageBar label="Credits balance" value={pct(balance, MONTHLY_ALLOWANCE)} hint={`${balance} / ${MONTHLY_ALLOWANCE} remaining`} />
+      <UsageBar label="Today" value={pct(daily, MONTHLY_ALLOWANCE)} hint={`${daily} credits`} />
+      <UsageBar label="Voice generations" value={pct(voice, MONTHLY_ALLOWANCE)} hint={`${voice} credits`} />
+      <UsageBar label="Image generations" value={pct(image, MONTHLY_ALLOWANCE)} hint={`${image} credits`} />
+      <UsageBar label="Video renders" value={pct(video, MONTHLY_ALLOWANCE)} hint={`${video} credits`} />
+    </>
   );
 }
