@@ -8,7 +8,15 @@ import { toast } from "sonner";
 import { audioService } from "@/lib/audioService";
 import { subtitleService } from "@/lib/subtitleService";
 
-const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
+const VOICES = [
+  "longxiaochun",
+  "longxiaocheng",
+  "longwan",
+  "longcheng",
+  "longhua",
+  "longxiaobai",
+  "longxiaoxia",
+] as const;
 
 export function AudioPanel({
   script,
@@ -22,7 +30,7 @@ export function AudioPanel({
   const asset = audioService.parseAsset(value);
   const configured = audioService.isConfigured();
   const hasScript = Boolean(script.trim());
-  const [voice, setVoice] = useState<string>("alloy");
+  const [voice, setVoice] = useState<string>("longxiaochun");
   const [state, setState] = useState<{
     status: "idle" | "generating" | "ready" | "error";
     url?: string;
@@ -92,11 +100,11 @@ export function AudioPanel({
           <div>
             <p className="text-sm font-semibold">Voice over</p>
             <p className="text-[11px] text-muted-foreground">
-              Qwen Voice · voice “{voice}”
+              CosyVoice · voice “{voice}”
             </p>
             {!configured && (
               <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                Unavailable with current Qwen capabilities.
+                Set DASHSCOPE_API_KEY or QWEN_API_KEY to enable voice generation.
               </p>
             )}
           </div>

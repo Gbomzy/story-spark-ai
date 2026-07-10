@@ -54,6 +54,15 @@ export const subtitleService = {
     const url = `data:text/${format === "vtt" ? "vtt" : "plain"};charset=utf-8,${encodeURIComponent(text)}`;
     return { url, format, status: "ready", text, cues: built.cues, durationSeconds: built.durationSeconds };
   },
+  /** Fun-ASR / Qwen-ASR transcription of a hosted audio URL. */
+  async transcribeAudio(audioUrl: string, opts?: { format?: "srt" | "vtt" | "txt"; language?: string; projectId?: string; model?: "paraformer-v2" | "paraformer-v1" | "qwen-audio-asr" }) {
+    const { transcribeAudio } = await import("./asr.functions");
+    const r = await transcribeAudio({ data: { audioUrl, language: opts?.language, projectId: opts?.projectId, model: opts?.model } });
+    const fmt = opts?.format ?? "srt";
+    const text = fmt === "vtt" ? r.vtt : fmt === "txt" ? r.text : r.srt;
+    const url = `data:text/${fmt === "vtt" ? "vtt" : "plain"};charset=utf-8,${encodeURIComponent(text)}`;
+    return { url, format: fmt, status: "ready" as const, text, provider: r.provider, sentences: r.sentences };
+  },
   parseAsset(value: string | null | undefined): SubtitleAsset {
     if (!value) return { url: null, format: "srt", status: "idle" };
     try {

@@ -4,7 +4,7 @@
 // /api/generate-voice server route. The orchestrator (src/lib/orchestrator.ts)
 // owns routing and metrics; this module keeps parse helpers and the flag.
 
-import { orchestrateVoice } from "@/lib/orchestrator";
+import { generateCosyVoice } from "@/lib/cosyvoice.functions";
 
 export type AudioAsset = {
   url: string | null;
@@ -16,20 +16,24 @@ export type AudioAsset = {
 
 export const audioService = {
   isConfigured(): boolean {
-    // Qwen Cloud does not currently expose speech synthesis to this project.
-    return false;
+    return true;
   },
   async generateFromScript(
     script: string,
-    opts?: { voice?: string; language?: string; speed?: number; projectId?: string },
+    opts?: { voice?: string; language?: string; speed?: number; pitch?: number; projectId?: string; model?: "cosyvoice-v1" | "cosyvoice-v2" | "qwen-tts" | "qwen-tts-latest" },
   ): Promise<AudioAsset> {
-    const r = await orchestrateVoice({
-      script,
-      voice: opts?.voice,
-      speed: opts?.speed,
-      projectId: opts?.projectId,
+    const r = await generateCosyVoice({
+      data: {
+        script,
+        voice: opts?.voice,
+        speed: opts?.speed,
+        pitch: opts?.pitch,
+        language: opts?.language,
+        projectId: opts?.projectId,
+        model: opts?.model,
+      },
     });
-    return { url: r.url, voice: opts?.voice, status: "ready" };
+    return { url: r.url, voice: r.voice, status: "ready" };
   },
   parseAsset(value: string | null | undefined): AudioAsset {
     if (!value) return { url: null, status: "idle" };
