@@ -28,6 +28,12 @@ import {
   Gauge,
   ShieldCheck,
   Flag,
+  ScanText,
+  Languages,
+  Share2,
+  Coins,
+  BarChart3,
+  Server,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -45,11 +51,16 @@ const items = [
   { label: "SEO Studio", to: "/seo-studio", icon: Search },
   { label: "Media Studio", to: "/media-studio", icon: Clapperboard },
   { label: "Video Studio", to: "/video-studio", icon: MonitorPlay },
+  { label: "OCR", to: "/ocr", icon: ScanText },
+  { label: "Translate", to: "/translate", icon: Languages },
+  { label: "Publishing", to: "/publishing", icon: Share2 },
   { label: "Assets", to: "/assets", icon: Boxes },
   { label: "Timeline", to: "/timeline", icon: Activity },
   { label: "Queue", to: "/queue", icon: ListChecks },
   { label: "Job Manager", to: "/jobs", icon: ListChecks },
   { label: "History", to: "/history", icon: History },
+  { label: "Analytics", to: "/analytics", icon: BarChart3 },
+  { label: "Credits", to: "/credits", icon: Coins },
   { label: "Search", to: "/search", icon: Search },
   { label: "Export", to: "/export", icon: Download },
   { label: "Import", to: "/import", icon: Upload },
@@ -58,6 +69,7 @@ const items = [
 ] as const;
 
 const footerItems = [
+  { label: "Production", to: "/production", icon: Server },
   { label: "Monitoring", to: "/monitoring", icon: Gauge },
   { label: "System Health", to: "/system-health", icon: ShieldCheck },
   { label: "Error Log", to: "/error-log", icon: AlertTriangle },

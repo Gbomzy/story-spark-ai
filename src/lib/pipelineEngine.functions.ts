@@ -33,7 +33,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const results: { images?: Array<{ id: string; url: string }>; voiceUrl?: string; videoUrl?: string } = {};
 
     // 1. Images
-    if (scenes.length > 0) {
+    if (scenes.length > 0 && pipeline.generated_images !== "completed") {
       await setStage("generated_images", "generating");
       const images: Array<{ id: string; url: string }> = [];
       try {
@@ -53,7 +53,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
 
     // 2. Narration
     const voiceScript = extractText(proj.voice);
-    if (voiceScript) {
+    if (voiceScript && pipeline.narration !== "completed") {
       await setStage("narration", "generating");
       try {
         const v = await generateCosyVoice({ data: { script: voiceScript, projectId: proj.id } });
@@ -67,6 +67,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
 
     // 3. Video (text-to-video from story summary)
     const videoPrompt = summarize(proj.story) || proj.name || "Cinematic short film";
+    if (pipeline.video === "completed") return { ok: true, results, resumed: true };
     await setStage("video", "generating");
     try {
       const v = await generateWanVideo({ data: { prompt: videoPrompt, projectId: proj.id, mode: "t2v", duration: 5 } });
