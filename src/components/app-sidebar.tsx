@@ -51,6 +51,7 @@ const items = [
   { label: "SEO Studio", to: "/seo-studio", icon: Search },
   { label: "Media Studio", to: "/media-studio", icon: Clapperboard },
   { label: "Video Studio", to: "/video-studio", icon: MonitorPlay },
+  { label: "Movie Composer", to: "/movie-composer", icon: Clapperboard },
   { label: "OCR", to: "/ocr", icon: ScanText },
   { label: "Translate", to: "/translate", icon: Languages },
   { label: "Publishing", to: "/publishing", icon: Share2 },

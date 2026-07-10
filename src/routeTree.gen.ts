@@ -32,6 +32,7 @@ import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
+import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
 import { Route as AppMonitoringRouteImport } from './routes/_app.monitoring'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
 import { Route as AppJobsRouteImport } from './routes/_app.jobs'
@@ -167,6 +168,11 @@ const AppOcrRoute = AppOcrRouteImport.update({
   path: '/ocr',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMovieComposerRoute = AppMovieComposerRouteImport.update({
+  id: '/movie-composer',
+  path: '/movie-composer',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMonitoringRoute = AppMonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
+  '/movie-composer': typeof AppMovieComposerRoute
   '/ocr': typeof AppOcrRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
+  '/movie-composer': typeof AppMovieComposerRoute
   '/ocr': typeof AppOcrRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -381,6 +389,7 @@ export interface FileRoutesById {
   '/_app/jobs': typeof AppJobsRoute
   '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/monitoring': typeof AppMonitoringRoute
+  '/_app/movie-composer': typeof AppMovieComposerRoute
   '/_app/ocr': typeof AppOcrRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/media-studio'
     | '/monitoring'
+    | '/movie-composer'
     | '/ocr'
     | '/production'
     | '/projects'
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/media-studio'
     | '/monitoring'
+    | '/movie-composer'
     | '/ocr'
     | '/production'
     | '/projects'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/_app/jobs'
     | '/_app/media-studio'
     | '/_app/monitoring'
+    | '/_app/movie-composer'
     | '/_app/ocr'
     | '/_app/production'
     | '/_app/projects'
@@ -710,6 +722,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOcrRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/movie-composer': {
+      id: '/_app/movie-composer'
+      path: '/movie-composer'
+      fullPath: '/movie-composer'
+      preLoaderRoute: typeof AppMovieComposerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/monitoring': {
       id: '/_app/monitoring'
       path: '/monitoring'
@@ -885,6 +904,7 @@ interface AppRouteChildren {
   AppJobsRoute: typeof AppJobsRoute
   AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
+  AppMovieComposerRoute: typeof AppMovieComposerRoute
   AppOcrRoute: typeof AppOcrRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
@@ -923,6 +943,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppJobsRoute: AppJobsRoute,
   AppMediaStudioRoute: AppMediaStudioRoute,
   AppMonitoringRoute: AppMonitoringRoute,
+  AppMovieComposerRoute: AppMovieComposerRoute,
   AppOcrRoute: AppOcrRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
