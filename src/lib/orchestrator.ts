@@ -22,10 +22,10 @@ export type OrchestratorProvider = {
 export const ORCHESTRATOR: Record<ProviderCapability, OrchestratorProvider> = {
   text: { id: "qwen", label: "Qwen", capability: "text", status: "connected" },
   images: { id: "lovable-gemini-image", label: "Lovable AI · Gemini Image", capability: "images", status: "connected" },
-  voice: { id: "wan-voice", label: "Voice Provider", capability: "voice", status: "coming_soon" },
+  voice: { id: "lovable-openai-tts", label: "Lovable AI · OpenAI TTS", capability: "voice", status: "connected" },
   music: { id: "wan-music", label: "Music Provider", capability: "music", status: "coming_soon" },
   video: { id: "wan-video", label: "Wan AI Video", capability: "video", status: "coming_soon" },
-  subtitles: { id: "auto-subtitles", label: "Auto Subtitles", capability: "subtitles", status: "coming_soon" },
+  subtitles: { id: "auto-subtitles", label: "Auto Subtitles (local)", capability: "subtitles", status: "connected" },
 };
 
 export function isCapabilityAvailable(cap: ProviderCapability): boolean {
@@ -75,6 +75,49 @@ export async function orchestrateImage(input: {
       duration_ms: Date.now() - started,
       error_message: err instanceof Error ? err.message : String(err),
       metadata: { sceneId: input.sceneId },
+    }).catch(() => undefined);
+    throw err;
+  }
+}
+
+/** Generate narration MP3 through the server-side voice proxy. */
+export async function orchestrateVoice(input: {
+  script: string;
+  voice?: string;
+  speed?: number;
+  projectId?: string;
+}): Promise<{ url: string; provider: string; durationMs: number; bytes: number }> {
+  const started = Date.now();
+  const provider = ORCHESTRATOR.voice.id;
+  try {
+    const res = await fetch("/api/generate-voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ script: input.script, voice: input.voice, speed: input.speed }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(detail || `Voice generation failed (${res.status})`);
+    }
+    const data = (await res.json()) as { url: string; provider: string; durationMs: number; bytes: number };
+    void logGeneration({
+      project_id: input.projectId,
+      asset_type: "voice_audio",
+      provider: data.provider ?? provider,
+      status: "completed",
+      duration_ms: data.durationMs ?? Date.now() - started,
+      credits_used: Math.ceil((data.bytes ?? 0) / 1024),
+      metadata: { voice: input.voice ?? "alloy" },
+    }).catch(() => undefined);
+    return data;
+  } catch (err) {
+    void logGeneration({
+      project_id: input.projectId,
+      asset_type: "voice_audio",
+      provider,
+      status: "failed",
+      duration_ms: Date.now() - started,
+      error_message: err instanceof Error ? err.message : String(err),
     }).catch(() => undefined);
     throw err;
   }
