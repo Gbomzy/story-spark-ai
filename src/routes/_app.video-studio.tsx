@@ -111,7 +111,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               <Field label="Resolution" value="1280×720" />
               <Field label="Aspect ratio" value="16:9" />
               <Field label="Provider" value={provider} />
-              <Field label="Model" value="wanx2.1-t2v-turbo" />
+              <Field label="Model" value="wan2.7-t2v" />
               <Field label="Status" value={status} />
               <Field label="Progress" value={`${progress}%`} />
             </dl>

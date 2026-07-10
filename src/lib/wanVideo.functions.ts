@@ -14,14 +14,11 @@ const Input = z.object({
   projectId: z.string().optional(),
 });
 
-// Ordered fallback lists per mode. DashScope silently deprecates model
-// IDs; iterating candidates keeps rendering alive when the primary returns
-// "Model not exist" / InvalidParameter.
 const MODEL_FALLBACKS: Record<string, string[]> = {
-  t2v: ["wan2.2-t2v-plus", "wanx2.1-t2v-turbo", "wanx2.1-t2v-plus", "wanx-v1"],
-  i2v: ["wan2.2-i2v-flash", "wan2.2-i2v-plus", "wanx2.1-i2v-turbo", "wanx2.1-i2v-plus"],
-  ref2v: ["wanx2.1-ref2v-plus"],
-  edit: ["wanx2.1-vace-plus"],
+  t2v: ["wan2.7-t2v", "wan2.7-t2v-2026-06-12", "wan2.7-t2v-2026-04-25"],
+  i2v: ["wan2.7-i2v", "wan2.7-i2v-2026-04-25"],
+  ref2v: ["wan2.7-r2v", "wan2.7-r2v-2026-06-12"],
+  edit: ["wan2.7-videoedit"],
 };
 
 const ENDPOINT: Record<string, string> = {
@@ -44,6 +41,8 @@ export const generateWanVideo = createServerFn({ method: "POST" })
     let model = preferred[0];
     const base = getBase("WAN_BASE_URL", DEFAULT_DASHSCOPE_BASE);
     const size = data.size ?? "1280*720";
+    const ratio = size.includes("720*1280") ? "9:16" : size.includes("1024*1024") ? "1:1" : "16:9";
+    const resolution = size.includes("1920") || size.includes("1080") ? "1080P" : "720P";
 
     // Mark project as rendering
     if (data.projectId) {
@@ -61,8 +60,9 @@ export const generateWanVideo = createServerFn({ method: "POST" })
     let coverUrl = "";
     try {
       const inputBody: Record<string, unknown> = { prompt: data.prompt };
-      if (mode === "i2v" && data.imageUrl) inputBody.img_url = data.imageUrl;
-      if (mode === "ref2v" && data.refImageUrl) inputBody.ref_images_url = [data.refImageUrl];
+      if (mode === "i2v" && data.imageUrl) inputBody.media = [{ type: "first_frame", url: data.imageUrl }];
+      if (mode === "ref2v" && data.refImageUrl) inputBody.media = [{ type: "reference_image", url: data.refImageUrl }];
+      if (mode === "edit" && data.imageUrl) inputBody.media = [{ type: "video", url: data.imageUrl }];
       const res = await runAsyncTaskWithFallback({
         submitUrl: `${base}${ENDPOINT[mode]}`,
         base,
@@ -73,7 +73,10 @@ export const generateWanVideo = createServerFn({ method: "POST" })
           model: m,
           input: inputBody,
           parameters: {
-            size,
+            resolution,
+            ...(mode === "i2v" ? {} : { ratio }),
+            prompt_extend: true,
+            watermark: false,
             ...(data.duration ? { duration: data.duration } : {}),
             ...(data.seed != null ? { seed: data.seed } : {}),
           },
@@ -122,7 +125,7 @@ export const generateWanVideo = createServerFn({ method: "POST" })
         duration_ms: durationMs,
         credits_used: providerError ? 0 : 5,
         error_message: providerError,
-        metadata: { mode, size, bytes, cover: coverUrl },
+        metadata: { mode, size, resolution, ratio, bytes, cover: coverUrl },
       });
     } catch { /* history is best-effort */ }
 

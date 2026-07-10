@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Input = z.object({
   audioUrl: z.string().url(),
-  model: z.enum(["paraformer-v2", "paraformer-v1", "qwen-audio-asr"]).optional(),
+  model: z.enum(["fun-asr", "fun-asr-2025-11-07", "fun-asr-mtl", "fun-asr-mtl-2025-08-25"]).optional(),
   language: z.string().optional(),
   projectId: z.string().optional(),
 });
@@ -46,7 +46,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
     const { runAsyncTask, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
-    const model = data.model ?? "paraformer-v2";
+    const model = data.model ?? "fun-asr";
     const base = getBase("ASR_BASE_URL", DEFAULT_DASHSCOPE_BASE);
 
     let providerError: string | null = null;

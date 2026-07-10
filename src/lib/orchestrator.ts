@@ -39,7 +39,7 @@ export function providerFor(cap: ProviderCapability): OrchestratorProvider {
   return ORCHESTRATOR[cap];
 }
 
-/** Generate a scene image via DashScope (Qwen Image 2.0 / Wan T2I). */
+/** Generate a scene image via DashScope Qwen Image 2.0. */
 export async function orchestrateImage(input: {
   prompt: string;
   projectId?: string;
@@ -52,7 +52,7 @@ export async function orchestrateImage(input: {
   return await generateQwenImage({ data: input });
 }
 
-/** Generate narration MP3 through the server-side voice proxy. */
+/** Generate narration audio through the server-side Qwen3-TTS proxy. */
 export async function orchestrateVoice(input: {
   script: string;
   voice?: string;
