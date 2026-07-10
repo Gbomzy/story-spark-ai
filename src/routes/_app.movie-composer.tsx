@@ -64,9 +64,9 @@ function ComposerBody({ project }: { project: ProjectRow }) {
     quality: initial?.quality ?? "standard",
     transition: initial?.transition ?? "crossfade",
     transitionDuration: initial?.transitionDuration ?? 0.6,
-    burnSubtitles: true,
+    burnSubtitles: initial?.burnSubtitles ?? true,
     subtitleText: extractText(project.voice) || "",
-    subtitlePosition: "bottom",
+    subtitlePosition: initial?.subtitlePosition ?? "bottom",
   });
   const [progress, setProgress] = useState<{ stage: string; percent: number; label?: string } | null>(null);
   const [renderedUrl, setRenderedUrl] = useState<string | null>(null);
@@ -105,6 +105,8 @@ function ComposerBody({ project }: { project: ProjectRow }) {
             aspectRatio: settings.aspectRatio,
             fps: settings.fps,
             quality: settings.quality,
+            burnSubtitles: settings.burnSubtitles,
+            subtitlePosition: settings.subtitlePosition,
           },
         },
       }),
