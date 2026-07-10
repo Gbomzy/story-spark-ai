@@ -55,7 +55,7 @@ export const subtitleService = {
     return { url, format, status: "ready", text, cues: built.cues, durationSeconds: built.durationSeconds };
   },
   /** Fun-ASR / Qwen-ASR transcription of a hosted audio URL. */
-  async transcribeAudio(audioUrl: string, opts?: { format?: "srt" | "vtt" | "txt"; language?: string; projectId?: string; model?: "paraformer-v2" | "paraformer-v1" | "qwen-audio-asr" }) {
+  async transcribeAudio(audioUrl: string, opts?: { format?: "srt" | "vtt" | "txt"; language?: string; projectId?: string; model?: "fun-asr" | "fun-asr-2025-11-07" | "fun-asr-mtl" | "fun-asr-mtl-2025-08-25" }) {
     const { transcribeAudio } = await import("./asr.functions");
     const r = await transcribeAudio({ data: { audioUrl, language: opts?.language, projectId: opts?.projectId, model: opts?.model } });
     const fmt = opts?.format ?? "srt";

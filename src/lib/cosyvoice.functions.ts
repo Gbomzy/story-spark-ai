@@ -15,65 +15,37 @@ const Input = z.object({
   projectId: z.string().optional(),
 });
 
-// DashScope TTS models, ordered from preferred to legacy. Any ID that
-// returns "Model not exist"/InvalidParameter is skipped and the next one
-// is tried. Voices are model-specific — CosyVoice uses `longxiaochun`
-// et al., Qwen-TTS uses `Cherry` etc. — so we pick a safe default per family.
-const TTS_MODEL_FALLBACKS = [
-  "cosyvoice-v2",
-  "cosyvoice-v1",
-  "qwen-tts-latest",
-  "qwen-tts",
-  "sambert-zhichu-v1",
-];
-
-function defaultVoiceFor(model: string): string {
-  if (model.startsWith("qwen-tts")) return "Cherry";
-  if (model.startsWith("sambert")) return "zhichu";
-  return "longxiaochun";
-}
-
 export const generateCosyVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
-    const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
-    const preferred = data.model
-      ? [data.model, ...TTS_MODEL_FALLBACKS.filter((m) => m !== data.model)]
-      : TTS_MODEL_FALLBACKS;
+    const { runDashScopeJson, getBase, DEFAULT_DASHSCOPE_BASE, MULTIMODAL_GENERATION_PATH } = await import("./dashscope.server");
+    const model = data.model ?? "qwen3-tts-flash";
+    const qwenVoices = new Set(["Cherry", "Serena", "Ethan", "Chelsie", "Dylan", "Jada", "Sunny"]);
+    const normalizeVoice = (value?: string) => (value && qwenVoices.has(value) ? value : "Cherry");
     const format = data.format ?? "mp3";
     const base = getBase("COSYVOICE_BASE_URL", DEFAULT_DASHSCOPE_BASE);
 
     let providerError: string | null = null;
     let audioUrl = "";
     let bytes = 0;
-    let model = preferred[0];
-    let voice = data.voice ?? defaultVoiceFor(model);
+    const voice = normalizeVoice(data.voice);
 
     try {
-      const res = await runAsyncTaskWithFallback({
-        // No trailing slash — DashScope rejects `/tts/` with 400.
-        submitUrl: `${base}/api/v1/services/audio/tts`,
-        base,
-        models: preferred,
-        buildBody: (m) => ({
-          model: m,
-          input: { text: data.script },
-          parameters: {
-            voice: data.voice ?? defaultVoiceFor(m),
-            format,
-            ...(data.sampleRate ? { sample_rate: data.sampleRate } : {}),
-            ...(data.speed != null ? { rate: data.speed } : {}),
-            ...(data.pitch != null ? { pitch: data.pitch } : {}),
-            ...(data.volume != null ? { volume: data.volume } : {}),
-            ...(data.language ? { language: data.language } : {}),
+      const res = await runDashScopeJson<{ output?: { audio?: { url?: string } } }>({
+        url: `${base}${MULTIMODAL_GENERATION_PATH}`,
+        body: {
+          model,
+          input: {
+            text: data.script,
+            voice,
+            language_type: data.language ?? "Auto",
+            stream: false,
           },
-        }),
+        },
       });
-      model = res.model;
-      voice = data.voice ?? defaultVoiceFor(model);
-      const rawAudio = res.output.audio as { url?: string } | undefined;
+      const rawAudio = res.output?.audio;
       audioUrl = rawAudio?.url ?? "";
       if (!audioUrl) throw new Error("DashScope returned no audio URL.");
     } catch (e) {
@@ -91,7 +63,7 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
           const buf = new Uint8Array(await audRes.arrayBuffer());
           bytes = buf.byteLength;
           const name = `${context.userId}/audio/${Date.now()}-${voice}.${format}`;
-          const contentType = format === "wav" ? "audio/wav" : "audio/mpeg";
+          const contentType = audRes.headers.get("content-type") || (format === "wav" ? "audio/wav" : "audio/mpeg");
           const { data: up } = await context.supabase.storage
             .from("generated-media")
             .upload(name, buf, { contentType, upsert: false });

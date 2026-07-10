@@ -34,7 +34,7 @@ export const qwenOcr = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: "qwen-vl-ocr",
+          model: "qwen-vl-ocr-2025-11-20",
           messages: [
             {
               role: "user",
@@ -59,7 +59,7 @@ export const qwenOcr = createServerFn({ method: "POST" })
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "ocr",
-        provider: "qwen-vl-ocr",
+        provider: "qwen-vl-ocr-2025-11-20",
         status: "completed",
         duration_ms: Date.now() - t0,
         credits_used: 1,
@@ -67,5 +67,5 @@ export const qwenOcr = createServerFn({ method: "POST" })
       });
     } catch { /* best-effort */ }
 
-    return { text, provider: "qwen-vl-ocr", durationMs: Date.now() - t0 };
+    return { text, provider: "qwen-vl-ocr-2025-11-20", durationMs: Date.now() - t0 };
   });

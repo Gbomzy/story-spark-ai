@@ -24,10 +24,10 @@ function HealthPage() {
 
   const services: { name: string; status: Status; note?: string }[] = [
     { name: "Qwen (Text)",     status: qwen.data?.connected ? "ok" : "down", note: "Alibaba Cloud DashScope" },
-    { name: "Qwen Image 2.0",  status: "ok", note: "DashScope image-synthesis" },
-    { name: "Wan Video",       status: "ok", note: "DashScope video-synthesis" },
-    { name: "CosyVoice / Qwen TTS", status: "ok", note: "DashScope TTS" },
-    { name: "Fun-ASR",         status: "ok", note: "paraformer-v2 subtitles" },
+    { name: "Qwen Image 2.0",  status: "ok", note: "DashScope multimodal generation" },
+    { name: "Wan Video",       status: "ok", note: "Wan 2.7 video-synthesis" },
+    { name: "CosyVoice / Qwen TTS", status: "ok", note: "Qwen3-TTS multimodal generation" },
+    { name: "Fun-ASR",         status: "ok", note: "fun-asr subtitles" },
     { name: "Storage",         status: "ok", note: "Lovable Cloud" },
     { name: "Database",        status: db.data ? "ok" : "unknown" },
     { name: "Authentication",  status: auth.data ? "ok" : "unknown" },

@@ -24,45 +24,51 @@ const Input = z.object({
   sceneId: z.string().optional(),
 });
 
-// Ordered from cheapest/fastest to highest quality. DashScope silently
-// deprecates model IDs; iterating a fallback list keeps the pipeline alive
-// when the primary ID returns "Model not exist" / InvalidParameter.
-const IMAGE_MODEL_FALLBACKS = [
-  "wan2.2-t2i-flash",
-  "wan2.2-t2i-plus",
-  "wanx2.1-t2i-turbo",
-  "wanx2.1-t2i-plus",
-  "wanx-v1",
-];
-
 export const generateQwenImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
-    const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
-    const preferred = data.model ? [data.model, ...IMAGE_MODEL_FALLBACKS.filter((m) => m !== data.model)] : IMAGE_MODEL_FALLBACKS;
-    const size = data.size || ASPECT_TO_SIZE[data.aspect ?? "16:9"] || "1280*720";
+    const { runDashScopeJson, getBase, DEFAULT_DASHSCOPE_BASE, MULTIMODAL_GENERATION_PATH } = await import("./dashscope.server");
+    const model = data.model ?? "qwen-image-2.0";
+    const aspectToSize: Record<string, string> = {
+      "1:1": "1024*1024",
+      "16:9": "1280*720",
+      "9:16": "720*1280",
+      "4:5": "1024*1280",
+      portrait: "832*1216",
+      landscape: "1216*832",
+      ultra: "1440*1440",
+    };
+    const size = data.size || aspectToSize[data.aspect ?? "16:9"] || "1280*720";
     const base = getBase("QWEN_BASE_URL", DEFAULT_DASHSCOPE_BASE);
 
     let url = "";
     let providerError: string | null = null;
-    let model = preferred[0];
     try {
-      const res = await runAsyncTaskWithFallback({
-        submitUrl: `${base}/api/v1/services/aigc/text2image/image-synthesis`,
-        base,
-        models: preferred,
-        buildBody: (m) => ({
-          model: m,
-          input: { prompt: data.prompt, negative_prompt: data.negativePrompt },
-          parameters: { size, n: data.n ?? 1, ...(data.seed != null ? { seed: data.seed } : {}) },
-        }),
+      const res = await runDashScopeJson<{
+        output?: { choices?: Array<{ message?: { content?: Array<{ image?: string }> } }>; results?: Array<{ url?: string }> };
+      }>({
+        url: `${base}${MULTIMODAL_GENERATION_PATH}`,
+        body: {
+          model,
+          input: {
+            messages: [
+              { role: "user", content: [{ text: data.prompt }] },
+            ],
+          },
+          parameters: {
+            size,
+            n: data.n ?? 1,
+            prompt_extend: true,
+            watermark: false,
+            ...(data.negativePrompt ? { negative_prompt: data.negativePrompt } : {}),
+            ...(data.seed != null ? { seed: data.seed } : {}),
+          },
+        },
       });
-      // rebuild with the model actually used
-      model = res.model;
-      const results = (res.output.results as Array<{ url?: string }> | undefined) ?? [];
-      url = results[0]?.url ?? "";
+      const content = res.output?.choices?.[0]?.message?.content ?? [];
+      url = content.find((item) => item.image)?.image ?? res.output?.results?.[0]?.url ?? "";
       if (!url) throw new Error("DashScope returned no image URL.");
     } catch (e) {
       providerError = e instanceof Error ? e.message : String(e);

@@ -3,6 +3,7 @@
 // client-reachable file.
 
 export const DEFAULT_DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com";
+export const MULTIMODAL_GENERATION_PATH = "/api/v1/services/aigc/multimodal-generation/generation";
 
 export function getDashScopeKey(): string {
   const key = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY;
@@ -34,6 +35,28 @@ export async function dashFetch(url: string, init: FetchInit = {}): Promise<Resp
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
+export async function runDashScopeJson<T = Record<string, unknown>>(input: {
+  url: string;
+  body: unknown;
+  headers?: Record<string, string>;
+}): Promise<T> {
+  const key = getDashScopeKey();
+  const res = await dashFetch(input.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...input.headers,
+    },
+    body: JSON.stringify(input.body),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`DashScope request failed (${res.status}): ${txt.slice(0, 400)}`);
+  }
+  return (await res.json()) as T;
 }
 
 /**

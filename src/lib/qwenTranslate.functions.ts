@@ -43,10 +43,7 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("QWEN_API_KEY / DASHSCOPE_API_KEY is not configured.");
     const t0 = Date.now();
 
-    const source = data.sourceLanguage && data.sourceLanguage !== "auto"
-      ? `from ${data.sourceLanguage} `
-      : "";
-    const system = `You are a professional translator. Translate the user's text ${source}into ${data.targetLanguage}. Preserve formatting, line breaks, markdown, character names and speaker labels. Return only the translated text, no commentary.`;
+    const sourceLanguage = data.sourceLanguage && data.sourceLanguage !== "auto" ? data.sourceLanguage : "auto";
 
     const res = await fetch(
       "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
@@ -54,43 +51,20 @@ export const qwenTranslate = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: "qwen-mt-turbo",
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: data.text },
-          ],
+          model: "qwen-mt-flash",
+          messages: [{ role: "user", content: data.text }],
+          translation_options: { source_lang: sourceLanguage, target_lang: data.targetLanguage },
         }),
       },
     );
     if (!res.ok) {
-      // Fallback to qwen-plus if the MT model isn't available on this region.
-      const fallback = await fetch(
-        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({
-            model: "qwen-plus",
-            messages: [
-              { role: "system", content: system },
-              { role: "user", content: data.text },
-            ],
-          }),
-        },
-      );
-      if (!fallback.ok) {
-        const txt = await fallback.text();
-        throw new Error(`Qwen translate failed (${fallback.status}): ${txt.slice(0, 300)}`);
-      }
-      const j = (await fallback.json()) as { choices?: { message?: { content?: string } }[] };
-      const translated = j.choices?.[0]?.message?.content ?? "";
-      await logTr(context, data.projectId, "qwen-plus", t0);
-      return { translated, provider: "qwen-plus", durationMs: Date.now() - t0 };
+      const txt = await res.text();
+      throw new Error(`Qwen translate failed (${res.status}): ${txt.slice(0, 300)}`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const translated = json.choices?.[0]?.message?.content ?? "";
-    await logTr(context, data.projectId, "qwen-mt-turbo", t0);
-    return { translated, provider: "qwen-mt-turbo", durationMs: Date.now() - t0 };
+    await logTr(context, data.projectId, "qwen-mt-flash", t0);
+    return { translated, provider: "qwen-mt-flash", durationMs: Date.now() - t0 };
   });
 
 async function logTr(context: { supabase: { from: (t: string) => { insert: (v: Record<string, unknown>) => { then?: unknown } } }; userId: string }, projectId: string | undefined, provider: string, t0: number) {
