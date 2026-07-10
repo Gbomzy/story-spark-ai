@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { listProjects } from "@/lib/projects";
+import { listHistory } from "@/lib/assets";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -209,10 +212,7 @@ function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <div className="space-y-5">
-            <UsageBar label="Story tokens" value={68} hint="6.8K / 10K used" />
-            <UsageBar label="Voice minutes" value={42} hint="84 / 200 min" />
-            <UsageBar label="Images generated" value={81} hint="162 / 200" />
-            <UsageBar label="Render credits" value={23} hint="46 / 200" />
+            <LiveUsage />
           </div>
           <div className="mt-6 rounded-2xl border border-dashed border-border p-4">
             <p className="text-xs text-muted-foreground">
