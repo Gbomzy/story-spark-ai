@@ -22,6 +22,12 @@ import {
   History,
   ListChecks,
   Activity,
+  Download,
+  Upload,
+  AlertTriangle,
+  Gauge,
+  ShieldCheck,
+  Flag,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -42,12 +48,20 @@ const items = [
   { label: "Assets", to: "/assets", icon: Boxes },
   { label: "Timeline", to: "/timeline", icon: Activity },
   { label: "Queue", to: "/queue", icon: ListChecks },
+  { label: "Job Manager", to: "/jobs", icon: ListChecks },
   { label: "History", to: "/history", icon: History },
+  { label: "Search", to: "/search", icon: Search },
+  { label: "Export", to: "/export", icon: Download },
+  { label: "Import", to: "/import", icon: Upload },
   { label: "Templates", to: "/templates", icon: LayoutTemplate },
   { label: "AI Agents", to: "/ai-agents", icon: Bot },
 ] as const;
 
 const footerItems = [
+  { label: "Monitoring", to: "/monitoring", icon: Gauge },
+  { label: "System Health", to: "/system-health", icon: ShieldCheck },
+  { label: "Error Log", to: "/error-log", icon: AlertTriangle },
+  { label: "Feature Flags", to: "/feature-flags", icon: Flag },
   { label: "AI Providers", to: "/ai-providers", icon: Cpu },
   { label: "Settings", to: "/settings", icon: Settings },
   { label: "Help", to: "/help", icon: HelpCircle },

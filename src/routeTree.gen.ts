@@ -19,17 +19,25 @@ import { Route as AppVoiceGeneratorRouteImport } from './routes/_app.voice-gener
 import { Route as AppVideoStudioRouteImport } from './routes/_app.video-studio'
 import { Route as AppTimelineRouteImport } from './routes/_app.timeline'
 import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
+import { Route as AppSystemHealthRouteImport } from './routes/_app.system-health'
 import { Route as AppStoryboardRouteImport } from './routes/_app.storyboard'
 import { Route as AppStoryGeneratorRouteImport } from './routes/_app.story-generator'
 import { Route as AppSongsRouteImport } from './routes/_app.songs'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
+import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppMonitoringRouteImport } from './routes/_app.monitoring'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
+import { Route as AppJobsRouteImport } from './routes/_app.jobs'
+import { Route as AppImportRouteImport } from './routes/_app.import'
 import { Route as AppImagePromptsRouteImport } from './routes/_app.image-prompts'
 import { Route as AppHistoryRouteImport } from './routes/_app.history'
 import { Route as AppHelpRouteImport } from './routes/_app.help'
+import { Route as AppFeatureFlagsRouteImport } from './routes/_app.feature-flags'
+import { Route as AppExportRouteImport } from './routes/_app.export'
+import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
@@ -37,6 +45,7 @@ import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
+import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -87,6 +96,11 @@ const AppTemplatesRoute = AppTemplatesRouteImport.update({
   path: '/templates',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSystemHealthRoute = AppSystemHealthRouteImport.update({
+  id: '/system-health',
+  path: '/system-health',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStoryboardRoute = AppStoryboardRouteImport.update({
   id: '/storyboard',
   path: '/storyboard',
@@ -112,6 +126,11 @@ const AppSeoStudioRoute = AppSeoStudioRouteImport.update({
   path: '/seo-studio',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSearchRoute = AppSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppQueueRoute = AppQueueRouteImport.update({
   id: '/queue',
   path: '/queue',
@@ -122,9 +141,24 @@ const AppProjectsRoute = AppProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMonitoringRoute = AppMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMediaStudioRoute = AppMediaStudioRouteImport.update({
   id: '/media-studio',
   path: '/media-studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppJobsRoute = AppJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppImportRoute = AppImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => AppRoute,
 } as any)
 const AppImagePromptsRoute = AppImagePromptsRouteImport.update({
@@ -140,6 +174,21 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
 const AppHelpRoute = AppHelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFeatureFlagsRoute = AppFeatureFlagsRouteImport.update({
+  id: '/feature-flags',
+  path: '/feature-flags',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppExportRoute = AppExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppErrorLogRoute = AppErrorLogRouteImport.update({
+  id: '/error-log',
+  path: '/error-log',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -177,6 +226,11 @@ const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppProjectsRoute,
 } as any)
+const AppProjectSettingsIdRoute = AppProjectSettingsIdRouteImport.update({
+  id: '/project-settings/$id',
+  path: '/project-settings/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -189,21 +243,30 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/error-log': typeof AppErrorLogRoute
+  '/export': typeof AppExportRoute
+  '/feature-flags': typeof AppFeatureFlagsRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
+  '/import': typeof AppImportRoute
+  '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
+  '/monitoring': typeof AppMonitoringRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
+  '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
   '/songs': typeof AppSongsRoute
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
+  '/system-health': typeof AppSystemHealthRoute
   '/templates': typeof AppTemplatesRoute
   '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
+  '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
@@ -218,21 +281,30 @@ export interface FileRoutesByTo {
   '/assets': typeof AppAssetsRoute
   '/characters': typeof AppCharactersRoute
   '/dashboard': typeof AppDashboardRoute
+  '/error-log': typeof AppErrorLogRoute
+  '/export': typeof AppExportRoute
+  '/feature-flags': typeof AppFeatureFlagsRoute
   '/help': typeof AppHelpRoute
   '/history': typeof AppHistoryRoute
   '/image-prompts': typeof AppImagePromptsRoute
+  '/import': typeof AppImportRoute
+  '/jobs': typeof AppJobsRoute
   '/media-studio': typeof AppMediaStudioRoute
+  '/monitoring': typeof AppMonitoringRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/queue': typeof AppQueueRoute
+  '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
   '/songs': typeof AppSongsRoute
   '/story-generator': typeof AppStoryGeneratorRoute
   '/storyboard': typeof AppStoryboardRoute
+  '/system-health': typeof AppSystemHealthRoute
   '/templates': typeof AppTemplatesRoute
   '/timeline': typeof AppTimelineRoute
   '/video-studio': typeof AppVideoStudioRoute
   '/voice-generator': typeof AppVoiceGeneratorRoute
+  '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
 }
@@ -249,21 +321,30 @@ export interface FileRoutesById {
   '/_app/assets': typeof AppAssetsRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/error-log': typeof AppErrorLogRoute
+  '/_app/export': typeof AppExportRoute
+  '/_app/feature-flags': typeof AppFeatureFlagsRoute
   '/_app/help': typeof AppHelpRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/image-prompts': typeof AppImagePromptsRoute
+  '/_app/import': typeof AppImportRoute
+  '/_app/jobs': typeof AppJobsRoute
   '/_app/media-studio': typeof AppMediaStudioRoute
+  '/_app/monitoring': typeof AppMonitoringRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/queue': typeof AppQueueRoute
+  '/_app/search': typeof AppSearchRoute
   '/_app/seo-studio': typeof AppSeoStudioRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/songs': typeof AppSongsRoute
   '/_app/story-generator': typeof AppStoryGeneratorRoute
   '/_app/storyboard': typeof AppStoryboardRoute
+  '/_app/system-health': typeof AppSystemHealthRoute
   '/_app/templates': typeof AppTemplatesRoute
   '/_app/timeline': typeof AppTimelineRoute
   '/_app/video-studio': typeof AppVideoStudioRoute
   '/_app/voice-generator': typeof AppVoiceGeneratorRoute
+  '/_app/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
 }
@@ -280,21 +361,30 @@ export interface FileRouteTypes {
     | '/assets'
     | '/characters'
     | '/dashboard'
+    | '/error-log'
+    | '/export'
+    | '/feature-flags'
     | '/help'
     | '/history'
     | '/image-prompts'
+    | '/import'
+    | '/jobs'
     | '/media-studio'
+    | '/monitoring'
     | '/projects'
     | '/queue'
+    | '/search'
     | '/seo-studio'
     | '/settings'
     | '/songs'
     | '/story-generator'
     | '/storyboard'
+    | '/system-health'
     | '/templates'
     | '/timeline'
     | '/video-studio'
     | '/voice-generator'
+    | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
   fileRoutesByTo: FileRoutesByTo
@@ -309,21 +399,30 @@ export interface FileRouteTypes {
     | '/assets'
     | '/characters'
     | '/dashboard'
+    | '/error-log'
+    | '/export'
+    | '/feature-flags'
     | '/help'
     | '/history'
     | '/image-prompts'
+    | '/import'
+    | '/jobs'
     | '/media-studio'
+    | '/monitoring'
     | '/projects'
     | '/queue'
+    | '/search'
     | '/seo-studio'
     | '/settings'
     | '/songs'
     | '/story-generator'
     | '/storyboard'
+    | '/system-health'
     | '/templates'
     | '/timeline'
     | '/video-studio'
     | '/voice-generator'
+    | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
   id:
@@ -339,21 +438,30 @@ export interface FileRouteTypes {
     | '/_app/assets'
     | '/_app/characters'
     | '/_app/dashboard'
+    | '/_app/error-log'
+    | '/_app/export'
+    | '/_app/feature-flags'
     | '/_app/help'
     | '/_app/history'
     | '/_app/image-prompts'
+    | '/_app/import'
+    | '/_app/jobs'
     | '/_app/media-studio'
+    | '/_app/monitoring'
     | '/_app/projects'
     | '/_app/queue'
+    | '/_app/search'
     | '/_app/seo-studio'
     | '/_app/settings'
     | '/_app/songs'
     | '/_app/story-generator'
     | '/_app/storyboard'
+    | '/_app/system-health'
     | '/_app/templates'
     | '/_app/timeline'
     | '/_app/video-studio'
     | '/_app/voice-generator'
+    | '/_app/project-settings/$id'
     | '/_app/projects/$id'
     | '/_app/projects/new'
   fileRoutesById: FileRoutesById
@@ -439,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTemplatesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/system-health': {
+      id: '/_app/system-health'
+      path: '/system-health'
+      fullPath: '/system-health'
+      preLoaderRoute: typeof AppSystemHealthRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/storyboard': {
       id: '/_app/storyboard'
       path: '/storyboard'
@@ -474,6 +589,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSeoStudioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/search': {
+      id: '/_app/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/queue': {
       id: '/_app/queue'
       path: '/queue'
@@ -488,11 +610,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/monitoring': {
+      id: '/_app/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof AppMonitoringRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/media-studio': {
       id: '/_app/media-studio'
       path: '/media-studio'
       fullPath: '/media-studio'
       preLoaderRoute: typeof AppMediaStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/jobs': {
+      id: '/_app/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/import': {
+      id: '/_app/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof AppImportRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/image-prompts': {
@@ -514,6 +657,27 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof AppHelpRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/feature-flags': {
+      id: '/_app/feature-flags'
+      path: '/feature-flags'
+      fullPath: '/feature-flags'
+      preLoaderRoute: typeof AppFeatureFlagsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/export': {
+      id: '/_app/export'
+      path: '/export'
+      fullPath: '/export'
+      preLoaderRoute: typeof AppExportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/error-log': {
+      id: '/_app/error-log'
+      path: '/error-log'
+      fullPath: '/error-log'
+      preLoaderRoute: typeof AppErrorLogRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -565,6 +729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsIdRouteImport
       parentRoute: typeof AppProjectsRoute
     }
+    '/_app/project-settings/$id': {
+      id: '/_app/project-settings/$id'
+      path: '/project-settings/$id'
+      fullPath: '/project-settings/$id'
+      preLoaderRoute: typeof AppProjectSettingsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -588,21 +759,30 @@ interface AppRouteChildren {
   AppAssetsRoute: typeof AppAssetsRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppErrorLogRoute: typeof AppErrorLogRoute
+  AppExportRoute: typeof AppExportRoute
+  AppFeatureFlagsRoute: typeof AppFeatureFlagsRoute
   AppHelpRoute: typeof AppHelpRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppImagePromptsRoute: typeof AppImagePromptsRoute
+  AppImportRoute: typeof AppImportRoute
+  AppJobsRoute: typeof AppJobsRoute
   AppMediaStudioRoute: typeof AppMediaStudioRoute
+  AppMonitoringRoute: typeof AppMonitoringRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppQueueRoute: typeof AppQueueRoute
+  AppSearchRoute: typeof AppSearchRoute
   AppSeoStudioRoute: typeof AppSeoStudioRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppSongsRoute: typeof AppSongsRoute
   AppStoryGeneratorRoute: typeof AppStoryGeneratorRoute
   AppStoryboardRoute: typeof AppStoryboardRoute
+  AppSystemHealthRoute: typeof AppSystemHealthRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
   AppTimelineRoute: typeof AppTimelineRoute
   AppVideoStudioRoute: typeof AppVideoStudioRoute
   AppVoiceGeneratorRoute: typeof AppVoiceGeneratorRoute
+  AppProjectSettingsIdRoute: typeof AppProjectSettingsIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -611,21 +791,30 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssetsRoute: AppAssetsRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppErrorLogRoute: AppErrorLogRoute,
+  AppExportRoute: AppExportRoute,
+  AppFeatureFlagsRoute: AppFeatureFlagsRoute,
   AppHelpRoute: AppHelpRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppImagePromptsRoute: AppImagePromptsRoute,
+  AppImportRoute: AppImportRoute,
+  AppJobsRoute: AppJobsRoute,
   AppMediaStudioRoute: AppMediaStudioRoute,
+  AppMonitoringRoute: AppMonitoringRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppQueueRoute: AppQueueRoute,
+  AppSearchRoute: AppSearchRoute,
   AppSeoStudioRoute: AppSeoStudioRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppSongsRoute: AppSongsRoute,
   AppStoryGeneratorRoute: AppStoryGeneratorRoute,
   AppStoryboardRoute: AppStoryboardRoute,
+  AppSystemHealthRoute: AppSystemHealthRoute,
   AppTemplatesRoute: AppTemplatesRoute,
   AppTimelineRoute: AppTimelineRoute,
   AppVideoStudioRoute: AppVideoStudioRoute,
   AppVoiceGeneratorRoute: AppVoiceGeneratorRoute,
+  AppProjectSettingsIdRoute: AppProjectSettingsIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

@@ -127,6 +127,36 @@ export type Database = {
         }
         Relationships: []
       }
+      folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_history: {
         Row: {
           asset_id: string | null
@@ -340,6 +370,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           duration: number | null
+          folder_id: string | null
           generated_images: Json | null
           id: string
           image_assets: string | null
@@ -393,6 +424,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           duration?: number | null
+          folder_id?: string | null
           generated_images?: Json | null
           id?: string
           image_assets?: string | null
@@ -446,6 +478,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           duration?: number | null
+          folder_id?: string | null
           generated_images?: Json | null
           id?: string
           image_assets?: string | null
@@ -486,7 +519,15 @@ export type Database = {
           voice_audio?: Json | null
           voice_preference?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

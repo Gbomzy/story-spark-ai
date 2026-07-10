@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ChevronLeft, Save, FileJson, FileText, FileType2, RefreshCw, BookOpen, Users, Film, Mic, Music, ImageIcon, Search, Copy } from "lucide-react";
+import { Loader2, ChevronLeft, Save, FileJson, FileText, FileType2, RefreshCw, BookOpen, Users, Film, Mic, Music, ImageIcon, Search, Copy, Settings2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, touchOpened, updateProject, type ProjectContentField } from "@/lib/projects";
 import {
@@ -191,6 +191,14 @@ function ProjectDetailPage() {
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={exportJson}>
               <FileJson className="mr-1.5 h-4 w-4" /> Export JSON
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link to="/export"><Download className="mr-1.5 h-4 w-4" /> Export Studio</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link to="/project-settings/$id" params={{ id: project.id }}>
+                <Settings2 className="mr-1.5 h-4 w-4" /> Settings
+              </Link>
             </Button>
             <Button
               onClick={() => saveMut.mutate()}
