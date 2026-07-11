@@ -222,7 +222,13 @@ export const startCreditPurchase = createServerFn({ method: "POST" })
 
     const provider = await getProvider(data.provider as ProviderId);
     if (!provider.isConfigured()) {
-      return { purchaseId: row.id, checkoutUrl: null, reference, providerConfigured: false };
+      // MOCK MODE — auto-complete the purchase server-side so the entire billing
+      // flow can be exercised without real payment keys. When keys are added,
+      // this branch stops firing and the real provider takes over.
+      await supabaseAdmin.rpc("credit_grant", { _user: context.userId, _credits: totalCredits, _reason: `Mock purchase ${reference}`, _kind: "topup", _ref: row.id });
+      await supabaseAdmin.from("credit_purchases").update({ status: "completed", completed_at: new Date().toISOString(), provider_reference: reference, metadata: { mock: true, bonus_credits: bonusCredits } }).eq("id", row.id);
+      await supabaseAdmin.from("invoices").insert({ user_id: context.userId, purchase_id: row.id, provider: data.provider, provider_reference: reference, kind: "credit_pack", amount_cents: amountCents, currency: pack.currency, status: "paid", description: `${totalCredits} credits (mock)`, metadata: { mock: true } });
+      return { purchaseId: row.id, checkoutUrl: null, reference, providerConfigured: false, mockCompleted: true };
     }
     const email = await resolveEmail(context.userId);
     const returnUrl = data.returnUrl ?? `${publicOrigin()}/billing?purchase=${row.id}`;
@@ -286,7 +292,21 @@ export const startSubscription = createServerFn({ method: "POST" })
 
     const provider = await getProvider(data.provider as ProviderId);
     if (!provider.isConfigured()) {
-      return { subscriptionRowId: subRow.id, checkoutUrl: null, reference, providerConfigured: false };
+      // MOCK MODE — activate subscription immediately and grant plan credits
+      const now = new Date();
+      const periodDays = data.billingCycle === "yearly" ? 365 : 30;
+      await supabaseAdmin.from("user_subscriptions").update({
+        status: "active",
+        current_period_start: now.toISOString(),
+        current_period_end: new Date(now.getTime() + periodDays * 24 * 3600 * 1000).toISOString(),
+        cancel_at_period_end: false,
+        cancelled_at: null,
+      }).eq("id", subRow.id);
+      if (plan.monthly_credits > 0) {
+        await supabaseAdmin.rpc("credit_grant", { _user: context.userId, _credits: plan.monthly_credits, _reason: `Mock subscription ${plan.id}`, _kind: "subscription", _ref: subRow.id });
+      }
+      await supabaseAdmin.from("invoices").insert({ user_id: context.userId, subscription_id: subRow.id, provider: data.provider, provider_reference: reference, kind: "subscription", amount_cents: amount, currency: plan.currency, status: "paid", description: `${plan.id} (${data.billingCycle}, mock)`, metadata: { mock: true } });
+      return { subscriptionRowId: subRow.id, checkoutUrl: null, reference, providerConfigured: false, mockCompleted: true };
     }
     const providerPlanCode =
       data.provider === "paystack"
