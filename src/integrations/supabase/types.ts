@@ -97,6 +97,57 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          amount_off_cents: number | null
+          applies_to: string
+          bonus_credits: number
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_redemptions: number | null
+          percent_off: number | null
+          redemptions: number
+          updated_at: string
+        }
+        Insert: {
+          amount_off_cents?: number | null
+          applies_to?: string
+          bonus_credits?: number
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          percent_off?: number | null
+          redemptions?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_off_cents?: number | null
+          applies_to?: string
+          bonus_credits?: number
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          percent_off?: number | null
+          redemptions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credit_costs: {
         Row: {
           category: string
@@ -104,6 +155,7 @@ export type Database = {
           is_active: boolean
           label: string
           operation: string
+          unit: string
           updated_at: string
         }
         Insert: {
@@ -112,6 +164,7 @@ export type Database = {
           is_active?: boolean
           label: string
           operation: string
+          unit?: string
           updated_at?: string
         }
         Update: {
@@ -120,6 +173,46 @@ export type Database = {
           is_active?: boolean
           label?: string
           operation?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_packs: {
+        Row: {
+          bonus_label: string | null
+          created_at: string
+          credits: number
+          currency: string
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_label?: string | null
+          created_at?: string
+          credits: number
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_label?: string | null
+          created_at?: string
+          credits?: number
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -128,12 +221,17 @@ export type Database = {
         Row: {
           amount_cents: number
           completed_at: string | null
+          coupon_code: string | null
           created_at: string
           credits: number
           currency: string
+          discount_cents: number
           id: string
+          metadata: Json
+          pack_id: string | null
           provider: string
           provider_payment_id: string | null
+          provider_reference: string | null
           provider_session_id: string | null
           status: string
           user_id: string
@@ -141,12 +239,17 @@ export type Database = {
         Insert: {
           amount_cents: number
           completed_at?: string | null
+          coupon_code?: string | null
           created_at?: string
           credits: number
           currency?: string
+          discount_cents?: number
           id?: string
+          metadata?: Json
+          pack_id?: string | null
           provider: string
           provider_payment_id?: string | null
+          provider_reference?: string | null
           provider_session_id?: string | null
           status?: string
           user_id: string
@@ -154,12 +257,17 @@ export type Database = {
         Update: {
           amount_cents?: number
           completed_at?: string | null
+          coupon_code?: string | null
           created_at?: string
           credits?: number
           currency?: string
+          discount_cents?: number
           id?: string
+          metadata?: Json
+          pack_id?: string | null
           provider?: string
           provider_payment_id?: string | null
+          provider_reference?: string | null
           provider_session_id?: string | null
           status?: string
           user_id?: string
@@ -437,6 +545,75 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          kind: string
+          metadata: Json
+          pdf_url: string | null
+          provider: string
+          provider_invoice_id: string | null
+          provider_reference: string | null
+          purchase_id: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          pdf_url?: string | null
+          provider: string
+          provider_invoice_id?: string | null
+          provider_reference?: string | null
+          purchase_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          pdf_url?: string | null
+          provider?: string
+          provider_invoice_id?: string | null
+          provider_reference?: string | null
+          purchase_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -805,18 +982,87 @@ export type Database = {
         }
         Relationships: []
       }
+      refunds: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          credits_reversed: number
+          currency: string
+          id: string
+          provider: string
+          provider_refund_id: string | null
+          purchase_id: string | null
+          reason: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          credits_reversed?: number
+          currency?: string
+          id?: string
+          provider: string
+          provider_refund_id?: string | null
+          purchase_id?: string | null
+          reason?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          credits_reversed?: number
+          currency?: string
+          id?: string
+          provider?: string
+          provider_refund_id?: string | null
+          purchase_id?: string | null
+          reason?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           concurrent_jobs: number
           created_at: string
           currency: string
           features: Json
+          flutterwave_plan_id_monthly: string | null
+          flutterwave_plan_id_yearly: string | null
           id: string
           is_active: boolean
+          max_projects: number
           monthly_credits: number
           movie_length_seconds: number
           name: string
+          paystack_plan_code_monthly: string | null
+          paystack_plan_code_yearly: string | null
           price_cents: number
+          price_yearly_cents: number
           publish_limit: number
           sort_order: number
           storage_limit_mb: number
@@ -828,12 +1074,18 @@ export type Database = {
           created_at?: string
           currency?: string
           features?: Json
+          flutterwave_plan_id_monthly?: string | null
+          flutterwave_plan_id_yearly?: string | null
           id: string
           is_active?: boolean
+          max_projects?: number
           monthly_credits?: number
           movie_length_seconds?: number
           name: string
+          paystack_plan_code_monthly?: string | null
+          paystack_plan_code_yearly?: string | null
           price_cents?: number
+          price_yearly_cents?: number
           publish_limit?: number
           sort_order?: number
           storage_limit_mb?: number
@@ -845,12 +1097,18 @@ export type Database = {
           created_at?: string
           currency?: string
           features?: Json
+          flutterwave_plan_id_monthly?: string | null
+          flutterwave_plan_id_yearly?: string | null
           id?: string
           is_active?: boolean
+          max_projects?: number
           monthly_credits?: number
           movie_length_seconds?: number
           name?: string
+          paystack_plan_code_monthly?: string | null
+          paystack_plan_code_yearly?: string | null
           price_cents?: number
+          price_yearly_cents?: number
           publish_limit?: number
           sort_order?: number
           storage_limit_mb?: number
@@ -882,6 +1140,7 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          billing_cycle: string
           cancel_at_period_end: boolean
           cancelled_at: string | null
           created_at: string
@@ -897,6 +1156,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_cycle?: string
           cancel_at_period_end?: boolean
           cancelled_at?: string | null
           created_at?: string
@@ -912,6 +1172,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_cycle?: string
           cancel_at_period_end?: boolean
           cancelled_at?: string | null
           created_at?: string
