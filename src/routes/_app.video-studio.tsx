@@ -80,10 +80,29 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   });
 
   const pipelineMut = useMutation({
-    mutationFn: () => runPipeline({ data: { projectId: project.id, perSceneDuration: perScene, chainScenes: true } }),
+    mutationFn: async () => {
+      // Loop until the server reports the queue is fully drained.
+      // Each invocation generates one clip → avoids Worker timeouts and
+      // gives resume-from-interruption for free.
+      let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
+      for (let i = 0; i < 200; i++) {
+        last = await runPipeline({ data: { projectId: project.id, perSceneDuration: perScene, chainScenes: true } });
+        const done = last?.results?.done ?? true;
+        const remaining = last?.results?.queueRemaining ?? 0;
+        const completed = last?.results?.queueCompleted ?? 0;
+        const total = last?.results?.queueTotal ?? 0;
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        if (done) break;
+        if (total > 0) {
+          toast.message(`Rendering clip ${completed}/${total}…`, { id: "movie-pipeline" });
+        }
+        if (remaining === 0) break;
+      }
+      return last;
+    },
     onSuccess: (r) => {
-      const n = r?.results?.clips?.length ?? 0;
-      toast.success(n > 1 ? `Movie built from ${n} scene clips.` : "Movie ready.");
+      const n = r?.results?.clips?.filter((c) => c.url).length ?? 0;
+      toast.success(n > 1 ? `Movie built from ${n} scene clips.` : "Movie ready.", { id: "movie-pipeline" });
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
