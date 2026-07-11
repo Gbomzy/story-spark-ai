@@ -115,8 +115,20 @@ function ComposerBody({ project }: { project: ProjectRow }) {
   });
 
   const pipelineMut = useMutation({
-    mutationFn: () => runPipeline({ data: { projectId: project.id, chainScenes: true } }),
-    onSuccess: () => { toast.success("Pipeline complete."); qc.invalidateQueries({ queryKey: ["projects"] }); },
+    mutationFn: async () => {
+      let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
+      for (let i = 0; i < 200; i++) {
+        last = await runPipeline({ data: { projectId: project.id, chainScenes: true } });
+        const done = last?.results?.done ?? true;
+        const completed = last?.results?.queueCompleted ?? 0;
+        const total = last?.results?.queueTotal ?? 0;
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        if (done) break;
+        if (total > 0) toast.message(`Rendering clip ${completed}/${total}…`, { id: "movie-pipeline" });
+      }
+      return last;
+    },
+    onSuccess: () => { toast.success("Pipeline complete.", { id: "movie-pipeline" }); qc.invalidateQueries({ queryKey: ["projects"] }); },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
