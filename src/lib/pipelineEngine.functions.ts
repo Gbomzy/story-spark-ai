@@ -60,7 +60,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,generated_images,voice_audio,video_file,media_pipeline")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
@@ -72,7 +72,10 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       await context.supabase.from("projects").update({ media_pipeline: pipeline, ...patch }).eq("id", proj.id);
     };
 
-    const scenes = parseScenes(proj.images);
+    let scenes = parseScenes(proj.images);
+    if (scenes.length === 0 && typeof proj.storyboard === "string" && proj.storyboard.trim()) {
+      scenes = parseStoryboardText(proj.storyboard);
+    }
     const perScene = data.perSceneDuration ?? 5;
     const wps = data.wordsPerSecond ?? 2.5; // ~150 wpm narration pace
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
@@ -131,8 +134,18 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     let manifest = (proj.video_file as MovieManifest | null) ?? null;
     const looksLikeQueue = manifest && Array.isArray(manifest.clips) && manifest.clips.length > 0
       && manifest.clips.every((c) => typeof c?.prompt === "string");
+    // If the storyboard has more scenes than the persisted manifest covers,
+    // the previous run was built before the storyboard existed (single-shot
+    // fallback). Rebuild the queue so every scene gets a clip.
+    const manifestSceneCount = manifest && Array.isArray(manifest.clips)
+      ? new Set(manifest.clips.map((c) => c.sceneNumber)).size
+      : 0;
+    const staleQueue = looksLikeQueue && chain && scenes.length > manifestSceneCount;
+    if (staleQueue) {
+      manifest = null;
+    }
 
-    if (!looksLikeQueue) {
+    if (!looksLikeQueue || staleQueue) {
       // Build the full queue from storyboard scenes (or a single-shot fallback).
       const queued: SceneClip[] = [];
       if (chain && scenes.length > 0) {
@@ -345,10 +358,27 @@ function parseScenes(images: unknown): Array<{ id: string; prompt: string; narra
 }
 
 function splitWordsAcrossScenes(script: string, scenes: Array<{ narrationWords?: number }>): number[] {
+  return _splitWords(script, scenes);
+}
+
+function _splitWords(script: string, scenes: Array<{ narrationWords?: number }>): number[] {
   if (!script || scenes.length === 0) return scenes.map(() => 0);
   const words = script.split(/\s+/).filter(Boolean).length;
   const per = Math.ceil(words / scenes.length);
   return scenes.map(() => per);
+}
+
+/** Parse the plain-text storyboard column into scene entries. Mirrors the
+ *  parser used on the Storyboard page: split on blank lines, first line = title. */
+function parseStoryboardText(text: string): Array<{ id: string; prompt: string; narrationWords?: number }> {
+  const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  return blocks.slice(0, 40).map((block, i) => {
+    const firstLine = block.split("\n")[0].trim();
+    const rest = block.split("\n").slice(1).join("\n").trim();
+    const title = firstLine.replace(/^#+\s*/, "").slice(0, 120) || `Scene ${i + 1}`;
+    const prompt = `${title}. ${rest || firstLine}`.slice(0, 1200);
+    return { id: `scene-${i + 1}`, prompt };
+  });
 }
 
 function segmentDuration(totalSeconds: number, maxClip: number): number[] {
