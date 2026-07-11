@@ -77,6 +77,16 @@ function ComposerBody({ project }: { project: ProjectRow }) {
   const renderStart = useRef<number>(0);
   const [renderMs, setRenderMs] = useState<number>(0);
 
+  // Render queue instrumentation
+  const [failedIdx, setFailedIdx] = useState<Set<number>>(new Set());
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [renderStartAt, setRenderStartAt] = useState<number | null>(null);
+  const clipTimesRef = useRef<number[]>([]);
+  const lastTickRef = useRef<number>(0);
+  const [tick, setTick] = useState(0); // forces re-render for elapsed clock
+  const autoFinalizedRef = useRef(false);
+  const autoResumedRef = useRef(false);
+
   const narrationUrl = extractUrl(project.voice_audio) ?? initial?.narrationUrl;
 
   const totalDuration = useMemo(
