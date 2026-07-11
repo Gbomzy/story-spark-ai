@@ -128,18 +128,45 @@ function ComposerBody({ project }: { project: ProjectRow }) {
   const pipelineMut = useMutation({
     mutationFn: async () => {
       let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
-      for (let i = 0; i < 200; i++) {
-        last = await runPipeline({ data: { projectId: project.id, chainScenes: true } });
-        const done = last?.results?.done ?? true;
-        const completed = last?.results?.queueCompleted ?? 0;
+      if (renderStartAt == null) setRenderStartAt(Date.now());
+      clipTimesRef.current = clipTimesRef.current.length ? clipTimesRef.current : [];
+      let lastCompleted = clips.filter((c) => c.url).length;
+      lastTickRef.current = performance.now();
+      for (let i = 0; i < 500; i++) {
+        const t0 = performance.now();
+        try {
+          last = await runPipeline({ data: { projectId: project.id, chainScenes: true, maxClipsPerCall: 1 } });
+        } catch (err) {
+          // Mark the first pending clip as failed and continue to next.
+          setFailedIdx((prev) => {
+            const next = new Set(prev);
+            const pendingAt = clips.findIndex((c) => !c.url && !prev.has(clips.indexOf(c)));
+            if (pendingAt >= 0) next.add(pendingAt);
+            return next;
+          });
+          throw err;
+        }
+        const dt = (performance.now() - t0) / 1000;
+        const completed = last?.results?.queueCompleted ?? lastCompleted;
         const total = last?.results?.queueTotal ?? 0;
+        if (completed > lastCompleted) {
+          clipTimesRef.current.push(dt);
+          lastCompleted = completed;
+        }
+        const nextClips = last?.results?.clips as SceneClip[] | undefined;
+        if (nextClips) setClips(nextClips);
+        setActiveIdx(nextClips ? nextClips.findIndex((c) => !c.url) : null);
         qc.invalidateQueries({ queryKey: ["projects"] });
-        if (done) break;
+        if (last?.results?.done) break;
         if (total > 0) toast.message(`Rendering clip ${completed}/${total}…`, { id: "movie-pipeline" });
       }
+      setActiveIdx(null);
       return last;
     },
-    onSuccess: () => { toast.success("Pipeline complete.", { id: "movie-pipeline" }); qc.invalidateQueries({ queryKey: ["projects"] }); },
+    onSuccess: () => {
+      toast.success("All clips rendered.", { id: "movie-pipeline" });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
