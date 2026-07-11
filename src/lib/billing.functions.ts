@@ -66,7 +66,9 @@ export const isAdmin = createServerFn({ method: "GET" })
 
 // ---------- Admin: metrics, cost editing, plan editing, adjust ----------
 
-async function assertAdmin(ctx: { supabase: { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown }> }; userId: string }) {
+import type { Context } from "@/integrations/supabase/auth-middleware";
+
+async function assertAdmin(ctx: { supabase: Context["supabase"]; userId: string }) {
   const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
   if (!data) throw new Error("Forbidden");
 }
@@ -119,7 +121,7 @@ export const adminGrantCredits = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: res, error } = await supabaseAdmin.rpc("credit_grant", {
-      _user: data.userId, _credits: data.credits, _reason: data.reason, _kind: "bonus", _ref: null,
+      _user: data.userId, _credits: data.credits, _reason: data.reason, _kind: "bonus",
     });
     if (error) throw new Error(error.message);
     return res;
