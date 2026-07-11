@@ -11,6 +11,7 @@ const Input = z.object({
   chainScenes: z.boolean().optional(),
   wordsPerSecond: z.number().min(1).max(6).optional(),
   maxClipSeconds: z.number().int().min(2).max(10).optional(),
+  maxClipsPerCall: z.number().int().min(1).max(4).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
@@ -76,11 +77,16 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const wps = data.wordsPerSecond ?? 2.5; // ~150 wpm narration pace
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
+    const maxClipsPerCall = data.maxClipsPerCall ?? 1; // process one Wan clip per invocation to avoid Worker timeouts
     const results: {
       images?: Array<{ id: string; url: string }>;
       voiceUrl?: string;
       videoUrl?: string;
       clips?: SceneClip[];
+      queueTotal?: number;
+      queueCompleted?: number;
+      queueRemaining?: number;
+      done?: boolean;
     } = {};
 
     // 1. Images
@@ -116,14 +122,20 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       }
     }
 
-    // 3. Video — either one clip per scene (chained movie) or a single Wan clip.
-    if (pipeline.video === "completed") return { ok: true, results, resumed: true };
-    await setStage("video", "generating");
-    try {
-      const clips: SceneClip[] = [];
-      let providerLabel = "wan";
+    // 3. Video — build a persistent clip queue, then generate one (or a small
+    // batch) of pending clips per invocation so we never hit the Worker
+    // timeout. The manifest is written to `video_file` up-front with pending
+    // clips (empty url), and each successful Wan generation is appended in
+    // place. The client keeps calling this fn until `done === true`.
+
+    let manifest = (proj.video_file as MovieManifest | null) ?? null;
+    const looksLikeQueue = manifest && Array.isArray(manifest.clips) && manifest.clips.length > 0
+      && manifest.clips.every((c) => typeof c?.prompt === "string");
+
+    if (!looksLikeQueue) {
+      // Build the full queue from storyboard scenes (or a single-shot fallback).
+      const queued: SceneClip[] = [];
       if (chain && scenes.length > 0) {
-        // Split narration text across scenes evenly (respecting per-scene narration if present).
         const perSceneWords = splitWordsAcrossScenes(voiceScript, scenes);
         let cursor = 0;
         for (let i = 0; i < scenes.length; i++) {
@@ -136,70 +148,181 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
             const promptText = segments.length > 1
               ? `${scene.prompt} — continuous shot, part ${j + 1} of ${segments.length}`
               : scene.prompt;
-            const r = await generateWanVideo({
-              data: { prompt: promptText, projectId: proj.id, mode: "t2v", duration: dur },
-            });
-            providerLabel = r.provider;
-            clips.push({
+            queued.push({
               sceneNumber: i + 1,
               clipNumber: j + 1,
               sceneId: scene.id,
               prompt: promptText,
-              url: r.url,
-              cover: r.cover,
+              url: "", // pending
               startTime: cursor,
               endTime: cursor + dur,
               durationSeconds: dur,
-              provider: r.provider,
+              provider: "wan",
             });
             cursor += dur;
           }
         }
       } else {
         const videoPrompt = summarize(proj.story) || proj.name || "Cinematic short film";
-        const r = await generateWanVideo({
-          data: { prompt: videoPrompt, projectId: proj.id, mode: "t2v", duration: perScene },
-        });
-        providerLabel = r.provider;
-        clips.push({
+        queued.push({
           sceneNumber: 1,
           clipNumber: 1,
           sceneId: "main",
           prompt: videoPrompt,
-          url: r.url,
-          cover: r.cover,
+          url: "",
           startTime: 0,
           endTime: perScene,
           durationSeconds: perScene,
-          provider: r.provider,
+          provider: "wan",
         });
       }
 
-      const manifest: MovieManifest = {
-        kind: clips.length > 1 ? "chained" : "single",
-        url: clips[0]?.url ?? "",
-        clips,
-        narrationUrl: results.voiceUrl,
-        provider: providerLabel,
-        totalDurationSeconds: clips.reduce((sum, c) => sum + c.durationSeconds, 0),
+      manifest = {
+        kind: queued.length > 1 ? "chained" : "single",
+        url: "",
+        clips: queued,
+        narrationUrl: results.voiceUrl ?? extractUrl(proj.voice_audio),
+        provider: "wan",
+        totalDurationSeconds: queued.reduce((n, c) => n + c.durationSeconds, 0),
         wordsPerSecond: wps,
         maxClipSeconds: maxClip,
       };
 
-      pipeline.video = "completed";
+      pipeline.video = "generating";
       await context.supabase
         .from("projects")
-        .update({ media_pipeline: pipeline, video_file: manifest, render_status: "completed", render_progress: 100, video_provider: providerLabel })
+        .update({
+          media_pipeline: pipeline,
+          video_file: manifest,
+          render_status: "generating",
+          render_progress: 1,
+        })
         .eq("id", proj.id);
-      results.clips = clips;
+      console.log(`[pipeline] scenes=${scenes.length} clips_queued=${queued.length}`);
+    }
+
+    if (!manifest) throw new Error("Failed to build clip queue.");
+
+    const total = manifest.clips.length;
+    const isPending = (c: SceneClip) => !c.url || c.url.length === 0;
+    const pendingIdxs = manifest.clips.map((c, i) => (isPending(c) ? i : -1)).filter((i) => i >= 0);
+    console.log(`[pipeline] total=${total} pending=${pendingIdxs.length} completed=${total - pendingIdxs.length}`);
+
+    if (pendingIdxs.length === 0) {
+      // Everything already generated — mark done.
+      pipeline.video = "completed";
+      manifest.url = manifest.clips[0]?.url ?? manifest.url;
+      manifest.totalDurationSeconds = manifest.clips.reduce((n, c) => n + c.durationSeconds, 0);
+      await context.supabase
+        .from("projects")
+        .update({
+          media_pipeline: pipeline,
+          video_file: manifest,
+          render_status: "completed",
+          render_progress: 100,
+        })
+        .eq("id", proj.id);
+      results.clips = manifest.clips;
       results.videoUrl = manifest.url;
+      results.queueTotal = total;
+      results.queueCompleted = total;
+      results.queueRemaining = 0;
+      results.done = true;
+      return { ok: true, results };
+    }
+
+    // Generate up to `maxClipsPerCall` pending clips this invocation.
+    if (pipeline.video !== "generating") {
+      await setStage("video", "generating");
+    }
+    let submitted = 0;
+    let providerLabel = manifest.provider ?? "wan";
+    try {
+      for (const idx of pendingIdxs.slice(0, maxClipsPerCall)) {
+        const target = manifest.clips[idx];
+        const dur = Math.max(2, Math.min(maxClip, Math.round(target.durationSeconds)));
+        const r = await generateWanVideo({
+          data: {
+            prompt: target.prompt,
+            projectId: proj.id,
+            mode: "t2v",
+            duration: dur,
+            skipProjectVideoUpdate: true, // don't clobber our manifest
+          },
+        });
+        providerLabel = r.provider;
+        manifest.clips[idx] = {
+          ...target,
+          url: r.url,
+          cover: r.cover,
+          durationSeconds: dur,
+          provider: r.provider,
+        };
+        submitted++;
+
+        // Persist after every successful clip → resume-safe.
+        const completedNow = manifest.clips.filter((c) => !isPending(c)).length;
+        const progressPct = Math.max(1, Math.min(99, Math.round((completedNow / total) * 100)));
+        manifest.url = manifest.clips.find((c) => !isPending(c))?.url ?? manifest.url;
+        manifest.provider = providerLabel;
+        await context.supabase
+          .from("projects")
+          .update({
+            video_file: manifest,
+            render_status: "generating",
+            render_progress: progressPct,
+            video_provider: providerLabel,
+          })
+          .eq("id", proj.id);
+        console.log(`[pipeline] wrote clip ${completedNow}/${total} scene=${target.sceneNumber} part=${target.clipNumber}`);
+      }
     } catch (e) {
-      await setStage("video", "failed");
+      // Persist whatever we managed so the next call resumes.
+      await context.supabase
+        .from("projects")
+        .update({ media_pipeline: pipeline, video_file: manifest, render_status: "failed" })
+        .eq("id", proj.id);
       throw e;
     }
 
+    const completed = manifest.clips.filter((c) => !isPending(c)).length;
+    const remaining = total - completed;
+    const done = remaining === 0;
+    if (done) {
+      pipeline.video = "completed";
+      manifest.url = manifest.clips[0]?.url ?? manifest.url;
+      manifest.totalDurationSeconds = manifest.clips.reduce((n, c) => n + c.durationSeconds, 0);
+      await context.supabase
+        .from("projects")
+        .update({
+          media_pipeline: pipeline,
+          video_file: manifest,
+          render_status: "completed",
+          render_progress: 100,
+          video_provider: providerLabel,
+        })
+        .eq("id", proj.id);
+    }
+    console.log(`[pipeline] submitted=${submitted} completed=${completed}/${total} done=${done}`);
+
+    results.clips = manifest.clips;
+    results.videoUrl = manifest.url;
+    results.queueTotal = total;
+    results.queueCompleted = completed;
+    results.queueRemaining = remaining;
+    results.done = done;
     return { ok: true, results };
   });
+
+function extractUrl(v: unknown): string | undefined {
+  if (!v) return undefined;
+  if (typeof v === "string") return v;
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (typeof o.url === "string") return o.url;
+  }
+  return undefined;
+}
 
 function parseScenes(images: unknown): Array<{ id: string; prompt: string; narrationWords?: number }> {
   if (!images) return [];
