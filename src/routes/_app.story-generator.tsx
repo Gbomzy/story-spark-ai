@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Sparkles, Loader2 } from "lucide-react";
+import { Wand2, Sparkles, Loader2, Film, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   generateStory,
@@ -18,11 +18,17 @@ import { OutputWorkspace } from "@/components/output-workspace";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    prompt: typeof s.prompt === "string" ? s.prompt : undefined,
+  }),
   component: StoryGeneratorPage,
 });
 
 function StoryGeneratorPage() {
-  const [prompt, setPrompt] = useState("A shy fox who wants to make friends at school.");
+  const search = useSearch({ from: "/_app/story-generator" });
+  const [prompt, setPrompt] = useState(
+    search.prompt ?? "A shy fox who wants to make friends at school.",
+  );
   const [story, setStory] = useState<string | null>(null);
   const [characters, setCharacters] = useState<string | null>(null);
   const [storyboard, setStoryboard] = useState<string | null>(null);
@@ -135,6 +141,25 @@ function StoryGeneratorPage() {
               : "awaiting"
         }
       />
+
+      {story ? (
+        <Card className="glass flex flex-col items-center justify-between gap-3 rounded-3xl p-5 shadow-soft sm:flex-row">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl gradient-primary text-white">
+              <Film className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Your story is ready</p>
+              <p className="text-xs text-muted-foreground">Pick a character and render the movie in Video Studio.</p>
+            </div>
+          </div>
+          <Button asChild className="rounded-xl gradient-primary text-white shadow-glow">
+            <Link to="/video-studio">
+              Generate the movie <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Link>
+          </Button>
+        </Card>
+      ) : null}
     </div>
   );
 }
