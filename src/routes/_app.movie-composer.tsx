@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { saveAs } from "file-saver";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import {
   Film, Download, Loader2, ArrowUp, ArrowDown, Trash2, Copy, RefreshCw, Scissors, Play, Wand2, Package, Music, Type,
+  CheckCircle2, XCircle, Clock, RotateCcw, SkipForward, PartyPopper, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
