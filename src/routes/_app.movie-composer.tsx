@@ -380,6 +380,30 @@ function ComposerBody({ project }: { project: ProjectRow }) {
         <SettingsPanel settings={settings} onChange={setSettings} />
       </Card>
 
+      {(pipelineMut.isPending || (totalCount > 0 && completedCount < totalCount)) && (
+        <ProgressDashboard
+          completed={completedCount}
+          total={totalCount}
+          overallPct={overallPct}
+          current={currentClip}
+          provider={currentClip?.provider ?? initial?.provider ?? "wan"}
+          avgClipSec={avgClipSec}
+          etaSec={etaSec}
+          elapsedSec={elapsedSec}
+          renderStartAt={renderStartAt}
+        />
+      )}
+
+      <RenderQueuePanel
+        clips={clips}
+        activeIdx={activeIdx}
+        failed={failedIdx}
+        retryingAny={regenMut.isPending}
+        onRetry={retryClip}
+        onSkip={skipClip}
+        onPreview={setPreviewClip}
+      />
+
       <Card className="glass rounded-3xl p-5 shadow-soft">
         <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Timeline</p>
         {clips.length === 0 ? (
@@ -455,6 +479,31 @@ function ComposerBody({ project }: { project: ProjectRow }) {
       </Card>
 
       {renderedUrl ? (
+        <Card className="glass rounded-3xl p-6 text-center shadow-soft">
+          <PartyPopper className="mx-auto mb-2 h-8 w-8 text-primary" />
+          <h3 className="text-xl font-bold">Movie completed successfully</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Runtime {totalDuration.toFixed(1)}s · {new Set(clips.map((c) => c.sceneNumber)).size} scenes · {clips.length} clips ·
+            {" "}{settings.resolution} · {settings.fps}fps · {(renderMs / 1000).toFixed(1)}s render · {initial?.provider ?? "wan"}
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button className="rounded-xl gradient-primary text-white shadow-glow" onClick={() => renderedUrl && window.open(renderedUrl, "_blank")}>
+              <Play className="mr-1.5 h-4 w-4" /> Watch movie
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={downloadMovie}>
+              <Download className="mr-1.5 h-4 w-4" /> Download {renderedExt.toUpperCase()}
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={downloadZip}>
+              <Package className="mr-1.5 h-4 w-4" /> Download ZIP
+            </Button>
+            <Button variant="outline" className="rounded-xl" asChild>
+              <Link to="/publishing"><Upload className="mr-1.5 h-4 w-4" /> Publish</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      {renderedUrl ? (
         <Card className="glass rounded-3xl p-5 shadow-soft">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -477,6 +526,8 @@ function ComposerBody({ project }: { project: ProjectRow }) {
           <video src={renderedUrl} controls className="aspect-video w-full rounded-2xl bg-black" />
         </Card>
       ) : null}
+
+      <RenderHistoryPanel />
     </>
   );
 }
