@@ -16,6 +16,22 @@ import { runFullMoviePipeline, type MovieManifest, type SceneClip } from "@/lib/
 import { PIPELINE, stageStatus, type PipelineState } from "@/lib/pipeline";
 import { CHARACTER_PRESETS, findCharacter } from "@/lib/characters";
 
+const ASPECT_SIZES: Record<"16:9" | "9:16" | "1:1" | "4:5", Record<"720p" | "1080p", string>> = {
+  "16:9": { "720p": "1280*720", "1080p": "1920*1080" },
+  "9:16": { "720p": "720*1280", "1080p": "1080*1920" },
+  "1:1":  { "720p": "960*960",  "1080p": "1024*1024" },
+  "4:5":  { "720p": "864*1080", "1080p": "864*1080" },
+};
+
+const PLATFORM_PRESETS: Array<{ id: string; label: string; ratio: "16:9" | "9:16" | "1:1" | "4:5"; resolution: "720p" | "1080p" }> = [
+  { id: "yt",       label: "YouTube (16:9)",         ratio: "16:9", resolution: "1080p" },
+  { id: "shorts",   label: "YouTube Shorts (9:16)",  ratio: "9:16", resolution: "1080p" },
+  { id: "tiktok",   label: "TikTok (9:16)",          ratio: "9:16", resolution: "1080p" },
+  { id: "reel",     label: "Instagram Reel (9:16)",  ratio: "9:16", resolution: "1080p" },
+  { id: "sq",       label: "Instagram Square (1:1)", ratio: "1:1",  resolution: "1080p" },
+  { id: "portrait", label: "Instagram Portrait (4:5)", ratio: "4:5", resolution: "1080p" },
+];
+
 export const Route = createFileRoute("/_app/video-studio")({
   head: () => ({ meta: [{ title: "Video Studio — StorySpark AI" }] }),
   component: VideoStudioPage,
