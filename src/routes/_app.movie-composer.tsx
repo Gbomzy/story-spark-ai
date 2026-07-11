@@ -269,6 +269,85 @@ function ComposerBody({ project }: { project: ProjectRow }) {
     setClips(next);
   };
 
+  // Retry a failed clip in place (regenerate it), keeping the manifest intact.
+  const retryClip = (i: number) => {
+    const c = clips[i];
+    if (!c) return;
+    setFailedIdx((p) => { const n = new Set(p); n.delete(i); return n; });
+    regenMut.mutate(c);
+  };
+
+  // Skip a failed clip — drop it from the queue and continue rendering.
+  const skipClip = (i: number) => {
+    setFailedIdx((p) => { const n = new Set(p); n.delete(i); return n; });
+    setClips(renumber(clips.filter((_, idx) => idx !== i)));
+    toast.message("Clip skipped.");
+  };
+
+  // Auto-resume: on mount, if the manifest has pending clips, continue rendering.
+  useEffect(() => {
+    if (autoResumedRef.current) return;
+    autoResumedRef.current = true;
+    const hasPending = clips.some((c) => !c.url);
+    if (hasPending && !pipelineMut.isPending) {
+      toast.message("Resuming render from last checkpoint…");
+      pipelineMut.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-finalize: once all clips are rendered, automatically compose the movie.
+  useEffect(() => {
+    if (autoFinalizedRef.current) return;
+    if (pipelineMut.isPending) return;
+    if (clips.length === 0) return;
+    if (clips.some((c) => !c.url)) return;
+    if (renderedUrl || progress) return;
+    autoFinalizedRef.current = true;
+    void render();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clips, pipelineMut.isPending]);
+
+  // 1Hz tick for the elapsed clock while rendering
+  useEffect(() => {
+    if (!pipelineMut.isPending) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [pipelineMut.isPending]);
+
+  // Persist a Render History entry on success.
+  useEffect(() => {
+    if (!renderedUrl || !renderStartAt) return;
+    saveRenderHistory({
+      projectId: project.id,
+      name: project.name,
+      startTime: renderStartAt,
+      endTime: Date.now(),
+      durationMs: Date.now() - renderStartAt,
+      provider: initial?.provider ?? "wan",
+      clips: clips.length,
+      failed: failedIdx.size,
+      status: failedIdx.size ? "partial" : "success",
+      avgClipSeconds: clipTimesRef.current.length
+        ? clipTimesRef.current.reduce((a, b) => a + b, 0) / clipTimesRef.current.length
+        : 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderedUrl]);
+
+  // Derived stats for the progress dashboard.
+  const completedCount = clips.filter((c) => c.url).length;
+  const totalCount = clips.length;
+  const overallPct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  const avgClipSec = clipTimesRef.current.length
+    ? clipTimesRef.current.reduce((a, b) => a + b, 0) / clipTimesRef.current.length
+    : 0;
+  const remainingClips = Math.max(0, totalCount - completedCount);
+  const etaSec = avgClipSec > 0 ? Math.round(avgClipSec * remainingClips) : 0;
+  const elapsedSec = renderStartAt ? Math.round((Date.now() - renderStartAt) / 1000) : 0;
+  void tick; // referenced so ESLint/consumers know it drives re-renders
+  const currentClip = activeIdx != null ? clips[activeIdx] : clips.find((c) => !c.url) ?? null;
+
   return (
     <>
       <Card className="glass rounded-3xl p-5 shadow-soft sm:p-6">
