@@ -21,8 +21,14 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
     const { beginCharge } = await import("./creditsInHandler.server");
+    const { sanitizeVoiceScript } = await import("./voiceScript");
+    // Never send screenplay markers ([NARRATOR], [SFX], [PAUSE 1s], scene
+    // headings, stage directions) to the TTS engine — otherwise the voice
+    // literally reads the annotations aloud.
+    const spokenScript = sanitizeVoiceScript(data.script);
+    if (!spokenScript) throw new Error("Voice script is empty after removing scene directions.");
     // Roughly one credit-unit per 500 chars of script
-    const units = Math.max(1, Math.ceil(data.script.length / 500));
+    const units = Math.max(1, Math.ceil(spokenScript.length / 500));
     const charge = await beginCharge({ userId: context.userId, operation: "voice", units, projectId: data.projectId ?? null });
     const { runDashScopeJson, getBase, DEFAULT_DASHSCOPE_BASE, MULTIMODAL_GENERATION_PATH } = await import("./dashscope.server");
     const model = data.model ?? "qwen3-tts-flash";
@@ -42,7 +48,7 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
         body: {
           model,
           input: {
-            text: data.script,
+            text: spokenScript,
             voice,
             language_type: data.language ?? "Auto",
             stream: false,
