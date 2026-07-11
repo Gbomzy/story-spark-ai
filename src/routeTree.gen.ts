@@ -46,6 +46,7 @@ import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
+import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
@@ -238,6 +239,11 @@ const AppCharactersRoute = AppCharactersRouteImport.update({
   path: '/characters',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAssetsRoute = AppAssetsRouteImport.update({
   id: '/assets',
   path: '/assets',
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
   '/assets': typeof AppAssetsRoute
+  '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
   '/assets': typeof AppAssetsRoute
+  '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
@@ -376,6 +384,7 @@ export interface FileRoutesById {
   '/_app/ai-providers': typeof AppAiProvidersRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/assets': typeof AppAssetsRoute
+  '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -423,6 +432,7 @@ export interface FileRouteTypes {
     | '/ai-providers'
     | '/analytics'
     | '/assets'
+    | '/billing'
     | '/characters'
     | '/credits'
     | '/dashboard'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/ai-providers'
     | '/analytics'
     | '/assets'
+    | '/billing'
     | '/characters'
     | '/credits'
     | '/dashboard'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/_app/ai-providers'
     | '/_app/analytics'
     | '/_app/assets'
+    | '/_app/billing'
     | '/_app/characters'
     | '/_app/credits'
     | '/_app/dashboard'
@@ -820,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCharactersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/billing': {
+      id: '/_app/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/assets': {
       id: '/_app/assets'
       path: '/assets'
@@ -891,6 +910,7 @@ interface AppRouteChildren {
   AppAiProvidersRoute: typeof AppAiProvidersRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppAssetsRoute: typeof AppAssetsRoute
+  AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
   AppCreditsRoute: typeof AppCreditsRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -930,6 +950,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAiProvidersRoute: AppAiProvidersRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppAssetsRoute: AppAssetsRoute,
+  AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
   AppCreditsRoute: AppCreditsRoute,
   AppDashboardRoute: AppDashboardRoute,
