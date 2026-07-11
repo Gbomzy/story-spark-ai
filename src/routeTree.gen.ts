@@ -51,6 +51,7 @@ import { Route as AppAssetsRouteImport } from './routes/_app.assets'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
+import { Route as AppAdminBillingRouteImport } from './routes/_app.admin-billing'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
@@ -264,6 +265,11 @@ const AppAiAgentsRoute = AppAiAgentsRouteImport.update({
   path: '/ai-agents',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminBillingRoute = AppAdminBillingRouteImport.update({
+  id: '/admin-billing',
+  path: '/admin-billing',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/admin-billing': typeof AppAdminBillingRoute
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/admin-billing': typeof AppAdminBillingRoute
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_app/admin-billing': typeof AppAdminBillingRoute
   '/_app/ai-agents': typeof AppAiAgentsRoute
   '/_app/ai-providers': typeof AppAiProvidersRoute
   '/_app/analytics': typeof AppAnalyticsRoute
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/admin-billing'
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/admin-billing'
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
@@ -521,6 +532,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/_app/admin-billing'
     | '/_app/ai-agents'
     | '/_app/ai-providers'
     | '/_app/analytics'
@@ -867,6 +879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAiAgentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin-billing': {
+      id: '/_app/admin-billing'
+      path: '/admin-billing'
+      fullPath: '/admin-billing'
+      preLoaderRoute: typeof AppAdminBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/new': {
       id: '/_app/projects/new'
       path: '/new'
@@ -906,6 +925,7 @@ const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAdminBillingRoute: typeof AppAdminBillingRoute
   AppAiAgentsRoute: typeof AppAiAgentsRoute
   AppAiProvidersRoute: typeof AppAiProvidersRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
@@ -946,6 +966,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminBillingRoute: AppAdminBillingRoute,
   AppAiAgentsRoute: AppAiAgentsRoute,
   AppAiProvidersRoute: AppAiProvidersRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
