@@ -12,6 +12,8 @@ const Input = z.object({
   wordsPerSecond: z.number().min(1).max(6).optional(),
   maxClipSeconds: z.number().int().min(2).max(10).optional(),
   maxClipsPerCall: z.number().int().min(1).max(4).optional(),
+  characterName: z.string().max(80).optional(),
+  characterDescription: z.string().max(600).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
@@ -81,6 +83,12 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
     const maxClipsPerCall = data.maxClipsPerCall ?? 1; // process one Wan clip per invocation to avoid Worker timeouts
+    const characterName = (data.characterName ?? "").trim();
+    const characterDesc = (data.characterDescription ?? "").trim();
+    const characterPrefix = characterDesc
+      ? `Featuring ${characterDesc} Keep the character's appearance identical to this description in every shot. `
+      : "";
+    const characterSeedValue = characterName ? fnv1a(characterName) : undefined;
     const results: {
       images?: Array<{ id: string; url: string }>;
       voiceUrl?: string;
@@ -99,7 +107,13 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       try {
         for (const scene of scenes) {
           const r = await generateQwenImage({
-            data: { prompt: scene.prompt, projectId: proj.id, sceneId: scene.id, aspect: "16:9" },
+            data: {
+              prompt: `${characterPrefix}${scene.prompt}`,
+              projectId: proj.id,
+              sceneId: scene.id,
+              aspect: "16:9",
+              ...(characterSeedValue != null ? { seed: characterSeedValue } : {}),
+            },
           });
           images.push({ id: scene.id, url: r.url });
         }
@@ -112,7 +126,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     }
 
     // 2. Narration
-    const voiceScript = extractText(proj.voice);
+    const voiceScript = sanitizeNarration(extractText(proj.voice));
     if (voiceScript && pipeline.narration !== "completed") {
       await setStage("narration", "generating");
       try {
@@ -165,7 +179,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
               sceneNumber: i + 1,
               clipNumber: j + 1,
               sceneId: scene.id,
-              prompt: promptText,
+              prompt: `${characterPrefix}${promptText}`,
               url: "", // pending
               startTime: cursor,
               endTime: cursor + dur,
@@ -408,4 +422,46 @@ function extractText(v: unknown): string {
 function summarize(v: unknown): string {
   const text = extractText(v);
   return text.slice(0, 800);
+}
+
+/** Strip TTS-unfriendly artifacts from narration text:
+ *  - "Narrator:" / "NARRATOR:" prefixes
+ *  - Character label prefixes ("Lila: hello") → keep just the spoken words
+ *  - Stage directions in [brackets] or (parentheses)
+ *  - Markdown headings and bullet markers
+ *  So the TTS reads the actual story, not the script scaffolding. */
+export function sanitizeNarration(raw: string): string {
+  if (!raw) return "";
+  const lines = raw.split(/\r?\n/);
+  const cleaned: string[] = [];
+  for (const line of lines) {
+    let l = line.trim();
+    if (!l) { cleaned.push(""); continue; }
+    // strip markdown headings / bullets
+    l = l.replace(/^#{1,6}\s+/, "").replace(/^[-*•]\s+/, "");
+    // drop scene / shot headings entirely
+    if (/^(scene|shot|act|chapter|part|int\.|ext\.)\s*\d*[:.\-]/i.test(l)) continue;
+    // strip a leading "Narrator:" prefix
+    l = l.replace(/^\s*narrator\s*[:\-]\s*/i, "");
+    // drop lines that were ONLY a narrator label
+    if (!l) continue;
+    // strip a leading "Name:" character label (e.g. "Lila: Hello!")
+    l = l.replace(/^\s*[A-Z][A-Za-z' .-]{0,30}\s*:\s+/, "");
+    // strip stage directions in [] or ()
+    l = l.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "");
+    l = l.replace(/\s{2,}/g, " ").trim();
+    if (l) cleaned.push(l);
+  }
+  return cleaned.join(" ").replace(/\s+/g, " ").trim();
+}
+
+/** FNV-1a 32-bit hash for deterministic per-character seeds. */
+function fnv1a(s: string): number {
+  let h = 2166136261 >>> 0;
+  const q = s.trim().toLowerCase();
+  for (let i = 0; i < q.length; i++) {
+    h ^= q.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % 2147483647;
 }

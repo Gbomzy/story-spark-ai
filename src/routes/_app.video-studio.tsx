@@ -7,13 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Film, Download, Sparkles, Share2, Loader2, Wand2 } from "lucide-react";
+import { Film, Download, Sparkles, Share2, Loader2, Wand2, User } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
 import { generateWanVideo } from "@/lib/wanVideo.functions";
 import { runFullMoviePipeline, type MovieManifest, type SceneClip } from "@/lib/pipelineEngine.functions";
 import { PIPELINE, stageStatus, type PipelineState } from "@/lib/pipeline";
+import { CHARACTER_PRESETS, findCharacter } from "@/lib/characters";
 
 export const Route = createFileRoute("/_app/video-studio")({
   head: () => ({ meta: [{ title: "Video Studio — StorySpark AI" }] }),
@@ -64,6 +65,14 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const narrationUrl = manifest?.narrationUrl ?? extractUrl(project.voice_audio);
   const [perScene, setPerScene] = useState<number>(5);
   const [previewClip, setPreviewClip] = useState<SceneClip | null>(null);
+  const [characterId, setCharacterId] = useState<string>("none");
+  const [customCharacter, setCustomCharacter] = useState<string>("");
+  const selectedCharacter =
+    characterId === "none"
+      ? null
+      : characterId === "custom"
+        ? { name: customCharacter.trim(), description: "" }
+        : findCharacter(characterId);
 
   const videoMut = useMutation({
     mutationFn: () =>
@@ -86,7 +95,17 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
       // gives resume-from-interruption for free.
       let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
       for (let i = 0; i < 200; i++) {
-        last = await runPipeline({ data: { projectId: project.id, perSceneDuration: perScene, chainScenes: true } });
+        last = await runPipeline({
+          data: {
+            projectId: project.id,
+            perSceneDuration: perScene,
+            chainScenes: true,
+            ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
+            ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
+              ? { characterDescription: selectedCharacter.description }
+              : {}),
+          },
+        });
         const done = last?.results?.done ?? true;
         const remaining = last?.results?.queueRemaining ?? 0;
         const completed = last?.results?.queueCompleted ?? 0;
@@ -110,6 +129,47 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
 
   const busy = videoMut.isPending || pipelineMut.isPending;
   const pipelineState = (project.media_pipeline as PipelineState | null) ?? {};
+
+  async function downloadAllClips() {
+    if (!clips.length) return;
+    toast.message(`Downloading ${clips.length} clip(s)…`, { id: "dl-all" });
+    for (let i = 0; i < clips.length; i++) {
+      const c = clips[i];
+      if (!c.url) continue;
+      try {
+        const res = await fetch(c.url);
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `${project.name || "movie"}_scene-${c.sceneNumber}_part-${c.clipNumber}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 4000);
+      } catch {
+        // fall back to opening in a new tab so the user can still save it
+        window.open(c.url, "_blank", "noopener");
+      }
+      // small gap so browsers don't drop rapid downloads
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    if (narrationUrl) {
+      try {
+        const res = await fetch(narrationUrl);
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `${project.name || "movie"}_narration.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 4000);
+      } catch { /* best effort */ }
+    }
+    toast.success("Movie files saved to your Downloads folder.", { id: "dl-all" });
+  }
 
   return (
     <>
@@ -165,6 +225,33 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
                 Wan clips max out at ~10s. Longer movies are built by chaining one clip per storyboard scene.
               </p>
             </div>
+            <div className="rounded-2xl border border-border bg-card/60 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <User className="h-3 w-3" /> Main character
+              </div>
+              <select
+                value={characterId}
+                onChange={(e) => setCharacterId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="none">No fixed character</option>
+                {CHARACTER_PRESETS.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name} — {c.trait}</option>
+                ))}
+                <option value="custom">Custom name…</option>
+              </select>
+              {characterId === "custom" ? (
+                <input
+                  value={customCharacter}
+                  onChange={(e) => setCustomCharacter(e.target.value)}
+                  placeholder="e.g. Lily"
+                  className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                />
+              ) : null}
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Picking the same character (or typing the same custom name) keeps them looking consistent across every movie.
+              </p>
+            </div>
             <div>
               <Progress value={progress} className="h-2" />
             </div>
@@ -177,6 +264,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               </Button>
               <Button asChild disabled={!videoUrl} variant="outline" className="rounded-xl">
                 {videoUrl ? <a href={videoUrl} download><Download className="mr-1.5 h-4 w-4" /> Download MP4</a> : <span><Download className="mr-1.5 h-4 w-4" /> Download MP4</span>}
+              </Button>
+              <Button onClick={downloadAllClips} disabled={clips.length === 0} variant="outline" className="rounded-xl">
+                <Download className="mr-1.5 h-4 w-4" /> Download entire movie ({clips.length || 0} clips)
               </Button>
               <Button disabled={!videoUrl} variant="outline" className="rounded-xl">
                 <Share2 className="mr-1.5 h-4 w-4" /> Publish
