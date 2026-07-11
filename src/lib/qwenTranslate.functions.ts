@@ -42,6 +42,9 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     const apiKey = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY;
     if (!apiKey) throw new Error("QWEN_API_KEY / DASHSCOPE_API_KEY is not configured.");
     const t0 = Date.now();
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const units = Math.max(1, Math.ceil(data.text.length / 1000));
+    const charge = await beginCharge({ userId: context.userId, operation: "translation", units, projectId: data.projectId ?? null });
 
     const sourceLanguage = data.sourceLanguage && data.sourceLanguage !== "auto" ? data.sourceLanguage : "auto";
 
@@ -59,6 +62,7 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     );
     if (!res.ok) {
       const txt = await res.text();
+      await charge.refund(`translate_http_${res.status}`);
       throw new Error(`Qwen translate failed (${res.status}): ${txt.slice(0, 300)}`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -74,5 +78,6 @@ export const qwenTranslate = createServerFn({ method: "POST" })
         credits_used: 1,
       });
     } catch { /* best-effort */ }
-    return { translated, provider: "qwen-mt-flash", durationMs: Date.now() - t0 };
+    await charge.commit("qwen-mt-flash");
+    return { translated, provider: "qwen-mt-flash", durationMs: Date.now() - t0, creditsUsed: charge.credits };
   });
