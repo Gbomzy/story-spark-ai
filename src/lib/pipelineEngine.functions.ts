@@ -423,3 +423,45 @@ function summarize(v: unknown): string {
   const text = extractText(v);
   return text.slice(0, 800);
 }
+
+/** Strip TTS-unfriendly artifacts from narration text:
+ *  - "Narrator:" / "NARRATOR:" prefixes
+ *  - Character label prefixes ("Lila: hello") → keep just the spoken words
+ *  - Stage directions in [brackets] or (parentheses)
+ *  - Markdown headings and bullet markers
+ *  So the TTS reads the actual story, not the script scaffolding. */
+export function sanitizeNarration(raw: string): string {
+  if (!raw) return "";
+  const lines = raw.split(/\r?\n/);
+  const cleaned: string[] = [];
+  for (const line of lines) {
+    let l = line.trim();
+    if (!l) { cleaned.push(""); continue; }
+    // strip markdown headings / bullets
+    l = l.replace(/^#{1,6}\s+/, "").replace(/^[-*•]\s+/, "");
+    // drop scene / shot headings entirely
+    if (/^(scene|shot|act|chapter|part|int\.|ext\.)\s*\d*[:.\-]/i.test(l)) continue;
+    // strip a leading "Narrator:" prefix
+    l = l.replace(/^\s*narrator\s*[:\-]\s*/i, "");
+    // drop lines that were ONLY a narrator label
+    if (!l) continue;
+    // strip a leading "Name:" character label (e.g. "Lila: Hello!")
+    l = l.replace(/^\s*[A-Z][A-Za-z' .-]{0,30}\s*:\s+/, "");
+    // strip stage directions in [] or ()
+    l = l.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "");
+    l = l.replace(/\s{2,}/g, " ").trim();
+    if (l) cleaned.push(l);
+  }
+  return cleaned.join(" ").replace(/\s+/g, " ").trim();
+}
+
+/** FNV-1a 32-bit hash for deterministic per-character seeds. */
+function fnv1a(s: string): number {
+  let h = 2166136261 >>> 0;
+  const q = s.trim().toLowerCase();
+  for (let i = 0; i < q.length; i++) {
+    h ^= q.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % 2147483647;
+}
