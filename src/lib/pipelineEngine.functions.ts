@@ -14,6 +14,7 @@ const Input = z.object({
   maxClipsPerCall: z.number().int().min(1).max(4).optional(),
   characterName: z.string().max(80).optional(),
   characterDescription: z.string().max(600).optional(),
+  size: z.string().max(20).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
@@ -275,6 +276,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
             mode: "t2v",
             duration: dur,
             skipProjectVideoUpdate: true, // don't clobber our manifest
+            ...(data.size ? { size: data.size } : {}),
           },
         });
         providerLabel = r.provider;

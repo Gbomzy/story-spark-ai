@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Film, Download, Sparkles, Share2, Loader2, Wand2, User } from "lucide-react";
+import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
@@ -16,6 +16,22 @@ import { runFullMoviePipeline, type MovieManifest, type SceneClip } from "@/lib/
 import { PIPELINE, stageStatus, type PipelineState } from "@/lib/pipeline";
 import { CHARACTER_PRESETS, findCharacter } from "@/lib/characters";
 
+const ASPECT_SIZES: Record<"16:9" | "9:16" | "1:1" | "4:5", Record<"720p" | "1080p", string>> = {
+  "16:9": { "720p": "1280*720", "1080p": "1920*1080" },
+  "9:16": { "720p": "720*1280", "1080p": "1080*1920" },
+  "1:1":  { "720p": "960*960",  "1080p": "1024*1024" },
+  "4:5":  { "720p": "864*1080", "1080p": "864*1080" },
+};
+
+const PLATFORM_PRESETS: Array<{ id: string; label: string; ratio: "16:9" | "9:16" | "1:1" | "4:5"; resolution: "720p" | "1080p" }> = [
+  { id: "yt",       label: "YouTube (16:9)",         ratio: "16:9", resolution: "1080p" },
+  { id: "shorts",   label: "YouTube Shorts (9:16)",  ratio: "9:16", resolution: "1080p" },
+  { id: "tiktok",   label: "TikTok (9:16)",          ratio: "9:16", resolution: "1080p" },
+  { id: "reel",     label: "Instagram Reel (9:16)",  ratio: "9:16", resolution: "1080p" },
+  { id: "sq",       label: "Instagram Square (1:1)", ratio: "1:1",  resolution: "1080p" },
+  { id: "portrait", label: "Instagram Portrait (4:5)", ratio: "4:5", resolution: "1080p" },
+];
+
 export const Route = createFileRoute("/_app/video-studio")({
   head: () => ({ meta: [{ title: "Video Studio — StorySpark AI" }] }),
   component: VideoStudioPage,
@@ -23,8 +39,14 @@ export const Route = createFileRoute("/_app/video-studio")({
 
 function VideoStudioPage() {
   const { data: projects, isLoading } = useQuery({ queryKey: ["projects"], queryFn: listProjects });
-  const project = projects?.[0] ?? null;
   const configured = videoService.isConfigured();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedProjectId && projects && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+  const project = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
@@ -45,7 +67,26 @@ function VideoStudioPage() {
           </Button>
         </Card>
       ) : (
-        <VideoDetail project={project} configured={configured} />
+        <>
+          {projects && projects.length > 0 ? (
+            <Card className="glass rounded-3xl p-4 shadow-soft">
+              <div className="flex items-center gap-3">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">Project</label>
+                <select
+                  value={project.id}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name || "Untitled project"}</option>
+                  ))}
+                </select>
+              </div>
+            </Card>
+          ) : null}
+          <VideoDetail key={project.id} project={project} configured={configured} />
+        </>
       )}
     </div>
   );
@@ -67,6 +108,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const [previewClip, setPreviewClip] = useState<SceneClip | null>(null);
   const [characterId, setCharacterId] = useState<string>("none");
   const [customCharacter, setCustomCharacter] = useState<string>("");
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1" | "4:5">("16:9");
+  const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
+  const size = ASPECT_SIZES[aspectRatio][resolution];
   const selectedCharacter =
     characterId === "none"
       ? null
@@ -82,6 +126,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           prompt: (typeof project.story === "string" ? project.story : String(project.story ?? "")).slice(0, 800) || project.name || "Cinematic short film",
           mode: "t2v",
           duration: perScene,
+          size,
         },
       }),
     onSuccess: () => { toast.success("Video ready."); qc.invalidateQueries({ queryKey: ["projects"] }); },
@@ -100,6 +145,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             projectId: project.id,
             perSceneDuration: perScene,
             chainScenes: true,
+            size,
             ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
             ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
               ? { characterDescription: selectedCharacter.description }
@@ -201,7 +247,8 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               <Field label="Total length" value={manifest ? `${manifest.totalDurationSeconds}s` : project.render_duration ? `${project.render_duration}s` : "—"} />
               <Field label="Scene clips" value={clips.length ? String(clips.length) : "—"} />
               <Field label="Scenes" value={clips.length ? String(new Set(clips.map((c) => c.sceneNumber)).size) : "—"} />
-              <Field label="Resolution" value="1280×720" />
+              <Field label="Resolution" value={size.replace("*", "×")} />
+              <Field label="Aspect" value={aspectRatio} />
               <Field label="Provider" value={provider} />
               <Field label="Model" value="wan2.7-t2v" />
               <Field label="Status" value={status} />
@@ -250,6 +297,56 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               ) : null}
               <p className="mt-2 text-[10px] text-muted-foreground">
                 Picking the same character (or typing the same custom name) keeps them looking consistent across every movie.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card/60 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Monitor className="h-3 w-3" /> Format & platform
+              </div>
+              <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Preset</p>
+              <select
+                value={PLATFORM_PRESETS.find((p) => p.ratio === aspectRatio && p.resolution === resolution)?.id ?? ""}
+                onChange={(e) => {
+                  const p = PLATFORM_PRESETS.find((x) => x.id === e.target.value);
+                  if (p) { setAspectRatio(p.ratio); setResolution(p.resolution); }
+                }}
+                className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="">Custom…</option>
+                {PLATFORM_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label} · {p.resolution}</option>
+                ))}
+              </select>
+              <p className="mb-1 mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">Aspect ratio</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(["16:9", "9:16", "1:1", "4:5"] as const).map((r) => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={aspectRatio === r ? "default" : "outline"}
+                    onClick={() => setAspectRatio(r)}
+                    className="rounded-lg"
+                  >
+                    {r}
+                  </Button>
+                ))}
+              </div>
+              <p className="mb-1 mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">Resolution</p>
+              <div className="flex gap-1.5">
+                {(["720p", "1080p"] as const).map((r) => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={resolution === r ? "default" : "outline"}
+                    onClick={() => setResolution(r)}
+                    className="rounded-lg"
+                  >
+                    {r.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Output size: <span className="font-mono">{size.replace("*", "×")}</span>
               </p>
             </div>
             <div>
