@@ -97,6 +97,168 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_costs: {
+        Row: {
+          category: string
+          credits: number
+          is_active: boolean
+          label: string
+          operation: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          credits: number
+          is_active?: boolean
+          label: string
+          operation: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          credits?: number
+          is_active?: boolean
+          label?: string
+          operation?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_purchases: {
+        Row: {
+          amount_cents: number
+          completed_at: string | null
+          created_at: string
+          credits: number
+          currency: string
+          id: string
+          provider: string
+          provider_payment_id: string | null
+          provider_session_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          completed_at?: string | null
+          created_at?: string
+          credits: number
+          currency?: string
+          id?: string
+          provider: string
+          provider_payment_id?: string | null
+          provider_session_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          completed_at?: string | null
+          created_at?: string
+          credits?: number
+          currency?: string
+          id?: string
+          provider?: string
+          provider_payment_id?: string | null
+          provider_session_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          balance_after: number
+          balance_before: number
+          created_at: string
+          credits: number
+          id: string
+          metadata: Json
+          model: string | null
+          operation: string
+          project_id: string | null
+          provider: string | null
+          reason: string | null
+          ref_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          credits: number
+          id?: string
+          metadata?: Json
+          model?: string | null
+          operation: string
+          project_id?: string | null
+          provider?: string | null
+          reason?: string | null
+          ref_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          credits?: number
+          id?: string
+          metadata?: Json
+          model?: string | null
+          operation?: string
+          project_id?: string | null
+          provider?: string | null
+          reason?: string | null
+          ref_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_wallet: {
+        Row: {
+          balance: number
+          bonus_credits: number
+          credits_expiring: number
+          expires_at: string | null
+          lifetime_purchased: number
+          lifetime_used: number
+          reserved: number
+          subscription_credits: number
+          topup_credits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          bonus_credits?: number
+          credits_expiring?: number
+          expires_at?: string | null
+          lifetime_purchased?: number
+          lifetime_used?: number
+          reserved?: number
+          subscription_credits?: number
+          topup_credits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          bonus_credits?: number
+          credits_expiring?: number
+          expires_at?: string | null
+          lifetime_purchased?: number
+          lifetime_used?: number
+          reserved?: number
+          subscription_credits?: number
+          topup_credits?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -643,15 +805,195 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          concurrent_jobs: number
+          created_at: string
+          currency: string
+          features: Json
+          id: string
+          is_active: boolean
+          monthly_credits: number
+          movie_length_seconds: number
+          name: string
+          price_cents: number
+          publish_limit: number
+          sort_order: number
+          storage_limit_mb: number
+          stripe_price_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          concurrent_jobs?: number
+          created_at?: string
+          currency?: string
+          features?: Json
+          id: string
+          is_active?: boolean
+          monthly_credits?: number
+          movie_length_seconds?: number
+          name: string
+          price_cents?: number
+          publish_limit?: number
+          sort_order?: number
+          storage_limit_mb?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          concurrent_jobs?: number
+          created_at?: string
+          currency?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          monthly_credits?: number
+          movie_length_seconds?: number
+          name?: string
+          price_cents?: number
+          publish_limit?: number
+          sort_order?: number
+          storage_limit_mb?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          provider: string | null
+          provider_customer_id: string | null
+          provider_subscription_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      credit_commit: {
+        Args: {
+          _credits: number
+          _model?: string
+          _operation: string
+          _project?: string
+          _provider?: string
+          _ref?: string
+          _user: string
+        }
+        Returns: Json
+      }
+      credit_grant: {
+        Args: {
+          _credits: number
+          _kind?: string
+          _reason: string
+          _ref?: string
+          _user: string
+        }
+        Returns: Json
+      }
+      credit_refund: {
+        Args: {
+          _credits: number
+          _operation: string
+          _project?: string
+          _reason?: string
+          _ref?: string
+          _user: string
+        }
+        Returns: Json
+      }
+      credit_reserve: {
+        Args: {
+          _credits: number
+          _operation: string
+          _project?: string
+          _ref?: string
+          _user: string
+        }
+        Returns: Json
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -778,6 +1120,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
