@@ -247,7 +247,8 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
               <Field label="Total length" value={manifest ? `${manifest.totalDurationSeconds}s` : project.render_duration ? `${project.render_duration}s` : "—"} />
               <Field label="Scene clips" value={clips.length ? String(clips.length) : "—"} />
               <Field label="Scenes" value={clips.length ? String(new Set(clips.map((c) => c.sceneNumber)).size) : "—"} />
-              <Field label="Resolution" value="1280×720" />
+              <Field label="Resolution" value={size.replace("*", "×")} />
+              <Field label="Aspect" value={aspectRatio} />
               <Field label="Provider" value={provider} />
               <Field label="Model" value="wan2.7-t2v" />
               <Field label="Status" value={status} />
