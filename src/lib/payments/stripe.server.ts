@@ -1,41 +1,17 @@
-import type { PaymentAdapter, CheckoutParams } from "../billing.functions";
+import type { PaymentProvider, CheckoutParams, SubscriptionParams, CheckoutResult } from "./provider";
 
-/**
- * Stripe adapter. Uses the built-in Lovable Payments Stripe integration when
- * STRIPE_SECRET_KEY is available. If not configured, returns null so the UI
- * can show a "connect Stripe" prompt instead of crashing.
- */
-export const stripeAdapter: PaymentAdapter = {
+// Placeholder Stripe adapter conforming to the new PaymentProvider interface.
+// Not wired up (Stripe isn't available for the seller country); kept so future
+// activation is drop-in without touching the billing engine.
+export const stripeProvider: PaymentProvider = {
   id: "stripe",
-  async createCheckoutSession(p: CheckoutParams): Promise<string | null> {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) return null;
-    const origin = process.env.PUBLIC_URL || "";
-    const body = new URLSearchParams();
-    body.set("mode", "payment");
-    body.set("success_url", `${origin}/billing?purchase=${p.purchaseId}&status=success`);
-    body.set("cancel_url", `${origin}/billing?purchase=${p.purchaseId}&status=cancelled`);
-    body.set("client_reference_id", p.purchaseId);
-    body.set("metadata[purchase_id]", p.purchaseId);
-    body.set("metadata[user_id]", p.userId);
-    body.set("metadata[credits]", String(p.credits));
-    body.set("line_items[0][quantity]", "1");
-    body.set("line_items[0][price_data][currency]", "usd");
-    body.set("line_items[0][price_data][unit_amount]", String(p.amountCents));
-    body.set("line_items[0][price_data][product_data][name]", `${p.credits} StorySpark credits`);
-    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
-    });
-    if (!res.ok) {
-      console.error("[stripe] checkout failed", res.status, await res.text());
-      return null;
-    }
-    const json = (await res.json()) as { url?: string };
-    return json.url ?? null;
+  displayName: "Stripe",
+  isConfigured: () => Boolean(process.env.STRIPE_SECRET_KEY),
+  async createOneTimeCheckout(p: CheckoutParams): Promise<CheckoutResult> {
+    return { url: null, providerReference: p.reference };
   },
+  async createSubscriptionCheckout(p: SubscriptionParams): Promise<CheckoutResult> {
+    return { url: null, providerReference: p.reference };
+  },
+  async verifyWebhook() { return false; },
 };
