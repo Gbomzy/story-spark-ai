@@ -276,6 +276,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
             mode: "t2v",
             duration: dur,
             skipProjectVideoUpdate: true, // don't clobber our manifest
+            ...(data.size ? { size: data.size } : {}),
           },
         });
         providerLabel = r.provider;
