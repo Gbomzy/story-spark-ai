@@ -99,7 +99,7 @@ function StoryGeneratorPage() {
           />
           <div className="mt-3 flex flex-wrap gap-1.5">
             {["Friendship", "Kindness", "Curiosity", "Counting", "Colors"].map((t) => (
-              <Badge key={t} variant="secondary" className="cursor-pointer rounded-full" onClick={() => setPrompt((p) => p + ` (theme: ${t})`)}>{t}</Badge>
+              <Badge key={t} variant="secondary" className="cursor-pointer rounded-full" onClick={() => setPrompt((p: string) => p + ` (theme: ${t})`)}>{t}</Badge>
             ))}
           </div>
           <Button onClick={generate} disabled={mutation.isPending} className="mt-4 w-full rounded-xl gradient-primary text-white shadow-glow hover:opacity-95">
