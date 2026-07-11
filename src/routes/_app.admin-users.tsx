@@ -26,6 +26,14 @@ export const Route = createFileRoute("/_app/admin-users")({
 
 type Action = "add" | "deduct" | "set" | "reset" | "unlimited_on" | "unlimited_off" | "beta_bonus";
 type UserRow = Awaited<ReturnType<typeof adminSearchUsers>>[number];
+type BulkInput = {
+  scope: "all" | "plan" | "selected";
+  planId?: string;
+  userIds?: string[];
+  action: "add" | "deduct" | "beta_bonus";
+  amount: number;
+  reason: string;
+};
 
 function AdminUsersPage() {
   const qc = useQueryClient();
@@ -63,8 +71,7 @@ function AdminUsersPage() {
   });
 
   const bulk = useMutation({
-    mutationFn: (v: Parameters<typeof adminBulkWalletAction>[0]["data"]) =>
-      adminBulkWalletAction({ data: v }),
+    mutationFn: (v: BulkInput) => adminBulkWalletAction({ data: v }),
     onSuccess: (res) => { toast.success(`Bulk: ${res.success}/${res.attempted} succeeded`); invalidateAll(); },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Bulk failed"),
   });
@@ -313,7 +320,7 @@ function BulkPanel({ plans, selectedIds, totalSelected, onRun, loading }: {
   plans: Awaited<ReturnType<typeof listPlans>>;
   selectedIds: string[];
   totalSelected: number;
-  onRun: (v: Parameters<typeof adminBulkWalletAction>[0]["data"]) => void;
+  onRun: (v: BulkInput) => void;
   loading: boolean;
 }) {
   const [scope, setScope] = useState<"all" | "plan" | "selected">("selected");
