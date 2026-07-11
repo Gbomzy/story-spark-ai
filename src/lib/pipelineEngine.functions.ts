@@ -83,6 +83,12 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
     const maxClipsPerCall = data.maxClipsPerCall ?? 1; // process one Wan clip per invocation to avoid Worker timeouts
+    const characterName = (data.characterName ?? "").trim();
+    const characterDesc = (data.characterDescription ?? "").trim();
+    const characterPrefix = characterDesc
+      ? `Featuring ${characterDesc} Keep the character's appearance identical to this description in every shot. `
+      : "";
+    const characterSeedValue = characterName ? fnv1a(characterName) : undefined;
     const results: {
       images?: Array<{ id: string; url: string }>;
       voiceUrl?: string;
@@ -101,7 +107,13 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       try {
         for (const scene of scenes) {
           const r = await generateQwenImage({
-            data: { prompt: scene.prompt, projectId: proj.id, sceneId: scene.id, aspect: "16:9" },
+            data: {
+              prompt: `${characterPrefix}${scene.prompt}`,
+              projectId: proj.id,
+              sceneId: scene.id,
+              aspect: "16:9",
+              ...(characterSeedValue != null ? { seed: characterSeedValue } : {}),
+            },
           });
           images.push({ id: scene.id, url: r.url });
         }
@@ -114,7 +126,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     }
 
     // 2. Narration
-    const voiceScript = extractText(proj.voice);
+    const voiceScript = sanitizeNarration(extractText(proj.voice));
     if (voiceScript && pipeline.narration !== "completed") {
       await setStage("narration", "generating");
       try {
@@ -167,7 +179,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
               sceneNumber: i + 1,
               clipNumber: j + 1,
               sceneId: scene.id,
-              prompt: promptText,
+              prompt: `${characterPrefix}${promptText}`,
               url: "", // pending
               startTime: cursor,
               endTime: cursor + dur,
