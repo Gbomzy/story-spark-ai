@@ -20,6 +20,10 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
+    const { beginCharge } = await import("./creditsInHandler.server");
+    // Roughly one credit-unit per 500 chars of script
+    const units = Math.max(1, Math.ceil(data.script.length / 500));
+    const charge = await beginCharge({ userId: context.userId, operation: "voice", units, projectId: data.projectId ?? null });
     const { runDashScopeJson, getBase, DEFAULT_DASHSCOPE_BASE, MULTIMODAL_GENERATION_PATH } = await import("./dashscope.server");
     const model = data.model ?? "qwen3-tts-flash";
     const qwenVoices = new Set(["Cherry", "Serena", "Ethan", "Chelsie", "Dylan", "Jada", "Sunny"]);
@@ -95,6 +99,10 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
       // history is best-effort
     }
 
-    if (providerError) throw new Error(providerError);
-    return { url: storedUrl, provider: model, voice, durationMs, bytes };
+    if (providerError) {
+      await charge.refund(providerError);
+      throw new Error(providerError);
+    }
+    await charge.commit(model);
+    return { url: storedUrl, provider: model, voice, durationMs, bytes, creditsUsed: charge.credits };
   });
