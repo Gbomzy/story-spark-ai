@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Film, Download, Sparkles, Share2, Loader2, Wand2, User } from "lucide-react";
+import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
@@ -23,8 +23,14 @@ export const Route = createFileRoute("/_app/video-studio")({
 
 function VideoStudioPage() {
   const { data: projects, isLoading } = useQuery({ queryKey: ["projects"], queryFn: listProjects });
-  const project = projects?.[0] ?? null;
   const configured = videoService.isConfigured();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedProjectId && projects && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+  const project = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
@@ -45,7 +51,26 @@ function VideoStudioPage() {
           </Button>
         </Card>
       ) : (
-        <VideoDetail project={project} configured={configured} />
+        <>
+          {projects && projects.length > 0 ? (
+            <Card className="glass rounded-3xl p-4 shadow-soft">
+              <div className="flex items-center gap-3">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">Project</label>
+                <select
+                  value={project.id}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name || "Untitled project"}</option>
+                  ))}
+                </select>
+              </div>
+            </Card>
+          ) : null}
+          <VideoDetail key={project.id} project={project} configured={configured} />
+        </>
       )}
     </div>
   );
