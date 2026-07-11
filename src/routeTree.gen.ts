@@ -53,6 +53,7 @@ import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppAdminBillingRouteImport } from './routes/_app.admin-billing'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
+import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
@@ -276,6 +277,12 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   path: '/api/public/stripe-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaystackWebhookRoute =
+  ApiPublicPaystackWebhookRouteImport.update({
+    id: '/api/public/paystack-webhook',
+    path: '/api/public/paystack-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -338,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -386,6 +394,7 @@ export interface FileRoutesByTo {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -436,6 +445,7 @@ export interface FileRoutesById {
   '/_app/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   id:
     | '__root__'
@@ -583,6 +595,7 @@ export interface FileRouteTypes {
     | '/_app/project-settings/$id'
     | '/_app/projects/$id'
     | '/_app/projects/new'
+    | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -593,6 +606,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -906,6 +920,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/paystack-webhook': {
+      id: '/api/public/paystack-webhook'
+      path: '/api/public/paystack-webhook'
+      fullPath: '/api/public/paystack-webhook'
+      preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/projects/new': {
       id: '/_app/projects/new'
       path: '/new'
@@ -1035,6 +1056,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
