@@ -92,6 +92,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const [previewClip, setPreviewClip] = useState<SceneClip | null>(null);
   const [characterId, setCharacterId] = useState<string>("none");
   const [customCharacter, setCustomCharacter] = useState<string>("");
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1" | "4:5">("16:9");
+  const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
+  const size = ASPECT_SIZES[aspectRatio][resolution];
   const selectedCharacter =
     characterId === "none"
       ? null
@@ -107,6 +110,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           prompt: (typeof project.story === "string" ? project.story : String(project.story ?? "")).slice(0, 800) || project.name || "Cinematic short film",
           mode: "t2v",
           duration: perScene,
+          size,
         },
       }),
     onSuccess: () => { toast.success("Video ready."); qc.invalidateQueries({ queryKey: ["projects"] }); },
@@ -125,6 +129,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             projectId: project.id,
             perSceneDuration: perScene,
             chainScenes: true,
+            size,
             ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
             ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
               ? { characterDescription: selectedCharacter.description }
