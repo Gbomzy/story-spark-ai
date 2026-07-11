@@ -624,6 +624,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          referral_code: string | null
           updated_at: string
         }
         Insert: {
@@ -631,6 +632,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          referral_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -638,6 +640,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          referral_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -979,6 +982,42 @@ export type Database = {
           user_id?: string
           video_url?: string | null
           visibility?: string | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          code: string
+          created_at: string
+          credited_at: string | null
+          id: string
+          referred_credits_awarded: number
+          referred_id: string
+          referrer_credits_awarded: number
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          credited_at?: string | null
+          id?: string
+          referred_credits_awarded?: number
+          referred_id: string
+          referrer_credits_awarded?: number
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          credited_at?: string | null
+          id?: string
+          referred_credits_awarded?: number
+          referred_id?: string
+          referrer_credits_awarded?: number
+          referrer_id?: string
+          status?: string
         }
         Relationships: []
       }
