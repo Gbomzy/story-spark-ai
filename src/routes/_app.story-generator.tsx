@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Sparkles, Loader2, Film, ArrowRight } from "lucide-react";
+import { Wand2, Sparkles, Loader2, Film, ArrowRight, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   generateStory,
@@ -15,6 +15,7 @@ import {
   generateMediaPack,
 } from "@/lib/qwen.functions";
 import { OutputWorkspace } from "@/components/output-workspace";
+import { createProject, updateProject } from "@/lib/projects";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
@@ -36,6 +37,7 @@ function StoryGeneratorPage() {
   const [songs, setSongs] = useState<string | null>(null);
   const [images, setImages] = useState<string | null>(null);
   const [seo, setSeo] = useState<string | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: async (p: string) => {
       setStory(null);
@@ -45,6 +47,7 @@ function StoryGeneratorPage() {
       setSongs(null);
       setImages(null);
       setSeo(null);
+      setSavedProjectId(null);
       const s = await generateStory({ data: { prompt: p } });
       setStory(s.story);
       const [c, sb, pack] = await Promise.all([
@@ -77,6 +80,35 @@ function StoryGeneratorPage() {
   function generate() {
     mutation.mutate(prompt);
   }
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      if (!story) throw new Error("Generate a story first");
+      const name = prompt.split("\n")[0].slice(0, 60) || "Untitled story";
+      const payload = {
+        name,
+        prompt,
+        story,
+        characters: characters ?? "",
+        storyboard: storyboard ?? "",
+        voice: voice ?? "",
+        songs: songs ?? "",
+        images: images ?? "",
+        seo: seo ?? "",
+      };
+      if (savedProjectId) {
+        await updateProject(savedProjectId, payload);
+        return savedProjectId;
+      }
+      const p = await createProject(payload);
+      return p.id as string;
+    },
+    onSuccess: (id) => {
+      setSavedProjectId(id);
+      toast.success("Story saved to your projects.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save"),
+  });
 
   return (
     <div className="space-y-6">
@@ -150,14 +182,40 @@ function StoryGeneratorPage() {
             </div>
             <div>
               <p className="text-sm font-semibold">Your story is ready</p>
-              <p className="text-xs text-muted-foreground">Pick a character and render the movie in Video Studio.</p>
+              <p className="text-xs text-muted-foreground">
+                {savedProjectId ? "Saved to your projects. Continue to Video Studio to render." : "Save the story to your projects, then continue to Video Studio."}
+              </p>
             </div>
           </div>
-          <Button asChild className="rounded-xl gradient-primary text-white shadow-glow">
-            <Link to="/video-studio">
-              Generate the movie <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => saveMut.mutate()}
+              disabled={saveMut.isPending}
+              variant={savedProjectId ? "outline" : "default"}
+              className={savedProjectId ? "rounded-xl" : "rounded-xl gradient-primary text-white shadow-glow"}
+            >
+              {saveMut.isPending ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Saving…</>
+              ) : savedProjectId ? (
+                <><Check className="mr-1.5 h-4 w-4" /> Saved · update</>
+              ) : (
+                <><Save className="mr-1.5 h-4 w-4" /> Save story</>
+              )}
+            </Button>
+            <Button
+              asChild
+              disabled={!savedProjectId}
+              className="rounded-xl gradient-primary text-white shadow-glow disabled:opacity-60"
+            >
+              {savedProjectId ? (
+                <Link to="/video-studio" search={{ projectId: savedProjectId }}>
+                  Generate the movie <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Link>
+              ) : (
+                <span>Generate the movie <ArrowRight className="ml-1.5 h-4 w-4" /></span>
+              )}
+            </Button>
+          </div>
         </Card>
       ) : null}
     </div>

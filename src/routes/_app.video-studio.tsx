@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -34,18 +34,25 @@ const PLATFORM_PRESETS: Array<{ id: string; label: string; ratio: "16:9" | "9:16
 
 export const Route = createFileRoute("/_app/video-studio")({
   head: () => ({ meta: [{ title: "Video Studio — StorySpark AI" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    projectId: typeof s.projectId === "string" ? s.projectId : undefined,
+  }),
   component: VideoStudioPage,
 });
 
 function VideoStudioPage() {
+  const search = useSearch({ from: "/_app/video-studio" });
   const { data: projects, isLoading } = useQuery({ queryKey: ["projects"], queryFn: listProjects });
   const configured = videoService.isConfigured();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   useEffect(() => {
-    if (!selectedProjectId && projects && projects.length > 0) {
+    if (selectedProjectId || !projects || projects.length === 0) return;
+    if (search.projectId && projects.some((p) => p.id === search.projectId)) {
+      setSelectedProjectId(search.projectId);
+    } else {
       setSelectedProjectId(projects[0].id);
     }
-  }, [projects, selectedProjectId]);
+  }, [projects, selectedProjectId, search.projectId]);
   const project = projects?.find((p) => p.id === selectedProjectId) ?? projects?.[0] ?? null;
 
   return (
