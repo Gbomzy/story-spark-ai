@@ -87,7 +87,6 @@ function StoryGeneratorPage() {
       const name = prompt.split("\n")[0].slice(0, 60) || "Untitled story";
       const payload = {
         name,
-        prompt,
         story,
         characters: characters ?? "",
         storyboard: storyboard ?? "",
