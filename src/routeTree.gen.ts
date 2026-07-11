@@ -52,6 +52,7 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppAdminBillingRouteImport } from './routes/_app.admin-billing'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
@@ -270,6 +271,11 @@ const AppAdminBillingRoute = AppAdminBillingRouteImport.update({
   path: '/admin-billing',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe-webhook',
+  path: '/api/public/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -332,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -379,6 +386,7 @@ export interface FileRoutesByTo {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/_app/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -477,6 +486,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/stripe-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/stripe-webhook'
   id:
     | '__root__'
     | '/'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/_app/project-settings/$id'
     | '/_app/projects/$id'
     | '/_app/projects/new'
+    | '/api/public/stripe-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -581,6 +593,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -886,6 +899,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminBillingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/stripe-webhook': {
+      id: '/api/public/stripe-webhook'
+      path: '/api/public/stripe-webhook'
+      fullPath: '/api/public/stripe-webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/projects/new': {
       id: '/_app/projects/new'
       path: '/new'
@@ -1015,6 +1035,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
