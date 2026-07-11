@@ -37,7 +37,7 @@ export const reserveForOperation = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const required = await costFor(data.operation, data.units);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.rpc("credit_reserve", { _user: context.userId, _operation: data.operation, _credits: required, _project: data.projectId ?? null, _ref: data.ref ?? null });
+    const { data: r, error } = await supabaseAdmin.rpc("credit_reserve", { _user: context.userId, _operation: data.operation, _credits: required, _project: data.projectId ?? undefined, _ref: data.ref ?? undefined });
     if (error) throw new Error(error.message);
     return { ...(r as Record<string, unknown>), required };
   });
@@ -47,7 +47,7 @@ export const commitForOperation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ operation: OP, credits: z.number().min(1), projectId: z.string().uuid().optional(), provider: z.string().optional(), model: z.string().optional(), ref: z.string().optional() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.rpc("credit_commit", { _user: context.userId, _operation: data.operation, _credits: data.credits, _project: data.projectId ?? null, _provider: data.provider ?? null, _model: data.model ?? null, _ref: data.ref ?? null });
+    const { data: r, error } = await supabaseAdmin.rpc("credit_commit", { _user: context.userId, _operation: data.operation, _credits: data.credits, _project: data.projectId ?? undefined, _provider: data.provider ?? undefined, _model: data.model ?? undefined, _ref: data.ref ?? undefined });
     if (error) throw new Error(error.message);
     return r;
   });
@@ -57,7 +57,7 @@ export const refundForOperation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ operation: OP, credits: z.number().min(1), projectId: z.string().uuid().optional(), ref: z.string().optional(), reason: z.string().optional() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.rpc("credit_refund", { _user: context.userId, _operation: data.operation, _credits: data.credits, _project: data.projectId ?? null, _ref: data.ref ?? null, _reason: data.reason ?? "generation_failed" });
+    const { data: r, error } = await supabaseAdmin.rpc("credit_refund", { _user: context.userId, _operation: data.operation, _credits: data.credits, _project: data.projectId ?? undefined, _ref: data.ref ?? undefined, _reason: data.reason ?? "generation_failed" });
     if (error) throw new Error(error.message);
     return r;
   });
