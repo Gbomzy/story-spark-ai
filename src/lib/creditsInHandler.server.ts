@@ -38,6 +38,33 @@ export async function beginCharge(params: {
   const credits = await costFor(params.operation, units, admin);
   const ref = params.ref ?? `${params.operation}_${Date.now().toString(36)}`;
   await admin.from("credit_wallet").upsert({ user_id: params.userId }, { onConflict: "user_id", ignoreDuplicates: true });
+  // Unlimited-credits accounts skip reserve/commit/refund but keep a log row
+  // in credit_transactions so analytics and generation history remain accurate.
+  const { data: wallet } = await admin
+    .from("credit_wallet")
+    .select("balance, unlimited_credits")
+    .eq("user_id", params.userId)
+    .maybeSingle();
+  if (wallet?.unlimited_credits) {
+    await admin.from("credit_transactions").insert({
+      user_id: params.userId,
+      project_id: params.projectId ?? null,
+      operation: params.operation,
+      credits: 0,
+      balance_before: wallet.balance,
+      balance_after: wallet.balance,
+      status: "completed",
+      reason: "unlimited_no_charge",
+      ref_id: ref,
+    });
+    return {
+      credits: 0,
+      operation: params.operation,
+      ref,
+      async commit() { /* no-op */ },
+      async refund() { /* no-op */ },
+    };
+  }
   const { data, error } = await admin.rpc("credit_reserve", {
     _user: params.userId,
     _operation: params.operation,
