@@ -12,6 +12,8 @@ const Input = z.object({
   wordsPerSecond: z.number().min(1).max(6).optional(),
   maxClipSeconds: z.number().int().min(2).max(10).optional(),
   maxClipsPerCall: z.number().int().min(1).max(4).optional(),
+  characterName: z.string().max(80).optional(),
+  characterDescription: z.string().max(600).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
