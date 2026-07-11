@@ -298,6 +298,56 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
                 Picking the same character (or typing the same custom name) keeps them looking consistent across every movie.
               </p>
             </div>
+            <div className="rounded-2xl border border-border bg-card/60 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Monitor className="h-3 w-3" /> Format & platform
+              </div>
+              <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Preset</p>
+              <select
+                value={PLATFORM_PRESETS.find((p) => p.ratio === aspectRatio && p.resolution === resolution)?.id ?? ""}
+                onChange={(e) => {
+                  const p = PLATFORM_PRESETS.find((x) => x.id === e.target.value);
+                  if (p) { setAspectRatio(p.ratio); setResolution(p.resolution); }
+                }}
+                className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="">Custom…</option>
+                {PLATFORM_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label} · {p.resolution}</option>
+                ))}
+              </select>
+              <p className="mb-1 mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">Aspect ratio</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(["16:9", "9:16", "1:1", "4:5"] as const).map((r) => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={aspectRatio === r ? "default" : "outline"}
+                    onClick={() => setAspectRatio(r)}
+                    className="rounded-lg"
+                  >
+                    {r}
+                  </Button>
+                ))}
+              </div>
+              <p className="mb-1 mt-3 text-[10px] uppercase tracking-widest text-muted-foreground">Resolution</p>
+              <div className="flex gap-1.5">
+                {(["720p", "1080p"] as const).map((r) => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={resolution === r ? "default" : "outline"}
+                    onClick={() => setResolution(r)}
+                    className="rounded-lg"
+                  >
+                    {r.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Output size: <span className="font-mono">{size.replace("*", "×")}</span>
+              </p>
+            </div>
             <div>
               <Progress value={progress} className="h-2" />
             </div>
