@@ -60,7 +60,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,generated_images,voice_audio,video_file,media_pipeline")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
@@ -72,7 +72,10 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       await context.supabase.from("projects").update({ media_pipeline: pipeline, ...patch }).eq("id", proj.id);
     };
 
-    const scenes = parseScenes(proj.images);
+    let scenes = parseScenes(proj.images);
+    if (scenes.length === 0 && typeof proj.storyboard === "string" && proj.storyboard.trim()) {
+      scenes = parseStoryboardText(proj.storyboard);
+    }
     const perScene = data.perSceneDuration ?? 5;
     const wps = data.wordsPerSecond ?? 2.5; // ~150 wpm narration pace
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
