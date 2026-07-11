@@ -7,6 +7,7 @@ import { Mic, Sparkles, Loader2, RefreshCw, Download, AlertCircle } from "lucide
 import { toast } from "sonner";
 import { audioService } from "@/lib/audioService";
 import { subtitleService } from "@/lib/subtitleService";
+import { sanitizeVoiceScript } from "@/lib/voiceScript";
 
 const VOICES = [
   "longxiaochun",
@@ -29,7 +30,9 @@ export function AudioPanel({
 }) {
   const asset = audioService.parseAsset(value);
   const configured = audioService.isConfigured();
-  const hasScript = Boolean(script.trim());
+  // The narrator should read the story, not the screenplay annotations.
+  const spokenScript = sanitizeVoiceScript(script);
+  const hasScript = Boolean(spokenScript);
   const [voice, setVoice] = useState<string>("longxiaochun");
   const [state, setState] = useState<{
     status: "idle" | "generating" | "ready" | "error";
@@ -42,7 +45,7 @@ export function AudioPanel({
     if (!hasScript) return;
     setState({ status: "generating" });
     try {
-      const r = await audioService.generateFromScript(script, { voice, projectId });
+      const r = await audioService.generateFromScript(spokenScript, { voice, projectId });
       setState({ status: "ready", url: r.url ?? undefined, provider: r.voice });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Voice generation failed";
@@ -62,7 +65,7 @@ export function AudioPanel({
       a.remove();
       return;
     }
-    subtitleService.generateFromScript(script, kind).then((sub) => {
+    subtitleService.generateFromScript(spokenScript, kind).then((sub) => {
       const a = document.createElement("a");
       a.href = sub.url ?? "";
       a.download = `narration.${kind}`;

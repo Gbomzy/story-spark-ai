@@ -127,7 +127,8 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     }
 
     // 2. Narration
-    const voiceScript = sanitizeNarration(extractText(proj.voice));
+    const { sanitizeVoiceScript } = await import("./voiceScript");
+    const voiceScript = sanitizeVoiceScript(extractText(proj.voice));
     if (voiceScript && pipeline.narration !== "completed") {
       await setStage("narration", "generating");
       try {

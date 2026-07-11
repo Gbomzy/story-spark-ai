@@ -95,12 +95,25 @@ function StoryGeneratorPage() {
         images: images ?? "",
         seo: seo ?? "",
       };
-      if (savedProjectId) {
-        await updateProject(savedProjectId, payload);
-        return savedProjectId;
+      try {
+        if (savedProjectId) {
+          await updateProject(savedProjectId, payload);
+          return savedProjectId;
+        }
+        const p = await createProject(payload);
+        return p.id as string;
+      } catch (err) {
+        // Surface the real database error (RLS name, missing column,
+        // constraint) instead of the generic "Failed to save" toast.
+        const anyErr = err as { message?: string; details?: string; hint?: string; code?: string } | Error;
+        const parts: string[] = [];
+        if ("message" in anyErr && anyErr.message) parts.push(anyErr.message);
+        if ("details" in anyErr && anyErr.details) parts.push(String(anyErr.details));
+        if ("hint" in anyErr && anyErr.hint) parts.push(`hint: ${anyErr.hint}`);
+        if ("code" in anyErr && anyErr.code) parts.push(`code: ${anyErr.code}`);
+        console.error("[story-generator] save failed", err);
+        throw new Error(parts.join(" — ") || "Save failed");
       }
-      const p = await createProject(payload);
-      return p.id as string;
     },
     onSuccess: (id) => {
       setSavedProjectId(id);
