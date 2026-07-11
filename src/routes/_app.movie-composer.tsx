@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { saveAs } from "file-saver";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import {
   Film, Download, Loader2, ArrowUp, ArrowDown, Trash2, Copy, RefreshCw, Scissors, Play, Wand2, Package, Music, Type,
+  CheckCircle2, XCircle, Clock, RotateCcw, SkipForward, PartyPopper, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
@@ -76,6 +77,16 @@ function ComposerBody({ project }: { project: ProjectRow }) {
   const renderStart = useRef<number>(0);
   const [renderMs, setRenderMs] = useState<number>(0);
 
+  // Render queue instrumentation
+  const [failedIdx, setFailedIdx] = useState<Set<number>>(new Set());
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [renderStartAt, setRenderStartAt] = useState<number | null>(null);
+  const clipTimesRef = useRef<number[]>([]);
+  const lastTickRef = useRef<number>(0);
+  const [tick, setTick] = useState(0); // forces re-render for elapsed clock
+  const autoFinalizedRef = useRef(false);
+  const autoResumedRef = useRef(false);
+
   const narrationUrl = extractUrl(project.voice_audio) ?? initial?.narrationUrl;
 
   const totalDuration = useMemo(
@@ -117,18 +128,45 @@ function ComposerBody({ project }: { project: ProjectRow }) {
   const pipelineMut = useMutation({
     mutationFn: async () => {
       let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
-      for (let i = 0; i < 200; i++) {
-        last = await runPipeline({ data: { projectId: project.id, chainScenes: true } });
-        const done = last?.results?.done ?? true;
-        const completed = last?.results?.queueCompleted ?? 0;
+      if (renderStartAt == null) setRenderStartAt(Date.now());
+      clipTimesRef.current = clipTimesRef.current.length ? clipTimesRef.current : [];
+      let lastCompleted = clips.filter((c) => c.url).length;
+      lastTickRef.current = performance.now();
+      for (let i = 0; i < 500; i++) {
+        const t0 = performance.now();
+        try {
+          last = await runPipeline({ data: { projectId: project.id, chainScenes: true, maxClipsPerCall: 1 } });
+        } catch (err) {
+          // Mark the first pending clip as failed and continue to next.
+          setFailedIdx((prev) => {
+            const next = new Set(prev);
+            const pendingAt = clips.findIndex((c) => !c.url && !prev.has(clips.indexOf(c)));
+            if (pendingAt >= 0) next.add(pendingAt);
+            return next;
+          });
+          throw err;
+        }
+        const dt = (performance.now() - t0) / 1000;
+        const completed = last?.results?.queueCompleted ?? lastCompleted;
         const total = last?.results?.queueTotal ?? 0;
+        if (completed > lastCompleted) {
+          clipTimesRef.current.push(dt);
+          lastCompleted = completed;
+        }
+        const nextClips = last?.results?.clips as SceneClip[] | undefined;
+        if (nextClips) setClips(nextClips);
+        setActiveIdx(nextClips ? nextClips.findIndex((c) => !c.url) : null);
         qc.invalidateQueries({ queryKey: ["projects"] });
-        if (done) break;
+        if (last?.results?.done) break;
         if (total > 0) toast.message(`Rendering clip ${completed}/${total}…`, { id: "movie-pipeline" });
       }
+      setActiveIdx(null);
       return last;
     },
-    onSuccess: () => { toast.success("Pipeline complete.", { id: "movie-pipeline" }); qc.invalidateQueries({ queryKey: ["projects"] }); },
+    onSuccess: () => {
+      toast.success("All clips rendered.", { id: "movie-pipeline" });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
@@ -231,6 +269,85 @@ function ComposerBody({ project }: { project: ProjectRow }) {
     setClips(next);
   };
 
+  // Retry a failed clip in place (regenerate it), keeping the manifest intact.
+  const retryClip = (i: number) => {
+    const c = clips[i];
+    if (!c) return;
+    setFailedIdx((p) => { const n = new Set(p); n.delete(i); return n; });
+    regenMut.mutate(c);
+  };
+
+  // Skip a failed clip — drop it from the queue and continue rendering.
+  const skipClip = (i: number) => {
+    setFailedIdx((p) => { const n = new Set(p); n.delete(i); return n; });
+    setClips(renumber(clips.filter((_, idx) => idx !== i)));
+    toast.message("Clip skipped.");
+  };
+
+  // Auto-resume: on mount, if the manifest has pending clips, continue rendering.
+  useEffect(() => {
+    if (autoResumedRef.current) return;
+    autoResumedRef.current = true;
+    const hasPending = clips.some((c) => !c.url);
+    if (hasPending && !pipelineMut.isPending) {
+      toast.message("Resuming render from last checkpoint…");
+      pipelineMut.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-finalize: once all clips are rendered, automatically compose the movie.
+  useEffect(() => {
+    if (autoFinalizedRef.current) return;
+    if (pipelineMut.isPending) return;
+    if (clips.length === 0) return;
+    if (clips.some((c) => !c.url)) return;
+    if (renderedUrl || progress) return;
+    autoFinalizedRef.current = true;
+    void render();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clips, pipelineMut.isPending]);
+
+  // 1Hz tick for the elapsed clock while rendering
+  useEffect(() => {
+    if (!pipelineMut.isPending) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [pipelineMut.isPending]);
+
+  // Persist a Render History entry on success.
+  useEffect(() => {
+    if (!renderedUrl || !renderStartAt) return;
+    saveRenderHistory({
+      projectId: project.id,
+      name: project.name,
+      startTime: renderStartAt,
+      endTime: Date.now(),
+      durationMs: Date.now() - renderStartAt,
+      provider: initial?.provider ?? "wan",
+      clips: clips.length,
+      failed: failedIdx.size,
+      status: failedIdx.size ? "partial" : "success",
+      avgClipSeconds: clipTimesRef.current.length
+        ? clipTimesRef.current.reduce((a, b) => a + b, 0) / clipTimesRef.current.length
+        : 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderedUrl]);
+
+  // Derived stats for the progress dashboard.
+  const completedCount = clips.filter((c) => c.url).length;
+  const totalCount = clips.length;
+  const overallPct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  const avgClipSec = clipTimesRef.current.length
+    ? clipTimesRef.current.reduce((a, b) => a + b, 0) / clipTimesRef.current.length
+    : 0;
+  const remainingClips = Math.max(0, totalCount - completedCount);
+  const etaSec = avgClipSec > 0 ? Math.round(avgClipSec * remainingClips) : 0;
+  const elapsedSec = renderStartAt ? Math.round((Date.now() - renderStartAt) / 1000) : 0;
+  void tick; // referenced so ESLint/consumers know it drives re-renders
+  const currentClip = activeIdx != null ? clips[activeIdx] : clips.find((c) => !c.url) ?? null;
+
   return (
     <>
       <Card className="glass rounded-3xl p-5 shadow-soft sm:p-6">
@@ -262,6 +379,30 @@ function ComposerBody({ project }: { project: ProjectRow }) {
         ) : null}
         <SettingsPanel settings={settings} onChange={setSettings} />
       </Card>
+
+      {(pipelineMut.isPending || (totalCount > 0 && completedCount < totalCount)) && (
+        <ProgressDashboard
+          completed={completedCount}
+          total={totalCount}
+          overallPct={overallPct}
+          current={currentClip}
+          provider={currentClip?.provider ?? initial?.provider ?? "wan"}
+          avgClipSec={avgClipSec}
+          etaSec={etaSec}
+          elapsedSec={elapsedSec}
+          renderStartAt={renderStartAt}
+        />
+      )}
+
+      <RenderQueuePanel
+        clips={clips}
+        activeIdx={activeIdx}
+        failed={failedIdx}
+        retryingAny={regenMut.isPending}
+        onRetry={retryClip}
+        onSkip={skipClip}
+        onPreview={setPreviewClip}
+      />
 
       <Card className="glass rounded-3xl p-5 shadow-soft">
         <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Timeline</p>
@@ -338,6 +479,31 @@ function ComposerBody({ project }: { project: ProjectRow }) {
       </Card>
 
       {renderedUrl ? (
+        <Card className="glass rounded-3xl p-6 text-center shadow-soft">
+          <PartyPopper className="mx-auto mb-2 h-8 w-8 text-primary" />
+          <h3 className="text-xl font-bold">Movie completed successfully</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Runtime {totalDuration.toFixed(1)}s · {new Set(clips.map((c) => c.sceneNumber)).size} scenes · {clips.length} clips ·
+            {" "}{settings.resolution} · {settings.fps}fps · {(renderMs / 1000).toFixed(1)}s render · {initial?.provider ?? "wan"}
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button className="rounded-xl gradient-primary text-white shadow-glow" onClick={() => renderedUrl && window.open(renderedUrl, "_blank")}>
+              <Play className="mr-1.5 h-4 w-4" /> Watch movie
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={downloadMovie}>
+              <Download className="mr-1.5 h-4 w-4" /> Download {renderedExt.toUpperCase()}
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={downloadZip}>
+              <Package className="mr-1.5 h-4 w-4" /> Download ZIP
+            </Button>
+            <Button variant="outline" className="rounded-xl" asChild>
+              <Link to="/publishing"><Upload className="mr-1.5 h-4 w-4" /> Publish</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      {renderedUrl ? (
         <Card className="glass rounded-3xl p-5 shadow-soft">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -360,6 +526,8 @@ function ComposerBody({ project }: { project: ProjectRow }) {
           <video src={renderedUrl} controls className="aspect-video w-full rounded-2xl bg-black" />
         </Card>
       ) : null}
+
+      <RenderHistoryPanel />
     </>
   );
 }
@@ -452,4 +620,189 @@ function formatTime(t: number): string {
   const mm = Math.floor(t / 60);
   const ss = Math.floor(t % 60);
   return `${mm}:${String(ss).padStart(2, "0")}`;
+}
+
+// ------------- Render History (localStorage per browser) --------------
+type RenderHistoryEntry = {
+  projectId: string;
+  name: string;
+  startTime: number;
+  endTime: number;
+  durationMs: number;
+  provider: string;
+  clips: number;
+  failed: number;
+  status: "success" | "partial" | "failed";
+  avgClipSeconds: number;
+};
+const HISTORY_KEY = "storyspark:render-history";
+function loadRenderHistory(): RenderHistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as RenderHistoryEntry[]) : [];
+  } catch { return []; }
+}
+function saveRenderHistory(entry: RenderHistoryEntry) {
+  if (typeof window === "undefined") return;
+  try {
+    const list = loadRenderHistory();
+    list.unshift(entry);
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 30)));
+  } catch { /* ignore */ }
+}
+function fmtSec(s: number): string {
+  if (!isFinite(s) || s <= 0) return "—";
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = Math.floor(s % 60);
+  return h ? `${h}h ${m}m` : m ? `${m}m ${ss}s` : `${ss}s`;
+}
+function fmtClock(ts: number): string {
+  try { return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  catch { return "—"; }
+}
+
+// ------------- Progress Dashboard & Render Queue --------------
+type QueueState = "pending" | "queued" | "rendering" | "completed" | "failed" | "retrying";
+function clipState(c: SceneClip, idx: number, activeIdx: number | null, failed: Set<number>, retrying: boolean): QueueState {
+  if (failed.has(idx)) return retrying ? "retrying" : "failed";
+  if (c.url) return "completed";
+  if (idx === activeIdx) return "rendering";
+  if (activeIdx != null && idx < activeIdx) return "queued";
+  return "pending";
+}
+const STATE_STYLES: Record<QueueState, string> = {
+  pending: "bg-muted text-muted-foreground",
+  queued: "bg-muted text-foreground",
+  rendering: "bg-primary/15 text-primary",
+  completed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  failed: "bg-red-500/15 text-red-500",
+  retrying: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+};
+
+function ProgressDashboard(props: {
+  completed: number; total: number; overallPct: number;
+  current: SceneClip | null; provider: string; avgClipSec: number;
+  etaSec: number; elapsedSec: number; renderStartAt: number | null;
+}) {
+  const { completed, total, overallPct, current, provider, avgClipSec, etaSec, elapsedSec, renderStartAt } = props;
+  const finishAt = renderStartAt ? renderStartAt + (elapsedSec + etaSec) * 1000 : 0;
+  return (
+    <Card className="glass rounded-3xl p-5 shadow-soft">
+      <div className="mb-3 flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Rendering movie</p>
+      </div>
+      <Progress value={overallPct} className="h-3" />
+      <p className="mt-1 text-[11px] text-muted-foreground">{overallPct}% · {completed} / {total} clips</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Current clip" value={current ? `Scene ${current.sceneNumber} · Part ${current.clipNumber}` : "—"} />
+        <Stat label="Status" value={current ? "Rendering…" : total === completed ? "Finalizing" : "Queued"} />
+        <Stat label="Provider" value={provider} />
+        <Stat label="Avg clip time" value={fmtSec(avgClipSec)} />
+        <Stat label="Elapsed" value={fmtSec(elapsedSec)} />
+        <Stat label="Est. remaining" value={fmtSec(etaSec)} />
+        <Stat label="Est. finish" value={finishAt ? fmtClock(finishAt) : "—"} />
+        <Stat label="Completed" value={`${completed} / ${total}`} />
+      </div>
+    </Card>
+  );
+}
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card/60 p-3">
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function RenderQueuePanel(props: {
+  clips: SceneClip[]; activeIdx: number | null; failed: Set<number>; retryingAny: boolean;
+  onRetry: (i: number) => void; onSkip: (i: number) => void; onPreview: (c: SceneClip) => void;
+}) {
+  const { clips, activeIdx, failed, retryingAny, onRetry, onSkip, onPreview } = props;
+  if (!clips.length) return null;
+  return (
+    <Card className="glass rounded-3xl p-5 shadow-soft">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Render queue</p>
+        <p className="text-[11px] text-muted-foreground">{clips.length} clip{clips.length === 1 ? "" : "s"}</p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {clips.map((c, i) => {
+          const st = clipState(c, i, activeIdx, failed, retryingAny);
+          const progressPct = st === "completed" ? 100 : st === "rendering" ? 55 : st === "retrying" ? 35 : 0;
+          return (
+            <div key={`q-${c.sceneNumber}-${c.clipNumber}-${i}`} className="rounded-2xl border border-border bg-card/60 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {st === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    : st === "failed" ? <XCircle className="h-4 w-4 text-red-500" />
+                    : st === "rendering" || st === "retrying" ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    : <Clock className="h-4 w-4 text-muted-foreground" />}
+                  <span className="text-sm font-semibold">Scene {c.sceneNumber} · Clip {c.clipNumber}</span>
+                </div>
+                <Badge className={`rounded-full text-[10px] uppercase ${STATE_STYLES[st]}`}>{st}</Badge>
+              </div>
+              <Progress value={progressPct} className="h-1.5" />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                <span>{c.durationSeconds.toFixed(1)}s · {c.provider}</span>
+                <span>{st === "completed" ? `done · ${formatTime(c.endTime)}` : "—"}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {st === "completed" && (
+                  <Button size="sm" variant="ghost" className="h-7 rounded-lg text-xs" onClick={() => onPreview(c)}>
+                    <Play className="mr-1 h-3 w-3" /> Preview
+                  </Button>
+                )}
+                {st === "failed" && (
+                  <>
+                    <Button size="sm" variant="ghost" className="h-7 rounded-lg text-xs" onClick={() => onRetry(i)}>
+                      <RotateCcw className="mr-1 h-3 w-3" /> Retry
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 rounded-lg text-xs" onClick={() => onSkip(i)}>
+                      <SkipForward className="mr-1 h-3 w-3" /> Skip
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function RenderHistoryPanel() {
+  const [items, setItems] = useState<RenderHistoryEntry[]>([]);
+  useEffect(() => { setItems(loadRenderHistory()); }, []);
+  if (!items.length) return null;
+  return (
+    <Card className="glass rounded-3xl p-5 shadow-soft">
+      <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Render history</p>
+      <div className="divide-y divide-border">
+        {items.slice(0, 8).map((it, i) => (
+          <div key={`h-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{it.name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {new Date(it.startTime).toLocaleString()} · {it.clips} clips · avg {fmtSec(it.avgClipSeconds)} · {it.provider}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">{fmtSec(Math.round(it.durationMs / 1000))}</span>
+              <Badge className={`rounded-full text-[10px] uppercase ${
+                it.status === "success" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                : it.status === "partial" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                : "bg-red-500/15 text-red-500"
+              }`}>{it.status}</Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
 }
