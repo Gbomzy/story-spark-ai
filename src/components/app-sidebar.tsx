@@ -62,6 +62,7 @@ const items = [
   { label: "History", to: "/history", icon: History },
   { label: "Analytics", to: "/analytics", icon: BarChart3 },
   { label: "Credits", to: "/credits", icon: Coins },
+  { label: "Billing", to: "/billing", icon: Coins },
   { label: "Search", to: "/search", icon: Search },
   { label: "Export", to: "/export", icon: Download },
   { label: "Import", to: "/import", icon: Upload },
@@ -76,6 +77,7 @@ const footerItems = [
   { label: "Error Log", to: "/error-log", icon: AlertTriangle },
   { label: "Feature Flags", to: "/feature-flags", icon: Flag },
   { label: "AI Providers", to: "/ai-providers", icon: Cpu },
+  { label: "Admin Billing", to: "/admin-billing", icon: BarChart3 },
   { label: "Settings", to: "/settings", icon: Settings },
   { label: "Help", to: "/help", icon: HelpCircle },
 ] as const;
