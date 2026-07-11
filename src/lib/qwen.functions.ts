@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const QWEN_ENDPOINT =
   "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
@@ -79,18 +80,27 @@ const StoryInput = z.object({
 });
 
 export const generateStory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => StoryInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const charge = await beginCharge({ userId: context.userId, operation: "story", units: 1 });
     const system = `You are StorySpark AI, an expert children's educational story writer. Write engaging, age-appropriate stories with a clear narrative arc.${
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
     }${data.language ? ` Language: ${data.language}.` : ""}${
       data.length ? ` Length: ${data.length}.` : ""
     }${data.learningGoal ? ` Learning goal: ${data.learningGoal}.` : ""}`;
-    const content = await callQwen([
-      { role: "system", content: system },
-      { role: "user", content: data.prompt },
-    ]);
-    return { story: content };
+    try {
+      const content = await callQwen([
+        { role: "system", content: system },
+        { role: "user", content: data.prompt },
+      ]);
+      await charge.commit("qwen-plus");
+      return { story: content, creditsUsed: charge.credits };
+    } catch (e) {
+      await charge.refund((e as Error)?.message);
+      throw e;
+    }
   });
 
 const CharactersInput = z.object({
@@ -102,8 +112,11 @@ const CharactersInput = z.object({
 });
 
 export const generateCharacters = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CharactersInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const charge = await beginCharge({ userId: context.userId, operation: "character", units: data.count ?? 4 });
     const count = data.count ?? 4;
     const system = `You are StorySpark AI's Character Agent. Design ${count} memorable, age-appropriate characters for a children's educational story.${
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
@@ -122,11 +135,17 @@ Keep descriptions vivid but concise. Do not add any preamble or closing text.`;
     const userPrompt = data.story
       ? `Project brief:\n${data.prompt}\n\nStory draft:\n${data.story}`
       : `Project brief:\n${data.prompt}`;
-    const content = await callQwen([
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ]);
-    return { characters: content };
+    try {
+      const content = await callQwen([
+        { role: "system", content: system },
+        { role: "user", content: userPrompt },
+      ]);
+      await charge.commit("qwen-plus");
+      return { characters: content, creditsUsed: charge.credits };
+    } catch (e) {
+      await charge.refund((e as Error)?.message);
+      throw e;
+    }
   });
 
 const StoryboardInput = z.object({
@@ -139,8 +158,11 @@ const StoryboardInput = z.object({
 });
 
 export const generateStoryboard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => StoryboardInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const charge = await beginCharge({ userId: context.userId, operation: "storyboard", units: data.scenes ?? 6 });
     const scenes = data.scenes ?? 6;
     const system = `You are StorySpark AI's Storyboard Agent. Break the story into ${scenes} cinematic scenes for a children's educational animation.${
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
@@ -162,11 +184,17 @@ Keep scenes tight and visual. Do not add any preamble or closing text.`;
     const userPrompt = data.story
       ? `Project brief:\n${data.prompt}\n\nStory draft:\n${data.story}`
       : `Project brief:\n${data.prompt}`;
-    const content = await callQwen([
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ]);
-    return { storyboard: content };
+    try {
+      const content = await callQwen([
+        { role: "system", content: system },
+        { role: "user", content: userPrompt },
+      ]);
+      await charge.commit("qwen-plus");
+      return { storyboard: content, creditsUsed: charge.credits };
+    } catch (e) {
+      await charge.refund((e as Error)?.message);
+      throw e;
+    }
   });
 
 const MediaPackInput = z.object({
@@ -184,8 +212,11 @@ function extractSection(text: string, tag: string): string {
 }
 
 export const generateMediaPack = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => MediaPackInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const charge = await beginCharge({ userId: context.userId, operation: "story", units: 4 });
     const system = `You are StorySpark AI's multi-agent media producer. Given a children's educational story, you will output FOUR assets in a SINGLE response using the exact delimiter format below. Do not add any preamble, closing text, or commentary outside the sections.${
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
     }${data.language ? ` Write in ${data.language}.` : ""}${
@@ -245,15 +276,22 @@ Produce discovery metadata as a markdown list with these exact labels:
 - Hashtags: {space-separated #tags, 8-12 items}`;
 
     const userPrompt = `Project brief:\n${data.prompt}\n\nStory:\n${data.story}`;
-    const content = await callQwen([
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ]);
-    return {
-      voice: extractSection(content, "VOICE"),
-      songs: extractSection(content, "SONGS"),
-      images: extractSection(content, "IMAGES"),
-      seo: extractSection(content, "SEO"),
-      raw: content,
-    };
+    try {
+      const content = await callQwen([
+        { role: "system", content: system },
+        { role: "user", content: userPrompt },
+      ]);
+      await charge.commit("qwen-plus");
+      return {
+        voice: extractSection(content, "VOICE"),
+        songs: extractSection(content, "SONGS"),
+        images: extractSection(content, "IMAGES"),
+        seo: extractSection(content, "SEO"),
+        raw: content,
+        creditsUsed: charge.credits,
+      };
+    } catch (e) {
+      await charge.refund((e as Error)?.message);
+      throw e;
+    }
   });

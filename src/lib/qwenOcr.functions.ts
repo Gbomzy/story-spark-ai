@@ -20,6 +20,8 @@ export const qwenOcr = createServerFn({ method: "POST" })
     if (!data.imageUrl && !data.imageBase64) throw new Error("Provide imageUrl or imageBase64.");
 
     const t0 = Date.now();
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const charge = await beginCharge({ userId: context.userId, operation: "ocr", units: 1, projectId: data.projectId ?? null });
     const imageValue = data.imageUrl
       ? data.imageUrl
       : `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
@@ -49,6 +51,7 @@ export const qwenOcr = createServerFn({ method: "POST" })
     );
     if (!res.ok) {
       const txt = await res.text();
+      await charge.refund(`ocr_http_${res.status}`);
       throw new Error(`Qwen OCR failed (${res.status}): ${txt.slice(0, 400)}`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -67,5 +70,6 @@ export const qwenOcr = createServerFn({ method: "POST" })
       });
     } catch { /* best-effort */ }
 
-    return { text, provider: "qwen-vl-ocr-2025-11-20", durationMs: Date.now() - t0 };
+    await charge.commit("qwen-vl-ocr-2025-11-20");
+    return { text, provider: "qwen-vl-ocr-2025-11-20", durationMs: Date.now() - t0, creditsUsed: charge.credits };
   });

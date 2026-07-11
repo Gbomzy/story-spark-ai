@@ -19,6 +19,9 @@ export const generateQwenImage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const units = data.n ?? 1;
+    const charge = await beginCharge({ userId: context.userId, operation: "image", units, projectId: data.projectId ?? null });
     const { runDashScopeJson, getBase, DEFAULT_DASHSCOPE_BASE, MULTIMODAL_GENERATION_PATH } = await import("./dashscope.server");
     const model = data.model ?? "qwen-image-2.0";
     const aspectToSize: Record<string, string> = {
@@ -82,7 +85,10 @@ export const generateQwenImage = createServerFn({ method: "POST" })
       // swallow: history is best-effort
     }
 
-    if (providerError) throw new Error(providerError);
+    if (providerError) {
+      await charge.refund(providerError);
+      throw new Error(providerError);
+    }
 
     // Persist to storage bucket under {userId}/images/{ts}-{scene}.png
     let storedUrl = url;
@@ -105,5 +111,6 @@ export const generateQwenImage = createServerFn({ method: "POST" })
       // Storage is best-effort; fall back to provider URL.
     }
 
-    return { url: storedUrl, provider: model, durationMs, creditsUsed: 1 };
+    await charge.commit(model);
+    return { url: storedUrl, provider: model, durationMs, creditsUsed: charge.credits };
   });
