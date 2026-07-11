@@ -348,10 +348,27 @@ function parseScenes(images: unknown): Array<{ id: string; prompt: string; narra
 }
 
 function splitWordsAcrossScenes(script: string, scenes: Array<{ narrationWords?: number }>): number[] {
+  return _splitWords(script, scenes);
+}
+
+function _splitWords(script: string, scenes: Array<{ narrationWords?: number }>): number[] {
   if (!script || scenes.length === 0) return scenes.map(() => 0);
   const words = script.split(/\s+/).filter(Boolean).length;
   const per = Math.ceil(words / scenes.length);
   return scenes.map(() => per);
+}
+
+/** Parse the plain-text storyboard column into scene entries. Mirrors the
+ *  parser used on the Storyboard page: split on blank lines, first line = title. */
+function parseStoryboardText(text: string): Array<{ id: string; prompt: string; narrationWords?: number }> {
+  const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  return blocks.slice(0, 40).map((block, i) => {
+    const firstLine = block.split("\n")[0].trim();
+    const rest = block.split("\n").slice(1).join("\n").trim();
+    const title = firstLine.replace(/^#+\s*/, "").slice(0, 120) || `Scene ${i + 1}`;
+    const prompt = `${title}. ${rest || firstLine}`.slice(0, 1200);
+    return { id: `scene-${i + 1}`, prompt };
+  });
 }
 
 function segmentDuration(totalSeconds: number, maxClip: number): number[] {
