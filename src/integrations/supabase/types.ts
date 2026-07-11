@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_credit_actions: {
+        Row: {
+          action: string
+          admin_id: string
+          affected_count: number
+          amount: number
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string
+          id: string
+          metadata: Json
+          reason: string
+          scope: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          affected_count?: number
+          amount?: number
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason: string
+          scope?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          affected_count?: number
+          amount?: number
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string
+          scope?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       asset_versions: {
         Row: {
           asset_id: string
@@ -332,10 +377,12 @@ export type Database = {
           credits_expiring: number
           expires_at: string | null
           lifetime_purchased: number
+          lifetime_refunded: number
           lifetime_used: number
           reserved: number
           subscription_credits: number
           topup_credits: number
+          unlimited_credits: boolean
           updated_at: string
           user_id: string
         }
@@ -345,10 +392,12 @@ export type Database = {
           credits_expiring?: number
           expires_at?: string | null
           lifetime_purchased?: number
+          lifetime_refunded?: number
           lifetime_used?: number
           reserved?: number
           subscription_credits?: number
           topup_credits?: number
+          unlimited_credits?: boolean
           updated_at?: string
           user_id: string
         }
@@ -358,10 +407,12 @@ export type Database = {
           credits_expiring?: number
           expires_at?: string | null
           lifetime_purchased?: number
+          lifetime_refunded?: number
           lifetime_used?: number
           reserved?: number
           subscription_credits?: number
           topup_credits?: number
+          unlimited_credits?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1241,6 +1292,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_apply_credit_action: {
+        Args: {
+          _action: string
+          _admin: string
+          _amount: number
+          _metadata?: Json
+          _reason: string
+          _scope?: string
+          _user: string
+        }
+        Returns: Json
+      }
       credit_commit: {
         Args: {
           _credits: number
