@@ -19,6 +19,12 @@ export type ComposerSettings = {
   subtitleColor?: string;
   subtitleBackground?: string;
   subtitlePosition?: "bottom" | "top" | "middle";
+  /** Optional background music mixed under narration. */
+  backgroundMusicUrl?: string;
+  /** 0..1 — gain applied to the background music track. */
+  backgroundMusicVolume?: number;
+  /** 0..1 — gain applied to the narration track. Default 1.0. */
+  narrationVolume?: number;
 };
 
 export type ComposerProgress = (info: {
@@ -182,20 +188,42 @@ export async function composeMovie(
   // the recorded output. If it fails to load, continue silently.
   let audioStream: MediaStream | undefined;
   let audioEl: HTMLAudioElement | undefined;
+  let bgmEl: HTMLAudioElement | undefined;
   let audioCtx: AudioContext | undefined;
-  if (narrationUrl) {
+  if (narrationUrl || settings.backgroundMusicUrl) {
     try {
-      audioEl = await loadAudio(narrationUrl);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AC: typeof AudioContext = (window.AudioContext ?? (window as any).webkitAudioContext);
       audioCtx = new AC();
-      const src = audioCtx.createMediaElementSource(audioEl);
       const dest = audioCtx.createMediaStreamDestination();
-      src.connect(dest);
-      // Also route to speakers muted so the recorder gets audio without playback noise.
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0;
-      src.connect(gain).connect(audioCtx.destination);
+      // Silent monitor so playback still ticks without audible output.
+      const silentMonitor = audioCtx.createGain();
+      silentMonitor.gain.value = 0;
+      silentMonitor.connect(audioCtx.destination);
+
+      if (narrationUrl) {
+        audioEl = await loadAudio(narrationUrl);
+        const narrSrc = audioCtx.createMediaElementSource(audioEl);
+        const narrGain = audioCtx.createGain();
+        narrGain.gain.value = Math.max(0, Math.min(1, settings.narrationVolume ?? 1));
+        narrSrc.connect(narrGain).connect(dest);
+        narrSrc.connect(silentMonitor);
+      }
+
+      if (settings.backgroundMusicUrl) {
+        try {
+          bgmEl = await loadAudio(settings.backgroundMusicUrl);
+          bgmEl.loop = true;
+          const bgmSrc = audioCtx.createMediaElementSource(bgmEl);
+          const bgmGain = audioCtx.createGain();
+          bgmGain.gain.value = Math.max(0, Math.min(1, settings.backgroundMusicVolume ?? 0.2));
+          bgmSrc.connect(bgmGain).connect(dest);
+          bgmSrc.connect(silentMonitor);
+        } catch {
+          bgmEl = undefined;
+        }
+      }
+
       audioStream = dest.stream;
     } catch {
       audioStream = undefined;
@@ -224,6 +252,7 @@ export async function composeMovie(
   const stopped = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
   recorder.start(200);
   if (audioEl) audioEl.play().catch(() => { /* ignore */ });
+  if (bgmEl) bgmEl.play().catch(() => { /* ignore */ });
   const startedAt = performance.now();
 
   onProgress?.({ stage: "rendering", percent: 20, totalClips: manifest.clips.length });
@@ -305,6 +334,7 @@ export async function composeMovie(
   recorder.stop();
   await stopped;
   if (audioEl) { try { audioEl.pause(); } catch { /* ignore */ } }
+  if (bgmEl) { try { bgmEl.pause(); } catch { /* ignore */ } }
   if (audioCtx) { try { await audioCtx.close(); } catch { /* ignore */ } }
   const blob = new Blob(chunks, { type: mime });
   onProgress?.({ stage: "done", percent: 100 });

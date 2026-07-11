@@ -68,6 +68,9 @@ function ComposerBody({ project }: { project: ProjectRow }) {
     burnSubtitles: initial?.burnSubtitles ?? true,
     subtitleText: extractText(project.voice) || "",
     subtitlePosition: initial?.subtitlePosition ?? "bottom",
+    backgroundMusicUrl: readBgmUrl(project.background_music),
+    backgroundMusicVolume: readBgmVolume(project.background_music) ?? 0.2,
+    narrationVolume: readNarrationVolume(project.background_music) ?? 1.0,
   });
   const [progress, setProgress] = useState<{ stage: string; percent: number; label?: string } | null>(null);
   const [renderedUrl, setRenderedUrl] = useState<string | null>(null);
@@ -570,8 +573,48 @@ function SettingsPanel({ settings, onChange }: { settings: ComposerSettings; onC
       <Group label="Subtitle position">
         {(["bottom", "middle", "top"] as const).map((v) => <Chip key={v} v={v} cur={settings.subtitlePosition ?? "bottom"} on={(x) => set("subtitlePosition", x)}>{v}</Chip>)}
       </Group>
+      <Group label="Background music URL">
+        <Input
+          value={settings.backgroundMusicUrl ?? ""}
+          onChange={(e) => set("backgroundMusicUrl", e.target.value || undefined)}
+          placeholder="https://…/track.mp3"
+          className="h-8 w-full text-xs"
+        />
+      </Group>
+      <Group label={`Music volume · ${Math.round((settings.backgroundMusicVolume ?? 0.2) * 100)}%`}>
+        <input
+          type="range" min={0} max={100} step={1}
+          value={Math.round((settings.backgroundMusicVolume ?? 0.2) * 100)}
+          onChange={(e) => set("backgroundMusicVolume", Number(e.target.value) / 100)}
+          className="w-full"
+        />
+      </Group>
+      <Group label={`Narration volume · ${Math.round((settings.narrationVolume ?? 1) * 100)}%`}>
+        <input
+          type="range" min={0} max={100} step={1}
+          value={Math.round((settings.narrationVolume ?? 1) * 100)}
+          onChange={(e) => set("narrationVolume", Number(e.target.value) / 100)}
+          className="w-full"
+        />
+      </Group>
     </div>
   );
+}
+
+function readBgmUrl(v: unknown): string | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  return typeof o.globalTrackUrl === "string" ? o.globalTrackUrl : undefined;
+}
+function readBgmVolume(v: unknown): number | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  return typeof o.globalVolume === "number" ? o.globalVolume : undefined;
+}
+function readNarrationVolume(v: unknown): number | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  return typeof o.narrationVolume === "number" ? o.narrationVolume : undefined;
 }
 
 function renumber(clips: SceneClip[]): SceneClip[] {
