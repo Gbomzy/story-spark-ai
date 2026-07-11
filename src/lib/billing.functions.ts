@@ -66,9 +66,8 @@ export const isAdmin = createServerFn({ method: "GET" })
 
 // ---------- Admin: metrics, cost editing, plan editing, adjust ----------
 
-import type { Context } from "@/integrations/supabase/auth-middleware";
-
-async function assertAdmin(ctx: { supabase: Context["supabase"]; userId: string }) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+async function assertAdmin(ctx: { supabase: any; userId: string }) {
   const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
   if (!data) throw new Error("Forbidden");
 }
