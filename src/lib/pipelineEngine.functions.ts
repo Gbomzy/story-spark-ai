@@ -134,8 +134,18 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     let manifest = (proj.video_file as MovieManifest | null) ?? null;
     const looksLikeQueue = manifest && Array.isArray(manifest.clips) && manifest.clips.length > 0
       && manifest.clips.every((c) => typeof c?.prompt === "string");
+    // If the storyboard has more scenes than the persisted manifest covers,
+    // the previous run was built before the storyboard existed (single-shot
+    // fallback). Rebuild the queue so every scene gets a clip.
+    const manifestSceneCount = manifest && Array.isArray(manifest.clips)
+      ? new Set(manifest.clips.map((c) => c.sceneNumber)).size
+      : 0;
+    const staleQueue = looksLikeQueue && chain && scenes.length > manifestSceneCount;
+    if (staleQueue) {
+      manifest = null;
+    }
 
-    if (!looksLikeQueue) {
+    if (!looksLikeQueue || staleQueue) {
       // Build the full queue from storyboard scenes (or a single-shot fallback).
       const queued: SceneClip[] = [];
       if (chain && scenes.length > 0) {
