@@ -12,6 +12,7 @@ const Input = z.object({
   duration: z.number().int().min(2).max(10).optional(),
   seed: z.number().int().optional(),
   projectId: z.string().optional(),
+  skipProjectVideoUpdate: z.boolean().optional(),
 });
 
 const MODEL_FALLBACKS: Record<string, string[]> = {
@@ -135,7 +136,9 @@ export const generateWanVideo = createServerFn({ method: "POST" })
           render_status: providerError ? "failed" : "completed",
           render_progress: providerError ? 0 : 100,
           video_provider: model,
-          ...(providerError ? {} : { video_file: { url: storedUrl, provider: model, bytes, cover: coverUrl } }),
+          ...(providerError || data.skipProjectVideoUpdate
+            ? {}
+            : { video_file: { url: storedUrl, provider: model, bytes, cover: coverUrl } }),
         }).eq("id", data.projectId);
       } catch { /* best-effort */ }
     }
