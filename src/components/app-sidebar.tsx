@@ -78,6 +78,7 @@ const footerItems = [
   { label: "Feature Flags", to: "/feature-flags", icon: Flag },
   { label: "AI Providers", to: "/ai-providers", icon: Cpu },
   { label: "Admin Billing", to: "/admin-billing", icon: BarChart3 },
+  { label: "Admin Users", to: "/admin-users", icon: Users },
   { label: "Settings", to: "/settings", icon: Settings },
   { label: "Help", to: "/help", icon: HelpCircle },
 ] as const;
