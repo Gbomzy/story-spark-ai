@@ -34,6 +34,9 @@ export const generateWanVideo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const t0 = Date.now();
+    const { beginCharge } = await import("./creditsInHandler.server");
+    const units = Math.max(1, data.duration ?? 5);
+    const charge = await beginCharge({ userId: context.userId, operation: "video", units, projectId: data.projectId ?? null });
     const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
     const mode = data.mode ?? (data.imageUrl ? "i2v" : "t2v");
     const preferred = data.model
@@ -143,6 +146,10 @@ export const generateWanVideo = createServerFn({ method: "POST" })
       } catch { /* best-effort */ }
     }
 
-    if (providerError) throw new Error(providerError);
-    return { url: storedUrl, provider: model, mode, durationMs, bytes, cover: coverUrl };
+    if (providerError) {
+      await charge.refund(providerError);
+      throw new Error(providerError);
+    }
+    await charge.commit(model);
+    return { url: storedUrl, provider: model, mode, durationMs, bytes, cover: coverUrl, creditsUsed: charge.credits };
   });
