@@ -54,6 +54,7 @@ import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
 import { Route as AppAdminBillingRouteImport } from './routes/_app.admin-billing'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
+import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/public/flutterwave-webhook'
 import { Route as AppProjectsNewRouteImport } from './routes/_app.projects.new'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
@@ -283,6 +284,12 @@ const ApiPublicPaystackWebhookRoute =
     path: '/api/public/paystack-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFlutterwaveWebhookRoute =
+  ApiPublicFlutterwaveWebhookRouteImport.update({
+    id: '/api/public/flutterwave-webhook',
+    path: '/api/public/flutterwave-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -345,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -394,6 +402,7 @@ export interface FileRoutesByTo {
   '/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -445,6 +454,7 @@ export interface FileRoutesById {
   '/_app/project-settings/$id': typeof AppProjectSettingsIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
   '/_app/projects/new': typeof AppProjectsNewRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/project-settings/$id'
     | '/projects/$id'
     | '/projects/new'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   id:
@@ -595,6 +607,7 @@ export interface FileRouteTypes {
     | '/_app/project-settings/$id'
     | '/_app/projects/$id'
     | '/_app/projects/new'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
     | '/api/public/stripe-webhook'
   fileRoutesById: FileRoutesById
@@ -606,6 +619,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
@@ -927,6 +941,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/flutterwave-webhook': {
+      id: '/api/public/flutterwave-webhook'
+      path: '/api/public/flutterwave-webhook'
+      fullPath: '/api/public/flutterwave-webhook'
+      preLoaderRoute: typeof ApiPublicFlutterwaveWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/projects/new': {
       id: '/_app/projects/new'
       path: '/new'
@@ -1056,6 +1077,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
