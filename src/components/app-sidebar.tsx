@@ -46,6 +46,7 @@ const items = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Create Movie", to: "/create-movie", icon: Wand2 },
   { label: "Orchestrator", to: "/orchestrator", icon: Workflow },
+  { label: "Cinematic Quality", to: "/cinematic-quality", icon: Sparkles },
   { label: "My Projects", to: "/projects", icon: FolderKanban },
   { label: "Story Generator", to: "/story-generator", icon: Wand2 },
   { label: "Character Creator", to: "/characters", icon: Users },

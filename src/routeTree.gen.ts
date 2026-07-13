@@ -50,6 +50,7 @@ import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppCreateMovieRouteImport } from './routes/_app.create-movie'
+import { Route as AppCinematicQualityRouteImport } from './routes/_app.cinematic-quality'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
@@ -269,6 +270,11 @@ const AppCreateMovieRoute = AppCreateMovieRouteImport.update({
   path: '/create-movie',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCinematicQualityRoute = AppCinematicQualityRouteImport.update({
+  id: '/cinematic-quality',
+  path: '/cinematic-quality',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCharactersRoute = AppCharactersRouteImport.update({
   id: '/characters',
   path: '/characters',
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/cinematic-quality': typeof AppCinematicQualityRoute
   '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/cinematic-quality': typeof AppCinematicQualityRoute
   '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
@@ -471,6 +479,7 @@ export interface FileRoutesById {
   '/_app/assets': typeof AppAssetsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
+  '/_app/cinematic-quality': typeof AppCinematicQualityRoute
   '/_app/create-movie': typeof AppCreateMovieRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -529,6 +538,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/cinematic-quality'
     | '/create-movie'
     | '/credits'
     | '/dashboard'
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/cinematic-quality'
     | '/create-movie'
     | '/credits'
     | '/dashboard'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/_app/assets'
     | '/_app/billing'
     | '/_app/characters'
+    | '/_app/cinematic-quality'
     | '/_app/create-movie'
     | '/_app/credits'
     | '/_app/dashboard'
@@ -984,6 +996,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCreateMovieRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/cinematic-quality': {
+      id: '/_app/cinematic-quality'
+      path: '/cinematic-quality'
+      fullPath: '/cinematic-quality'
+      preLoaderRoute: typeof AppCinematicQualityRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/characters': {
       id: '/_app/characters'
       path: '/characters'
@@ -1109,6 +1128,7 @@ interface AppRouteChildren {
   AppAssetsRoute: typeof AppAssetsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
+  AppCinematicQualityRoute: typeof AppCinematicQualityRoute
   AppCreateMovieRoute: typeof AppCreateMovieRoute
   AppCreditsRoute: typeof AppCreditsRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -1157,6 +1177,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssetsRoute: AppAssetsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
+  AppCinematicQualityRoute: AppCinematicQualityRoute,
   AppCreateMovieRoute: AppCreateMovieRoute,
   AppCreditsRoute: AppCreditsRoute,
   AppDashboardRoute: AppDashboardRoute,

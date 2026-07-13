@@ -8,6 +8,11 @@ export type StoryBibleCharacter = {
   voiceStyle?: string;
 };
 
+import type { SceneDirection } from "@/lib/aiDirector.functions";
+import type { CinematicShotPlan } from "@/lib/cinematicDirector";
+import type { CharacterVisualProfile, VisualProfileMap } from "@/lib/characterVisual";
+import type { WorldBible } from "@/lib/worldBible";
+
 export type StoryBible = {
   version: 1;
   characters: StoryBibleCharacter[];
@@ -16,6 +21,10 @@ export type StoryBible = {
   artStyle?: string;
   cameraStyle?: string;
   voiceStyle?: string;
+  worldBible?: WorldBible;
+  visualProfiles?: VisualProfileMap;
+  direction?: Record<string, SceneDirection>;
+  shotPlans?: Record<string, CinematicShotPlan>;
   updatedAt: string;
 };
 

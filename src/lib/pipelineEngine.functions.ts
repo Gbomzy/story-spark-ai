@@ -218,6 +218,28 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         });
       }
 
+      // Enrich every queued clip prompt with cinematic direction, motion,
+      // and quality tags so downstream Wan calls receive a production-grade prompt.
+      try {
+        const { buildShotPlan, enrichVideoPrompt } = await import("./cinematicDirector");
+        const total = queued.length;
+        let prevShot: import("./cinematicDirector").CameraShot | undefined;
+        for (let i = 0; i < queued.length; i++) {
+          const c = queued[i];
+          const plan = buildShotPlan({
+            sceneId: c.sceneId,
+            sceneNumber: c.sceneNumber,
+            total,
+            text: c.prompt,
+            prevShot,
+          });
+          prevShot = plan.cameraShot;
+          c.prompt = enrichVideoPrompt(c.prompt, plan);
+        }
+      } catch (err) {
+        console.warn("[pipeline] cinematic enrichment skipped", err);
+      }
+
       manifest = {
         kind: queued.length > 1 ? "chained" : "single",
         url: "",
