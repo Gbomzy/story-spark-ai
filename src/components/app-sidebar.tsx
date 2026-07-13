@@ -36,6 +36,8 @@ import {
   Server,
   Bell,
   BookMarked,
+  Wand2,
+  Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -43,6 +45,8 @@ import { Button } from "@/components/ui/button";
 
 const items = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Create Movie", to: "/create-movie", icon: Wand2 },
+  { label: "Orchestrator", to: "/orchestrator", icon: Workflow },
   { label: "My Projects", to: "/projects", icon: FolderKanban },
   { label: "Story Generator", to: "/story-generator", icon: Wand2 },
   { label: "Character Creator", to: "/characters", icon: Users },
