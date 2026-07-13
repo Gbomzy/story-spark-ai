@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Moon, Sun, Search, Menu, LogOut, User, CreditCard, Settings as SettingsIcon, Zap } from "lucide-react";
+import { Moon, Sun, Search, Menu, LogOut, User, CreditCard, Settings as SettingsIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
@@ -12,14 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NotificationBell } from "@/components/notification-bell";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -27,12 +23,6 @@ import { useEffect } from "react";
 import { getMyWallet } from "@/lib/billing.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-
-const notifications = [
-  { id: 1, title: "Your story 'Lila & the Star' rendered successfully", time: "2m ago" },
-  { id: 2, title: "Voiceover ready for 'Tiny Astronauts'", time: "1h ago" },
-  { id: 3, title: "New template added: Bedtime Adventures", time: "Yesterday" },
-];
 
 export function TopBar() {
   const { theme, toggle } = useTheme();
@@ -107,25 +97,7 @@ export function TopBar() {
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Notifications" className="relative rounded-xl">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-0">
-            <div className="border-b border-border px-4 py-3 text-sm font-semibold">Notifications</div>
-            <ul className="max-h-80 divide-y divide-border overflow-y-auto">
-              {notifications.map((n) => (
-                <li key={n.id} className="px-4 py-3 text-sm">
-                  <p className="font-medium leading-snug">{n.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{n.time}</p>
-                </li>
-              ))}
-            </ul>
-          </PopoverContent>
-        </Popover>
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
