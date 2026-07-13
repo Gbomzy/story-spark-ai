@@ -21,6 +21,7 @@ import { saveMovieManifest, regenerateClip } from "@/lib/movieManifest.functions
 import { composeMovie, type ComposerSettings } from "@/lib/movieComposer";
 import { downloadMoviePackage } from "@/lib/moviePackaging";
 import { buildSubtitles } from "@/lib/subtitleService";
+import { parseAudioStudio, parseSongsField } from "@/lib/storyMusic";
 
 export const Route = createFileRoute("/_app/movie-composer")({
   head: () => ({ meta: [{ title: "Movie Composer — StorySpark AI" }] }),
@@ -71,6 +72,11 @@ function ComposerBody({ project }: { project: ProjectRow }) {
     backgroundMusicUrl: readBgmUrl(project.background_music),
     backgroundMusicVolume: readBgmVolume(project.background_music) ?? 0.2,
     narrationVolume: readNarrationVolume(project.background_music) ?? 1.0,
+    audioStudio: (() => {
+      const stored = parseSongsField(project.songs);
+      const planScenes = stored.kind === "plan" ? stored.plan.scenes : undefined;
+      return parseAudioStudio(project.background_music, planScenes);
+    })(),
   });
   const [progress, setProgress] = useState<{ stage: string; percent: number; label?: string } | null>(null);
   const [renderedUrl, setRenderedUrl] = useState<string | null>(null);
