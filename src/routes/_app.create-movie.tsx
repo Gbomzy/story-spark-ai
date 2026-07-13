@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Sparkles, Play, Pause, RotateCcw, X, Wand2, Clock, Zap, HardDrive, Film } from "lucide-react";
+import { Play, Pause, RotateCcw, X, Wand2, Clock, Zap, HardDrive, Film } from "lucide-react";
 import { PROJECT_TEMPLATES, findTemplate } from "@/lib/projectTemplates";
 import { estimateProduction, formatDuration, formatStorage } from "@/lib/aiProducer";
 import {
