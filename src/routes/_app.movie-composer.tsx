@@ -42,6 +42,7 @@ import { composeMovie, type ComposerSettings } from "@/lib/movieComposer";
 import { downloadMoviePackage } from "@/lib/moviePackaging";
 import { buildSubtitles } from "@/lib/subtitleService";
 import { parseAudioStudio, parseSongsField } from "@/lib/storyMusic";
+import { AudioStudioPreview } from "@/components/media/audio-studio-preview";
 
 export const Route = createFileRoute("/_app/movie-composer")({
   head: () => ({ meta: [{ title: "Movie Composer — StorySpark AI" }] }),
@@ -488,6 +489,15 @@ function ComposerBody({ project }: { project: ProjectRow }) {
         ) : null}
         <SettingsPanel settings={settings} onChange={setSettings} />
       </Card>
+
+      <AudioStudioPreview
+        narrationUrl={narrationUrl}
+        musicUrl={settings.backgroundMusicUrl}
+        audioStudio={settings.audioStudio}
+        narrationText={settings.subtitleText}
+        narrationVolume={settings.narrationVolume}
+        musicVolume={settings.backgroundMusicVolume}
+      />
 
       {(pipelineMut.isPending || (totalCount > 0 && completedCount < totalCount)) && (
         <ProgressDashboard
