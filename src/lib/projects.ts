@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatDbError } from "./dbError";
 
 export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 export type ProjectInsert = Database["public"]["Tables"]["projects"]["Insert"];
@@ -32,7 +33,7 @@ export async function getProject(id: string) {
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new Error(formatDbError(error, "Failed to load project"));
   return data;
 }
 
@@ -44,7 +45,7 @@ export async function createProject(input: Omit<ProjectInsert, "user_id">) {
     .insert({ ...input, user_id: u.user.id })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(formatDbError(error, "Failed to create project"));
   return data;
 }
 
@@ -55,7 +56,8 @@ export async function updateProject(id: string, patch: ProjectUpdate) {
     .eq("id", id)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(formatDbError(error, "Failed to update project"));
+  if (!data) throw new Error("Update returned zero rows. The project may have been deleted or is not owned by you.");
   return data;
 }
 
