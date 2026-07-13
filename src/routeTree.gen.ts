@@ -49,6 +49,7 @@ import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
+import { Route as AppAssetLibraryRouteImport } from './routes/_app.asset-library'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
@@ -259,6 +260,11 @@ const AppAssetsRoute = AppAssetsRouteImport.update({
   path: '/assets',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssetLibraryRoute = AppAssetLibraryRouteImport.update({
+  id: '/asset-library',
+  path: '/asset-library',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/asset-library': typeof AppAssetLibraryRoute
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/asset-library': typeof AppAssetLibraryRoute
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/_app/ai-agents': typeof AppAiAgentsRoute
   '/_app/ai-providers': typeof AppAiProvidersRoute
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/asset-library': typeof AppAssetLibraryRoute
   '/_app/assets': typeof AppAssetsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
@@ -480,6 +489,7 @@ export interface FileRouteTypes {
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
+    | '/asset-library'
     | '/assets'
     | '/billing'
     | '/characters'
@@ -531,6 +541,7 @@ export interface FileRouteTypes {
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
+    | '/asset-library'
     | '/assets'
     | '/billing'
     | '/characters'
@@ -583,6 +594,7 @@ export interface FileRouteTypes {
     | '/_app/ai-agents'
     | '/_app/ai-providers'
     | '/_app/analytics'
+    | '/_app/asset-library'
     | '/_app/assets'
     | '/_app/billing'
     | '/_app/characters'
@@ -917,6 +929,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssetsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/asset-library': {
+      id: '/_app/asset-library'
+      path: '/asset-library'
+      fullPath: '/asset-library'
+      preLoaderRoute: typeof AppAssetLibraryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/analytics': {
       id: '/_app/analytics'
       path: '/analytics'
@@ -1010,6 +1029,7 @@ interface AppRouteChildren {
   AppAiAgentsRoute: typeof AppAiAgentsRoute
   AppAiProvidersRoute: typeof AppAiProvidersRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAssetLibraryRoute: typeof AppAssetLibraryRoute
   AppAssetsRoute: typeof AppAssetsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
@@ -1053,6 +1073,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAiAgentsRoute: AppAiAgentsRoute,
   AppAiProvidersRoute: AppAiProvidersRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAssetLibraryRoute: AppAssetLibraryRoute,
   AppAssetsRoute: AppAssetsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
