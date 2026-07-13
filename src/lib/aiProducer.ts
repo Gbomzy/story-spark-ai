@@ -43,15 +43,23 @@ export function estimateProduction(input: EstimateInput): ProductionEstimate {
   const resolution = input.resolution ?? "1080p";
 
   // Sum credits across the major stages using the existing estimator.
-  const storyCredits = estimate({ kind: "text", words: Math.round(targetLen * 2.5) }).credits;
-  const imageCredits = estimate({ kind: "image", scenes: imagesRequired }).credits;
+  const storyCredits = estimate({ kind: "story", words: Math.round(targetLen * 2.5) }).credits;
+  const storyboardCredits = estimate({ kind: "storyboard", scenes }).credits;
+  const charactersCredits = estimate({ kind: "characters" }).credits;
+  const imageCredits = estimate({ kind: "image_prompts", scenes: imagesRequired }).credits;
   const voiceCredits = estimate({ kind: "voice", seconds: voiceDurationSec }).credits;
   const videoCredits = estimate({ kind: "video", seconds: videoDurationSec, resolution }).credits;
-  const musicCredits = estimate({ kind: "music", seconds: voiceDurationSec }).credits;
-  const thumbnailCredits = estimate({ kind: "image", scenes: 1 }).credits;
-  const seoCredits = estimate({ kind: "text", words: 300 }).credits;
+  const musicCredits = estimate({ kind: "songs", seconds: voiceDurationSec }).credits;
+  const seoCredits = estimate({ kind: "seo" }).credits;
   const creditsRequired =
-    storyCredits + imageCredits + voiceCredits + videoCredits + musicCredits + thumbnailCredits + seoCredits;
+    storyCredits +
+    storyboardCredits +
+    charactersCredits +
+    imageCredits +
+    voiceCredits +
+    videoCredits +
+    musicCredits +
+    seoCredits;
 
   // Render time: roughly clip generation is the dominant cost.
   const renderTimeSec = clips * 30 + Math.round(voiceDurationSec / 4) + imagesRequired * 6;
