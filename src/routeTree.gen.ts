@@ -32,6 +32,7 @@ import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
 import { Route as AppOwnerAnalyticsRouteImport } from './routes/_app.owner-analytics'
+import { Route as AppOrchestratorRouteImport } from './routes/_app.orchestrator'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
@@ -175,6 +176,11 @@ const AppProductionRoute = AppProductionRouteImport.update({
 const AppOwnerAnalyticsRoute = AppOwnerAnalyticsRouteImport.update({
   id: '/owner-analytics',
   path: '/owner-analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrchestratorRoute = AppOrchestratorRouteImport.update({
+  id: '/orchestrator',
+  path: '/orchestrator',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOcrRoute = AppOcrRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/orchestrator': typeof AppOrchestratorRoute
   '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -415,6 +422,7 @@ export interface FileRoutesByTo {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/orchestrator': typeof AppOrchestratorRoute
   '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -471,6 +479,7 @@ export interface FileRoutesById {
   '/_app/movie-composer': typeof AppMovieComposerRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/ocr': typeof AppOcrRoute
+  '/_app/orchestrator': typeof AppOrchestratorRoute
   '/_app/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
@@ -527,6 +536,7 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/orchestrator'
     | '/owner-analytics'
     | '/production'
     | '/projects'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/orchestrator'
     | '/owner-analytics'
     | '/production'
     | '/projects'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/_app/movie-composer'
     | '/_app/notifications'
     | '/_app/ocr'
+    | '/_app/orchestrator'
     | '/_app/owner-analytics'
     | '/_app/production'
     | '/_app/projects'
@@ -832,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/owner-analytics'
       fullPath: '/owner-analytics'
       preLoaderRoute: typeof AppOwnerAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/orchestrator': {
+      id: '/_app/orchestrator'
+      path: '/orchestrator'
+      fullPath: '/orchestrator'
+      preLoaderRoute: typeof AppOrchestratorRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ocr': {
@@ -1087,6 +1106,7 @@ interface AppRouteChildren {
   AppMovieComposerRoute: typeof AppMovieComposerRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppOcrRoute: typeof AppOcrRoute
+  AppOrchestratorRoute: typeof AppOrchestratorRoute
   AppOwnerAnalyticsRoute: typeof AppOwnerAnalyticsRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
@@ -1133,6 +1153,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMovieComposerRoute: AppMovieComposerRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppOcrRoute: AppOcrRoute,
+  AppOrchestratorRoute: AppOrchestratorRoute,
   AppOwnerAnalyticsRoute: AppOwnerAnalyticsRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
