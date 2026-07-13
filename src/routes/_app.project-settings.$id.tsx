@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { formatDbError } from "@/lib/dbError";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2, Save, Loader2, ChevronLeft } from "lucide-react";
 
@@ -30,6 +31,7 @@ type Extra = {
   visibility?: "private" | "unlisted" | "public";
   aspectRatio?: string;
   resolution?: string;
+  description?: string;
 };
 
 function ProjectSettingsPage() {
@@ -52,25 +54,26 @@ function ProjectSettingsPage() {
     if (!project) return;
     const p = project as unknown as Record<string, unknown> & { settings?: Extra };
     setName((p.name as string) ?? "");
-    setDescription((p.description as string) ?? "");
+    const s = (p.settings as Extra) ?? {};
+    setDescription(s.description ?? "");
     setLanguage((p.language as string) ?? "en");
     setAudience((p.target_age as string) ?? "");
     setAnimation((p.animation_style as string) ?? "");
     setVoice((p.voice_preference as string) ?? "");
     setPlatform((p.target_platform as string) ?? "");
     setProvider((p.preferred_ai_provider as string) ?? "qwen");
-    setExtra((p.settings as Extra) ?? {});
+    setExtra(s);
   }, [project]);
 
   const save = useMutation({
     mutationFn: async () => updateProject(id, {
-      name, description,
+      name,
       language, target_age: audience, animation_style: animation,
       voice_preference: voice, target_platform: platform, preferred_ai_provider: provider,
-      settings: extra as never,
+      settings: { ...extra, description } as never,
     } as never),
     onSuccess: () => { toast.success("Settings saved"); qc.invalidateQueries({ queryKey: ["project", id] }); },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Save failed"),
+    onError: (e: unknown) => toast.error(formatDbError(e, "Save failed")),
   });
 
   const del = useMutation({
