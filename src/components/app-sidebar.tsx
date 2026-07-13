@@ -34,6 +34,8 @@ import {
   Coins,
   BarChart3,
   Server,
+  Bell,
+  BookMarked,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -56,6 +58,8 @@ const items = [
   { label: "Translate", to: "/translate", icon: Languages },
   { label: "Publishing", to: "/publishing", icon: Share2 },
   { label: "Assets", to: "/assets", icon: Boxes },
+  { label: "Asset Library", to: "/asset-library", icon: BookMarked },
+  { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "Timeline", to: "/timeline", icon: Activity },
   { label: "Queue", to: "/queue", icon: ListChecks },
   { label: "Job Manager", to: "/jobs", icon: ListChecks },
@@ -78,6 +82,7 @@ const footerItems = [
   { label: "Feature Flags", to: "/feature-flags", icon: Flag },
   { label: "AI Providers", to: "/ai-providers", icon: Cpu },
   { label: "Admin Billing", to: "/admin-billing", icon: BarChart3 },
+  { label: "Owner Analytics", to: "/owner-analytics", icon: BarChart3 },
   { label: "Admin Users", to: "/admin-users", icon: Users },
   { label: "Settings", to: "/settings", icon: Settings },
   { label: "Help", to: "/help", icon: HelpCircle },
