@@ -15,6 +15,8 @@ export const ASSET_KINDS = [
 ] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+
 export type AssetRow = {
   id: string;
   project_id: string;
@@ -24,7 +26,7 @@ export type AssetRow = {
   description: string | null;
   status: string;
   provider: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: Json | null;
   created_at: string;
   updated_at: string;
 };
