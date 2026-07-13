@@ -32,6 +32,7 @@ import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
+import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
 import { Route as AppMonitoringRouteImport } from './routes/_app.monitoring'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
@@ -171,6 +172,11 @@ const AppProductionRoute = AppProductionRouteImport.update({
 const AppOcrRoute = AppOcrRouteImport.update({
   id: '/ocr',
   path: '/ocr',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMovieComposerRoute = AppMovieComposerRouteImport.update({
@@ -333,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
   '/movie-composer': typeof AppMovieComposerRoute
+  '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
   '/movie-composer': typeof AppMovieComposerRoute
+  '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/monitoring': typeof AppMonitoringRoute
   '/_app/movie-composer': typeof AppMovieComposerRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/ocr': typeof AppOcrRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
@@ -487,6 +496,7 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/monitoring'
     | '/movie-composer'
+    | '/notifications'
     | '/ocr'
     | '/production'
     | '/projects'
@@ -537,6 +547,7 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/monitoring'
     | '/movie-composer'
+    | '/notifications'
     | '/ocr'
     | '/production'
     | '/projects'
@@ -588,6 +599,7 @@ export interface FileRouteTypes {
     | '/_app/media-studio'
     | '/_app/monitoring'
     | '/_app/movie-composer'
+    | '/_app/notifications'
     | '/_app/ocr'
     | '/_app/production'
     | '/_app/projects'
@@ -784,6 +796,13 @@ declare module '@tanstack/react-router' {
       path: '/ocr'
       fullPath: '/ocr'
       preLoaderRoute: typeof AppOcrRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/movie-composer': {
@@ -1007,6 +1026,7 @@ interface AppRouteChildren {
   AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppMovieComposerRoute: typeof AppMovieComposerRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppOcrRoute: typeof AppOcrRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
@@ -1049,6 +1069,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMediaStudioRoute: AppMediaStudioRoute,
   AppMonitoringRoute: AppMonitoringRoute,
   AppMovieComposerRoute: AppMovieComposerRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppOcrRoute: AppOcrRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
