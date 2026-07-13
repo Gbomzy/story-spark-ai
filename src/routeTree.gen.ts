@@ -47,6 +47,7 @@ import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
+import { Route as AppCreateMovieRouteImport } from './routes/_app.create-movie'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
@@ -251,6 +252,11 @@ const AppCreditsRoute = AppCreditsRouteImport.update({
   path: '/credits',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCreateMovieRoute = AppCreateMovieRouteImport.update({
+  id: '/create-movie',
+  path: '/create-movie',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCharactersRoute = AppCharactersRouteImport.update({
   id: '/characters',
   path: '/characters',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
@@ -447,6 +455,7 @@ export interface FileRoutesById {
   '/_app/assets': typeof AppAssetsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
+  '/_app/create-movie': typeof AppCreateMovieRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/error-log': typeof AppErrorLogRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/create-movie'
     | '/credits'
     | '/dashboard'
     | '/error-log'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/create-movie'
     | '/credits'
     | '/dashboard'
     | '/error-log'
@@ -609,6 +620,7 @@ export interface FileRouteTypes {
     | '/_app/assets'
     | '/_app/billing'
     | '/_app/characters'
+    | '/_app/create-movie'
     | '/_app/credits'
     | '/_app/dashboard'
     | '/_app/error-log'
@@ -927,6 +939,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCreditsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/create-movie': {
+      id: '/_app/create-movie'
+      path: '/create-movie'
+      fullPath: '/create-movie'
+      preLoaderRoute: typeof AppCreateMovieRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/characters': {
       id: '/_app/characters'
       path: '/characters'
@@ -1052,6 +1071,7 @@ interface AppRouteChildren {
   AppAssetsRoute: typeof AppAssetsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
+  AppCreateMovieRoute: typeof AppCreateMovieRoute
   AppCreditsRoute: typeof AppCreditsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppErrorLogRoute: typeof AppErrorLogRoute
@@ -1097,6 +1117,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssetsRoute: AppAssetsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
+  AppCreateMovieRoute: AppCreateMovieRoute,
   AppCreditsRoute: AppCreditsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppErrorLogRoute: AppErrorLogRoute,
