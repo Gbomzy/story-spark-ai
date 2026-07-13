@@ -22,6 +22,33 @@ export const BGM_MOODS: BgmMood[] = [
   "funny",
 ];
 
+export type SfxKind =
+  | "birds"
+  | "forest"
+  | "rain"
+  | "ocean"
+  | "wind"
+  | "footsteps"
+  | "door"
+  | "school"
+  | "crowd"
+  | "magic"
+  | "celebration";
+
+export const SFX_KINDS: SfxKind[] = [
+  "birds",
+  "forest",
+  "rain",
+  "ocean",
+  "wind",
+  "footsteps",
+  "door",
+  "school",
+  "crowd",
+  "magic",
+  "celebration",
+];
+
 export type SongPosition = "none" | "intro" | "middle" | "ending" | "multiple";
 
 export type MusicMode = "story_only" | "story_ending" | "musical" | "custom";
@@ -55,6 +82,8 @@ export type StoryMusicScene = {
   title: string;
   bgmMood: BgmMood;
   volume: number; // 0..1
+  narrationVolume?: number;
+  sfx?: Array<{ kind: SfxKind; volume: number }>;
 };
 
 export type StoryMusicPlan = {
@@ -75,6 +104,11 @@ export type StoryMusicPlan = {
   };
   scenes: StoryMusicScene[];
   song: StoryMusicSong | null;
+  endingCredits?: {
+    enabled: boolean;
+    fadeOutSeconds: number;
+    text?: string;
+  };
 };
 
 export type StoredSongsField =
