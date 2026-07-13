@@ -716,6 +716,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          onboarding: Json
           referral_code: string | null
           updated_at: string
         }
@@ -724,6 +725,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          onboarding?: Json
           referral_code?: string | null
           updated_at?: string
         }
@@ -732,6 +734,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          onboarding?: Json
           referral_code?: string | null
           updated_at?: string
         }
@@ -818,6 +821,7 @@ export type Database = {
           music: string | null
           name: string
           objective: string | null
+          orchestrator_state: Json | null
           preferred_ai_provider: string | null
           render_duration: number | null
           render_progress: number | null
@@ -873,6 +877,7 @@ export type Database = {
           music?: string | null
           name: string
           objective?: string | null
+          orchestrator_state?: Json | null
           preferred_ai_provider?: string | null
           render_duration?: number | null
           render_progress?: number | null
@@ -928,6 +933,7 @@ export type Database = {
           music?: string | null
           name?: string
           objective?: string | null
+          orchestrator_state?: Json | null
           preferred_ai_provider?: string | null
           render_duration?: number | null
           render_progress?: number | null
