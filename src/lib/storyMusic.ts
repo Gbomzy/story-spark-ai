@@ -60,10 +60,33 @@ export const MUSIC_MODES: Array<{
   forcedPosition?: SongPosition;
   forceSong: boolean;
 }> = [
-  { id: "story_only", label: "Story Only", description: "Narration + background music. No song.", forcedPosition: "none", forceSong: false },
-  { id: "story_ending", label: "Story + Ending Song", description: "One song at the end that reinforces the lesson.", forcedPosition: "ending", forceSong: true },
-  { id: "musical", label: "Musical Story", description: "Multiple songs woven through the story.", forcedPosition: "multiple", forceSong: true },
-  { id: "custom", label: "Custom", description: "You choose the song position and mood.", forceSong: false },
+  {
+    id: "story_only",
+    label: "Story Only",
+    description: "Narration + background music. No song.",
+    forcedPosition: "none",
+    forceSong: false,
+  },
+  {
+    id: "story_ending",
+    label: "Story + Ending Song",
+    description: "One song at the end that reinforces the lesson.",
+    forcedPosition: "ending",
+    forceSong: true,
+  },
+  {
+    id: "musical",
+    label: "Musical Story",
+    description: "Multiple songs woven through the story.",
+    forcedPosition: "multiple",
+    forceSong: true,
+  },
+  {
+    id: "custom",
+    label: "Custom",
+    description: "You choose the song position and mood.",
+    forceSong: false,
+  },
 ];
 
 export type StoryMusicSong = {
@@ -127,10 +150,18 @@ export function parseSongsField(value: string | null | undefined): StoredSongsFi
   if (trimmed.startsWith("{")) {
     try {
       const parsed = JSON.parse(trimmed) as { version?: number } & Partial<StoryMusicPlan>;
-      if (parsed && parsed.version === 1 && parsed.analysis && parsed.recommendation && Array.isArray(parsed.scenes)) {
+      if (
+        parsed &&
+        parsed.version === 1 &&
+        parsed.analysis &&
+        parsed.recommendation &&
+        Array.isArray(parsed.scenes)
+      ) {
         return { kind: "plan", plan: parsed as StoryMusicPlan };
       }
-    } catch { /* fall through to legacy */ }
+    } catch {
+      /* fall through to legacy */
+    }
   }
   return { kind: "legacy", lyrics: value };
 }
@@ -304,7 +335,10 @@ export function parseAudioStudio(value: unknown, planScenes?: StoryMusicScene[])
     base.scenes.sort((a, b) => a.sceneNumber - b.sceneNumber);
   }
 
-  const ec = src.endingCredits && typeof src.endingCredits === "object" ? (src.endingCredits as Record<string, unknown>) : null;
+  const ec =
+    src.endingCredits && typeof src.endingCredits === "object"
+      ? (src.endingCredits as Record<string, unknown>)
+      : null;
   if (ec) {
     base.endingCredits = {
       enabled: Boolean(ec.enabled),
@@ -314,11 +348,15 @@ export function parseAudioStudio(value: unknown, planScenes?: StoryMusicScene[])
     };
   }
 
-  const d = src.ducking && typeof src.ducking === "object" ? (src.ducking as Record<string, unknown>) : null;
+  const d =
+    src.ducking && typeof src.ducking === "object"
+      ? (src.ducking as Record<string, unknown>)
+      : null;
   if (d) {
     base.ducking = {
       enabled: d.enabled === undefined ? true : Boolean(d.enabled),
-      duckedLevel: typeof d.duckedLevel === "number" ? clamp01(d.duckedLevel) : DEFAULT_DUCKING.duckedLevel,
+      duckedLevel:
+        typeof d.duckedLevel === "number" ? clamp01(d.duckedLevel) : DEFAULT_DUCKING.duckedLevel,
       attackMs: typeof d.attackMs === "number" ? d.attackMs : DEFAULT_DUCKING.attackMs,
       releaseMs: typeof d.releaseMs === "number" ? d.releaseMs : DEFAULT_DUCKING.releaseMs,
       threshold: typeof d.threshold === "number" ? clamp01(d.threshold) : DEFAULT_DUCKING.threshold,
@@ -338,8 +376,11 @@ function normalizeStudioScene(raw: unknown, i: number): AudioStudioScene {
   const mood = String(s.bgmMood ?? "calm");
   const bgmMood = (BGM_MOODS as string[]).includes(mood) ? (mood as BgmMood) : "calm";
   const musicVol =
-    typeof s.musicVolume === "number" ? clamp01(s.musicVolume) :
-    typeof s.volume === "number" ? clamp01(s.volume as number) : 0.2;
+    typeof s.musicVolume === "number"
+      ? clamp01(s.musicVolume)
+      : typeof s.volume === "number"
+        ? clamp01(s.volume as number)
+        : 0.2;
   const narrVol = typeof s.narrationVolume === "number" ? clamp01(s.narrationVolume) : 1;
   const rawSfx = Array.isArray(s.sfx) ? (s.sfx as unknown[]) : [];
   const sfx: SfxItem[] = rawSfx.map((x) => {

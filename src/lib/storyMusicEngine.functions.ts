@@ -3,8 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { StoryMusicPlan, MusicMode, SongPosition, BgmMood, SfxKind } from "@/lib/storyMusic";
 
-const QWEN_ENDPOINT =
-  "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
+const QWEN_ENDPOINT = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
 const DEFAULT_MODEL = "qwen-plus";
 
 type QwenMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -35,7 +34,10 @@ async function callQwen(messages: QwenMessage[]): Promise<string> {
 function stripCodeFence(s: string): string {
   const t = s.trim();
   if (t.startsWith("```")) {
-    return t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+    return t
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/, "")
+      .trim();
   }
   return t;
 }
@@ -78,14 +80,14 @@ const AnalyzeInput = z.object({
 function modeInstruction(mode: MusicMode, customPosition?: SongPosition): string {
   switch (mode) {
     case "story_only":
-      return "MODE=STORY_ONLY. Do NOT produce a song. Set songNeeded=false, songPosition=\"none\", song=null.";
+      return 'MODE=STORY_ONLY. Do NOT produce a song. Set songNeeded=false, songPosition="none", song=null.';
     case "story_ending":
-      return "MODE=STORY_ENDING. Produce exactly ONE song at the END of the story. Set songNeeded=true, songPosition=\"ending\".";
+      return 'MODE=STORY_ENDING. Produce exactly ONE song at the END of the story. Set songNeeded=true, songPosition="ending".';
     case "musical":
-      return "MODE=MUSICAL. Produce a song appropriate for a musical (intro OR multiple placements). Set songNeeded=true, songPosition=\"multiple\".";
+      return 'MODE=MUSICAL. Produce a song appropriate for a musical (intro OR multiple placements). Set songNeeded=true, songPosition="multiple".';
     case "custom":
       if (!customPosition || customPosition === "none") {
-        return "MODE=CUSTOM (no song). Set songNeeded=false, songPosition=\"none\", song=null.";
+        return 'MODE=CUSTOM (no song). Set songNeeded=false, songPosition="none", song=null.';
       }
       return `MODE=CUSTOM. Produce ONE song. Set songNeeded=true, songPosition="${customPosition}".`;
   }
@@ -215,7 +217,10 @@ function normalizePlan(input: unknown, mode: MusicMode): StoryMusicPlan {
         const kind = String(o.kind ?? "");
         if (!(SFX_KINDS as readonly string[]).includes(kind)) return null;
         const v = Number(o.volume);
-        return { kind: kind as SfxKind, volume: Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6 };
+        return {
+          kind: kind as SfxKind,
+          volume: Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6,
+        };
       })
       .filter((x): x is { kind: SfxKind; volume: number } => x !== null)
       .slice(0, 3);
@@ -229,24 +234,25 @@ function normalizePlan(input: unknown, mode: MusicMode): StoryMusicPlan {
     };
   });
 
-  const song = songRaw && typeof songRaw === "object" && songRaw.title
-    ? {
-        position: (["intro", "middle", "ending", "multiple"].includes(String(songRaw.position))
-          ? String(songRaw.position)
-          : "ending") as "intro" | "middle" | "ending" | "multiple",
-        title: String(songRaw.title ?? "Untitled"),
-        verses: Array.isArray(songRaw.verses) ? songRaw.verses.map((v) => String(v)) : [],
-        chorus: String(songRaw.chorus ?? ""),
-        bridge: songRaw.bridge ? String(songRaw.bridge) : undefined,
-        estimatedDurationSeconds: Number.isFinite(Number(songRaw.estimatedDurationSeconds))
-          ? Number(songRaw.estimatedDurationSeconds)
-          : 60,
-        singability: (["easy", "medium", "hard"].includes(String(songRaw.singability))
-          ? String(songRaw.singability)
-          : "easy") as "easy" | "medium" | "hard",
-        reinforcesLesson: String(songRaw.reinforcesLesson ?? ""),
-      }
-    : null;
+  const song =
+    songRaw && typeof songRaw === "object" && songRaw.title
+      ? {
+          position: (["intro", "middle", "ending", "multiple"].includes(String(songRaw.position))
+            ? String(songRaw.position)
+            : "ending") as "intro" | "middle" | "ending" | "multiple",
+          title: String(songRaw.title ?? "Untitled"),
+          verses: Array.isArray(songRaw.verses) ? songRaw.verses.map((v) => String(v)) : [],
+          chorus: String(songRaw.chorus ?? ""),
+          bridge: songRaw.bridge ? String(songRaw.bridge) : undefined,
+          estimatedDurationSeconds: Number.isFinite(Number(songRaw.estimatedDurationSeconds))
+            ? Number(songRaw.estimatedDurationSeconds)
+            : 60,
+          singability: (["easy", "medium", "hard"].includes(String(songRaw.singability))
+            ? String(songRaw.singability)
+            : "easy") as "easy" | "medium" | "hard",
+          reinforcesLesson: String(songRaw.reinforcesLesson ?? ""),
+        }
+      : null;
 
   return {
     version: 1,
@@ -271,7 +277,10 @@ function normalizePlan(input: unknown, mode: MusicMode): StoryMusicPlan {
 }
 
 function readEndingCredits(o: Record<string, unknown>): StoryMusicPlan["endingCredits"] {
-  const ec = o.endingCredits && typeof o.endingCredits === "object" ? (o.endingCredits as Record<string, unknown>) : null;
+  const ec =
+    o.endingCredits && typeof o.endingCredits === "object"
+      ? (o.endingCredits as Record<string, unknown>)
+      : null;
   if (!ec) return undefined;
   const fade = Number(ec.fadeOutSeconds);
   return {

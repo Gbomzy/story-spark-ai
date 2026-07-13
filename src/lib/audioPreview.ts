@@ -11,7 +11,9 @@ export class AudioPreview {
 
   constructor(private url: string | undefined) {}
 
-  get loop() { return this._loop; }
+  get loop() {
+    return this._loop;
+  }
   setLoop(v: boolean) {
     this._loop = v;
     if (this.el) this.el.loop = v;
@@ -54,15 +56,30 @@ export class AudioPreview {
 
   async play() {
     const a = this.ensure();
-    if (!a) { this.emit("error"); return; }
-    try { await a.play(); } catch { this.emit("error"); }
+    if (!a) {
+      this.emit("error");
+      return;
+    }
+    try {
+      await a.play();
+    } catch {
+      this.emit("error");
+    }
   }
 
-  pause() { this.el?.pause(); }
-  toggle() { if (this.state === "playing") this.pause(); else void this.play(); }
+  pause() {
+    this.el?.pause();
+  }
+  toggle() {
+    if (this.state === "playing") this.pause();
+    else void this.play();
+  }
 
   dispose() {
-    if (this.el) { this.el.pause(); this.el.src = ""; }
+    if (this.el) {
+      this.el.pause();
+      this.el.src = "";
+    }
     this.el = null;
     this.listeners.clear();
   }
