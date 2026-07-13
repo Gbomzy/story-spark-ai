@@ -1,124 +1,122 @@
-# Production Stabilization Plan
+# Phase 6 — AI Orchestrator, Director, Producer & First-Time UX
 
-Scope: harden StorySpark AI for production. Seven work items, no experimental features. Preserve billing, publishing, credits, AI providers, and auth. Zero TypeScript errors.
+Additive only. No changes to auth, billing, credits, publishing, AI providers, Movie Composer internals, or existing generators.
 
-## 1. Surface real save errors everywhere
+## 1. Master Orchestrator (`src/lib/orchestrator.functions.ts`)
 
-Create a single helper `src/lib/dbError.ts` that converts a Supabase/PostgREST error into a readable string (message + details + hint + code) and always logs the raw error to console. Replace every `toast.error("Failed to save")` and similar generic catches with this helper.
+New `runOrchestrator` server fn (`createServerFn` + `requireSupabaseAuth`). Executes stages in dependency order, each stage isolated and resume-safe.
 
-Files touched:
-- `src/routes/_app.project-settings.$id.tsx` — project settings save
-- `src/routes/_app.story-generator.tsx` — already partially done, migrate to helper
-- `src/routes/_app.movie-composer.tsx` — movie save
-- `src/routes/_app.timeline.tsx` — timeline save
-- `src/routes/_app.publishing.tsx` — publishing save
-- `src/lib/projects.ts` — wrap `updateProject`/`createProject` so callers get rich errors
-- Any other `updateProject(...)` call site using a generic toast
-
-Behavior: on failure, toast shows `message — details — hint: X — code: Y` and console logs the full error object. No behavior change on success.
-
-## 2. Story Bible
-
-Canonical JSON stored on `projects.story_bible` (jsonb, nullable) with a versioned schema:
+Stage list stored on `projects.orchestrator_state` (new jsonb column):
 
 ```
-StoryBible v1 {
-  version: 1,
-  characters: [{ name, appearance, personality, voiceStyle }],
-  world: string,
-  theme: string,
-  artStyle: string,
-  cameraStyle: string,
-  voiceStyle: string,
-  updatedAt: string,
+{
+  status: "idle" | "running" | "paused" | "completed" | "failed",
+  currentStage: string,
+  stages: { [stageId]: { state: "pending"|"running"|"completed"|"failed"|"skipped", startedAt, completedAt, creditsUsed, error? } },
+  progress: number,
+  creditsUsed: number,
+  eta: number,
+  currentScene?, currentClip?,
+  retryCount: number
 }
 ```
 
-New files:
-- `src/lib/storyBible.ts` — types, zod-ish parser, `emptyBible()`, `mergeBible(existing, partial)`, `bibleToPromptContext(bible)` returning a compact system-prompt snippet.
-- `src/lib/storyBible.functions.ts` — `getStoryBible({projectId})`, `saveStoryBible({projectId, bible})`, `deriveStoryBible({projectId})` that reads existing story/characters/storyboard and asks Qwen once to synthesize the bible, then persists.
-
-Wiring (minimal, no prompt regressions): every AI stage that currently builds its own context (`generateCharacters`, `generateStoryboard`, `generateMediaPack`, image/voice/video prompt builders in `pipelineEngine.functions.ts` and `qwenImage.functions.ts`) accepts an optional `bibleContext: string` and prepends it to the existing prompt when provided. Story Generator + Storyboard/Video studio load the bible for the active project and pass it. If no bible exists we do not block generation — we fall back to today's behavior.
-
-Migration: add `story_bible jsonb` to `projects`. GRANTs are already in place for `projects`.
-
-## 3. Asset Library
-
-Reuse existing `project_assets` table (already present). Add a unified surface:
-
-- `src/lib/assetLibrary.ts` — `saveAsset({projectId, kind, url, meta})`, `listAssets({projectId?, kind?})`, `deleteAsset(id)`. Kinds: `story | character | storyboard | image | voice | music | video | movie | thumbnail`.
-- Hook automatic saves into existing generation success paths: each service (`imageService`, `voiceService`, `musicService`, `videoService`, `thumbnailService`, `movieComposer`) calls `saveAsset` after a successful generation. Idempotent by `(project_id, kind, url)`.
-- New route `src/routes/_app.asset-library.tsx` with filter-by-kind grid, copy URL, delete, and "reuse" button that emits a global event so the current tool can pick it up (Storyboard/Video Studio listen).
-
-Migration: add uniqueness index `(project_id, asset_type, url)` on `project_assets` if not present, and confirm GRANTs.
-
-## 4. Owner Analytics dashboard
-
-New route `src/routes/_app.owner-analytics.tsx`, gated by `has_role(uid,'admin')`. Server function `src/lib/ownerAnalytics.functions.ts` (admin-only middleware check inside handler) returns:
-
-- API cost: sum of `credit_transactions.credits` where operation is a provider call, multiplied by configured cost-per-credit.
-- Revenue: sum of `credit_purchases.amount_cents` where status=`succeeded`.
-- Credits sold: sum of `credit_purchases.credits`.
-- Credits consumed: sum of negative `credit_transactions.credits` where `status='completed'`.
-- Profit estimate: revenue − API cost.
-- Most active users: top 10 by `credit_transactions` volume in the last 30 days, joined to `profiles.display_name`.
-- Storage usage: sum of `project_assets.size_bytes` grouped by user (falls back to count when size is null).
-
-## 5. System Health dashboard
-
-Extend existing `_app.system-health.tsx` with a metrics section fed by `src/lib/systemHealth.functions.ts`:
-
-- Queue size: `count(generation_queue where status in ('queued','running'))`.
-- Active renders: `count(generation_queue where status='running')`.
-- API latency (p50/p95): from `generation_history.duration_ms` last hour.
-- Failure rate: `failed / total` last 24h from `generation_history`.
-- Average generation time: mean `duration_ms` last 24h.
-- Provider health: reuse existing `PROVIDERS` + last-hour success ratio from `generation_history.provider`.
-
-Auto-refresh via TanStack Query `refetchInterval: 15s`.
-
-## 6. Notification Center
-
-New table `notifications`:
+Stages (dependency edges shown):
 
 ```
-id uuid pk, user_id uuid, kind text, title text, body text,
-project_id uuid null, read_at timestamptz null,
-created_at timestamptz default now()
+story → storyBible → characters ↘
+                    → storyboard → director → imagePrompts → images ↘
+                                                        → voiceScript → voice ↘
+                                              → musicAnalysis → music ↘
+                                                                       → videos → subtitles → composition → thumbnail
+                                                                                                          → seo
 ```
 
-With GRANTs + RLS (`user_id = auth.uid()` for select/update; insert via `service_role` from server fns).
+Independent branches (`characters`, `music`, `seo`) run via `Promise.all` where the graph allows. Sequential branches (voice, video) stay ordered.
 
-Server helpers `src/lib/notifications.functions.ts`:
-- `listNotifications`, `markRead`, `markAllRead`.
-- `pushNotification({userId, kind, title, body, projectId?})` — invoked from server-side hooks:
-  - generation completed / failed (in `pipelineEngine.functions.ts`)
-  - publishing completed (`publishing.functions.ts`)
-  - credits low (in `credit_reserve` result path when `balance < 20`)
-  - subscription renewed (webhook: `paystack-webhook.ts` / `flutterwave-webhook.ts`)
+Each stage wrapper:
+- Skip if already `completed` (smart recovery — reuse existing story/characters/images/voice/videos).
+- Call existing generator server fn (reuse Qwen/CosyVoice/Wan pipeline — no rewrites).
+- Update `orchestrator_state`, credit ledger (existing `credit_reserve`/`credit_commit`), `generation_history`.
+- On error: mark stage `failed`, keep others, allow resume.
 
-UI:
-- `src/components/notification-bell.tsx` in topbar with unread badge + popover list.
-- `src/routes/_app.notifications.tsx` full page with filter and mark-all.
+Called by the client via a polling loop (`useQuery` refetchInterval 3s) that re-invokes `runOrchestrator` until `status !== "running"`. Worker-timeout safe — each call does one stage or one clip and returns.
 
-Kinds: `generation_complete | generation_failed | publish_complete | credits_low | subscription_renewed`.
+## 2. AI Director (`src/lib/aiDirector.functions.ts`)
 
-## 7. Guardrails
+`analyzeStoryboardDirection` server fn: takes storyboard, calls Qwen chat with a structured JSON schema returning per-scene `{ cameraAngle, cameraDistance, cameraMovement, lighting, weather, timeOfDay, emotion, musicMood, transition, colorPalette }`. Persist into `story_bible.direction[sceneId]`.
 
-- No changes to `client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`, `.env`.
-- No provider swaps, no billing formula changes.
-- Every new server fn returns typed DTOs; no `any`. `tsgo` must pass.
-- Every new `public` table migration includes CREATE → GRANT → ENABLE RLS → CREATE POLICY in that order.
+`buildScenePrompt(sceneId, basePrompt, bible)` helper merges direction into the prompt so image + video stages consume it. Called from existing `pipelineEngine` prompt-composition step (small edit — prefix the direction line into `prompt`).
 
-## Delivery order
+## 3. AI Producer (`src/lib/aiProducer.ts`)
 
-1. Migration: add `projects.story_bible` + create `notifications` table + `project_assets` unique index.
-2. `dbError.ts` + refactor all save call sites (item 1).
-3. Story Bible module + wiring (item 2).
-4. Asset Library service + route (item 3).
-5. Notifications table wiring + bell + page (item 6).
-6. Owner Analytics route + server fn (item 4).
-7. System Health metrics extension (item 5).
-8. Typecheck sweep.
+Pure client util `estimateProduction(project)`:
+- scenes = storyboard.length
+- images = scenes; clips = scenes; voiceSec ≈ words/2.5
+- credits via existing `creditEstimator` summed per stage
+- time = clips × ~30s + voice + images
+- storage ≈ clips × 8MB + images × 0.5MB
 
-Out of scope: real-time push (in-app polling only), email notifications, new AI providers, UI theme changes.
+## 4. One-Click Create Movie UI (`src/routes/_app.create-movie.tsx`)
+
+New primary route "Create Movie". Steps:
+1. Prompt textarea + template picker + producer estimate card.
+2. Confirm dialog: "Start Production / Cancel".
+3. Live orchestrator dashboard: current stage badge, overall progress bar, stage list with per-stage state, current scene/clip, ETA, credits used, Pause / Resume / Cancel buttons.
+
+Pause/Resume set `orchestrator_state.status`. Cancel marks `failed` and stops polling.
+
+Sidebar entry "Create Movie" added at top.
+
+## 5. Orchestrator Dashboard (`src/routes/_app.orchestrator.tsx`)
+
+Read-only view of `orchestrator_state` across all in-progress projects. Columns: project, stage, provider (from ORCHESTRATOR map), credits, ETA, current scene/clip, retry count, queue health (sourced from existing `systemHealth`).
+
+## 6. Onboarding Wizard
+
+New route `src/routes/_app.onboarding.tsx` (6 steps) writing to `profiles.onboarding` jsonb (new column):
+`{ completed: true, useCase, artStyle, voice, language, aspectRatio }`.
+
+Root `_app.tsx` reads `profiles.onboarding.completed`; if false, redirects to `/onboarding`. Wizard step 6 creates first project via existing project creation server fn and marks completed.
+
+## 7. Templates (`src/lib/projectTemplates.ts`)
+
+Static array with the 9 templates (Bedtime, Bible, Educational, Moral, Science, History, Nursery, Adventure, Language). Each has `{ id, name, prompt, artStyle, voice, music, transitions, exportSettings }`. Used by Create Movie prompt step and existing project wizard.
+
+## 8. Notifications
+
+Reuse existing `notifications` table + `pushNotification` helper. New kinds: `production_started`, `stage_completed`, `credits_low`, `production_completed`, `production_failed`, `resume_available`. Orchestrator inserts them at stage boundaries.
+
+Browser notifications: on Create Movie mount, `Notification.requestPermission()`. When a poll response flips a stage to completed and page is hidden, fire `new Notification(...)`.
+
+## 9. Data & migration
+
+Single migration:
+
+```sql
+alter table public.projects add column if not exists orchestrator_state jsonb;
+alter table public.profiles add column if not exists onboarding jsonb default '{"completed":false}'::jsonb;
+create index if not exists idx_projects_orch_status on public.projects ((orchestrator_state->>'status'));
+```
+
+No grant/RLS changes — both tables already have policies.
+
+## 10. Deliverables
+
+- New: `src/lib/orchestrator.functions.ts`, `src/lib/aiDirector.functions.ts`, `src/lib/aiProducer.ts`, `src/lib/projectTemplates.ts`, `src/routes/_app.create-movie.tsx`, `src/routes/_app.orchestrator.tsx`, `src/routes/_app.onboarding.tsx`, `supabase/migrations/<ts>_orchestrator.sql`.
+- Edited: `src/components/app-sidebar.tsx` (nav entries), `src/routes/_app.tsx` (onboarding gate), `src/lib/pipelineEngine.functions.ts` (consume `bible.direction`), `src/integrations/supabase/types.ts` (regenerated by migration tooling).
+
+## 11. Guardrails
+
+- Every new server fn: `requireSupabaseAuth`, Zod input, typed DTO.
+- Reuse existing `credit_reserve`/`credit_commit` — no new billing paths.
+- Reuse existing generators — orchestrator only sequences them.
+- Orchestrator poll = one stage per invocation → Worker-timeout safe & resume-safe by construction.
+- `tsgo` clean at completion.
+
+## 12. Out of scope
+
+- New AI providers or models.
+- Video editor changes.
+- Real-time websockets (polling only).
+- Push notifications (browser Notification API only).
