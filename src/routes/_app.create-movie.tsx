@@ -59,9 +59,15 @@ function CreateMoviePage() {
       const tpl = findTemplate(templateId);
       const project = await createProject({
         name: prompt.slice(0, 60) || tpl?.name || "New Movie",
-        prompt,
-        art_style: tpl?.artStyle ?? null,
-        aspect_ratio: tpl?.aspectRatio ?? "16:9",
+        topic: prompt,
+        style: tpl?.artStyle ?? null,
+        settings: {
+          templateId: tpl?.id ?? null,
+          aspectRatio: tpl?.aspectRatio ?? "16:9",
+          targetLengthSec: targetLen,
+          music: tpl?.music ?? null,
+          voice: tpl?.voice ?? null,
+        },
       });
       if (!project) throw new Error("Failed to create project");
       await notify({ data: { kind: "generation_complete", title: "Production started", body: prompt.slice(0, 100), projectId: project.id } })
@@ -79,8 +85,7 @@ function CreateMoviePage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Create Movie"
-        subtitle="Type one prompt. The AI orchestrator handles the rest."
-        icon={Sparkles}
+        description="Type one prompt. The AI orchestrator handles the rest."
       />
 
       {!projectId && (
