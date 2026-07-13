@@ -1,97 +1,94 @@
-# Story Music Engine
+# Audio Studio Plan
 
-Turn the current Songs page into an intelligent, opt-in music engine that analyzes the story, decides whether/where a song fits, and generates per-scene background-music recommendations that the Movie Composer can mix under narration. Keeps existing lyric generation, providers, billing, and pipeline intact.
+Extend the existing Story Music Engine into a per-scene Audio Studio with music preview, sound effects, automatic ducking, ending credits, and Movie Composer integration. No changes to billing, AI providers, publishing, or auth.
 
-## 1. New server function: `analyzeStoryMusic`
+## 1. Data model (client-only, no DB migration)
 
-File: `src/lib/storyMusicEngine.functions.ts` (new)
+`projects.background_music` (jsonb) becomes the authoritative Audio Studio blob. Backward compatible — existing `scenes[]` field kept.
 
-Auth-protected `createServerFn` calling Qwen with a strict JSON-only prompt. Input: `{ prompt, story, ageGroup?, language? }`. Output shape:
+New shape (all optional so old projects keep working):
 
 ```ts
-type StoryMusicPlan = {
-  analysis: { theme: string; mood: string; lesson: string; targetAge: string; emotionalArc: string };
-  recommendation: {
-    songNeeded: boolean;
-    songPosition: "none" | "intro" | "middle" | "ending" | "multiple";
-    reasoning: string;
-    backgroundStyle: string; // e.g. "warm acoustic, gentle strings"
-  };
+type AudioStudioState = {
+  version: 2;
   scenes: Array<{
     sceneNumber: number;
-    title: string;
-    bgmMood: "happy" | "calm" | "bedtime" | "adventure" | "celebration" | "mystery" | "emotional" | "funny";
-    volume: number; // 0..1 recommended duck level under narration
+    bgmMood: BgmMood;
+    bgmTrackUrl?: string;   // per-scene track override
+    musicVolume: number;    // 0..1 (was `volume`)
+    narrationVolume: number;// 0..1 default 1
+    sfx: Array<{ id: string; kind: SfxKind; url?: string; volume: number; startOffset?: number }>;
   }>;
-  song?: {
-    position: "intro" | "middle" | "ending" | "multiple";
-    title: string;
-    verses: string[];
-    chorus: string;
-    bridge?: string;
-    estimatedDurationSeconds: number;
-    singability: "easy" | "medium" | "hard";
-    reinforcesLesson: string;
-  } | null;
+  endingCredits?: {
+    enabled: boolean;
+    trackUrl?: string;
+    fadeOutSeconds: number;
+    text?: string;
+  };
+  ducking: { enabled: boolean; duckedLevel: number; attackMs: number; releaseMs: number };
+  globalTrackUrl?: string;   // legacy fallback
 };
 ```
 
-Uses `beginCharge`/`commit`/`refund` (operation: `story`, units: 2) mirroring `generateMediaPack`. Robust JSON parse: strip ```json fences, then `JSON.parse`.
+New helpers in `src/lib/storyMusic.ts`: `parseAudioStudio`, `serializeAudioStudio`, `SFX_KINDS`, migration from v1.
 
-## 2. Story Music Modes
+## 2. Server: extend analyzer
 
-Add a mode selector on the Songs page. Modes map to what the engine produces/persists:
+`src/lib/storyMusicEngine.functions.ts` — extend the Qwen JSON schema so every scene also returns:
+- `narrationVolume` (0..1, default 1)
+- `sfx: Array<{ kind: "birds"|"forest"|"rain"|"ocean"|"wind"|"footsteps"|"door"|"school"|"crowd"|"magic"|"celebration"; volume: number }>` — 0-3 items per scene picked from the story
 
-- **Story Only** (default): analysis + scene BGM; no song.
-- **Story + Ending Song**: force `songPosition: "ending"`, force `songNeeded: true`.
-- **Musical Story**: force `songPosition: "multiple"` (intro + ending minimum).
-- **Custom**: user picks position (intro / middle / ending / multiple / none) and optionally overrides mood.
+Add `endingCredits` recommendation when `songPosition === "ending"` or mode `story_ending`/`musical`.
 
-Mode + overrides are sent to the analyzer so Qwen respects them.
+No provider or credit changes.
 
-## 3. Songs page redesign — `src/routes/_app.songs.tsx`
+## 3. Songs page → Audio Studio UI
 
-Rewrite around the plan output. Sections:
+Rewrite `src/routes/_app.songs.tsx` (rename tab label to "Audio Studio", route stays `/songs` for compatibility). Sections:
 
-1. **Mode picker** — 4 cards (Story Only / +Ending / Musical / Custom) + Custom position select.
-2. **Analyze button** — runs `analyzeStoryMusic`; disabled without a saved story.
-3. **Analysis card** — theme, mood, lesson, target age, emotional arc, recommended background style, recommendation reasoning, "song recommended: yes/no + position".
-4. **Song card** — only if plan has a song: title, verses, chorus, optional bridge, duration, singability, lesson-reinforcement note. Copy / download TXT. "Music synthesis unavailable" note stays.
-5. **Scene BGM card** — table of scenes with mood chip + volume slider (0..100%). Editable, persisted.
+1. Mode selector (unchanged)
+2. Story analysis (unchanged)
+3. Song card (unchanged)
+4. **Per-scene panel** — for each scene:
+   - Mood chip picker
+   - Music preview mini-player: Play / Pause / Loop toggle + Replace Track (URL input) + Download
+   - Music volume, Narration volume sliders
+   - SFX chips (add/remove from recommended kinds) with per-SFX volume + optional URL
+5. **Ducking panel** — enable toggle + ducked level + attack/release
+6. **Ending Credits panel** — enable + track URL + fade-out seconds + optional text
 
-Persistence: store the whole plan as JSON in `projects.songs` (existing text column), and the per-scene BGM array in `projects.background_music` (existing jsonb column). Also store mode/overrides inside `songs` JSON. Read via `JSON.parse` with fallback: if `project.songs` isn't JSON, treat as legacy lyric text and show it read-only with an "Upgrade to Story Music" button that runs the analyzer.
+Preview uses a small client helper `src/lib/audioPreview.ts` (HTMLAudioElement wrapper with loop).
 
-## 4. Movie Composer BGM mixing
+## 4. Movie Composer integration
 
-`src/lib/movieComposer.ts`:
+Extend `src/lib/movieComposer.ts`:
+- `ComposerSettings.audioStudio?: AudioStudioState`
+- Per-clip build a scheduled `AudioContext` graph: narration source (already mixed) + per-scene BGM (looped, gain-per-scene) + per-scene SFX (one-shots at scene start) + optional ending credits track with linear ramp fade-out.
+- **Automatic ducking**: analyze narration via `AnalyserNode` RMS every rAF; when RMS > threshold, ramp BGM gain to `duckedLevel` (attack), else back to scene `musicVolume` (release). Falls back to constant scene volume when `ducking.enabled=false`.
+- Scene transitions switch scene index based on the running clip's start/end times.
 
-- Extend `ComposerSettings` with `backgroundMusic?: { url: string; volume: number; loop?: boolean }` and `narrationVolume?: number` (default 1.0).
-- In `composeMovie`, when `backgroundMusic.url` is set, load a second `HTMLAudioElement`, route through a WebAudio `GainNode` (volume from setting, default ~0.2 to duck under narration), connect to the same `MediaStreamDestination`. Loop if track shorter than movie.
-- Preserve existing narration path; both streams mix into the recorder.
+Update `src/routes/_app.movie-composer.tsx`:
+- Replace the single background-music URL panel with an "Audio Studio" summary card showing scene BGM/SFX/ducking counts, plus a "Preview mix" button that plays the assembled audio graph (no video) so users can hear the mix before rendering.
+- If a project has `audioStudio`, pass it into `composeMovie(..., { audioStudio })`.
 
-`src/routes/_app.movie-composer.tsx`:
+## 5. TypeScript & scope
 
-- New "Background music" mini-panel in `SettingsPanel`: URL input (or "use per-scene plan"), volume slider, narration volume slider. Wire into `settings` state → `composeMovie`.
-- If `project.background_music` has a global track URL, prefill.
+- No changes to `billing.functions.ts`, `publishing.functions.ts`, `qwen.functions.ts`, `cosyvoice.functions.ts`, providers, auth, DB schema.
+- Strict TS across new files; no `any`.
+- Legacy v1 `{scenes:[{sceneNumber,bgmMood,volume}]}` auto-migrates on read.
 
-Per-scene mood mixing across clip boundaries is out of scope for this pass — we mix a single BGM track underneath the whole movie with the recommended global style/volume. Scene mood metadata is stored for future per-scene ducking and displayed in the Songs page.
+## Files
 
-## 5. Wiring & guardrails
+Created: `src/lib/audioPreview.ts`
+Edited:
+- `src/lib/storyMusic.ts` (v2 types, migrator, SFX enum)
+- `src/lib/storyMusicEngine.functions.ts` (extend schema/prompt/normalizer)
+- `src/routes/_app.songs.tsx` (Audio Studio UI)
+- `src/lib/movieComposer.ts` (scheduler + ducking + SFX + credits)
+- `src/routes/_app.movie-composer.tsx` (Audio Studio card, wiring)
 
-- Story generator: keep `generateMediaPack` untouched (still produces `songs` lyrics for legacy). Add a note that Songs page now supersedes it, but do NOT auto-run analyzer.
-- Types: extend `types.ts`? No — `projects.songs` (text) and `projects.background_music` (jsonb) already exist. Add local TS types only.
-- Billing: single `beginCharge` inside `analyzeStoryMusic`. No changes to other providers.
-- Providers file: no changes.
-- TypeScript strict: all new code fully typed; no `any`.
+## Out of scope
 
-## Technical details
-
-Files touched:
-
-- **new** `src/lib/storyMusicEngine.functions.ts` — analyzer server fn + shared types.
-- **new** `src/lib/storyMusic.ts` — client-safe parsing/normalization helpers + mode presets.
-- **edit** `src/routes/_app.songs.tsx` — full rewrite around the engine.
-- **edit** `src/lib/movieComposer.ts` — BGM mixing + narration gain.
-- **edit** `src/routes/_app.movie-composer.tsx` — BGM controls in settings panel; pass through to `composeMovie`.
-
-No DB migration. No changes to `pipelineEngine.functions.ts`, `qwen.functions.ts`, billing, providers, or auth. Voice-script sanitization from the previous fix is preserved.
+- No music synthesis provider (still lyrics + user-supplied URLs).
+- No new DB columns; everything fits in `background_music` jsonb.
+- No auto-generated SFX audio files — users paste URLs; recommendations are metadata.
