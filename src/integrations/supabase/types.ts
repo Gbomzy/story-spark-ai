@@ -669,6 +669,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          project_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          project_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -785,6 +826,7 @@ export type Database = {
           settings: Json
           songs: string | null
           story: string | null
+          story_bible: Json | null
           storyboard: string | null
           style: string | null
           subtitle_file: Json | null
@@ -839,6 +881,7 @@ export type Database = {
           settings?: Json
           songs?: string | null
           story?: string | null
+          story_bible?: Json | null
           storyboard?: string | null
           style?: string | null
           subtitle_file?: Json | null
@@ -893,6 +936,7 @@ export type Database = {
           settings?: Json
           songs?: string | null
           story?: string | null
+          story_bible?: Json | null
           storyboard?: string | null
           style?: string | null
           subtitle_file?: Json | null

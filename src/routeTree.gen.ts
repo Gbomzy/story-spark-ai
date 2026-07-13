@@ -31,7 +31,9 @@ import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
+import { Route as AppOwnerAnalyticsRouteImport } from './routes/_app.owner-analytics'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
+import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
 import { Route as AppMonitoringRouteImport } from './routes/_app.monitoring'
 import { Route as AppMediaStudioRouteImport } from './routes/_app.media-studio'
@@ -48,6 +50,7 @@ import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
+import { Route as AppAssetLibraryRouteImport } from './routes/_app.asset-library'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiProvidersRouteImport } from './routes/_app.ai-providers'
 import { Route as AppAiAgentsRouteImport } from './routes/_app.ai-agents'
@@ -168,9 +171,19 @@ const AppProductionRoute = AppProductionRouteImport.update({
   path: '/production',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOwnerAnalyticsRoute = AppOwnerAnalyticsRouteImport.update({
+  id: '/owner-analytics',
+  path: '/owner-analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppOcrRoute = AppOcrRouteImport.update({
   id: '/ocr',
   path: '/ocr',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMovieComposerRoute = AppMovieComposerRouteImport.update({
@@ -253,6 +266,11 @@ const AppAssetsRoute = AppAssetsRouteImport.update({
   path: '/assets',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssetLibraryRoute = AppAssetLibraryRouteImport.update({
+  id: '/asset-library',
+  path: '/asset-library',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -317,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/asset-library': typeof AppAssetLibraryRoute
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
@@ -333,7 +352,9 @@ export interface FileRoutesByFullPath {
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
   '/movie-composer': typeof AppMovieComposerRoute
+  '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
@@ -367,6 +388,7 @@ export interface FileRoutesByTo {
   '/ai-agents': typeof AppAiAgentsRoute
   '/ai-providers': typeof AppAiProvidersRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/asset-library': typeof AppAssetLibraryRoute
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
@@ -383,7 +405,9 @@ export interface FileRoutesByTo {
   '/media-studio': typeof AppMediaStudioRoute
   '/monitoring': typeof AppMonitoringRoute
   '/movie-composer': typeof AppMovieComposerRoute
+  '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
@@ -419,6 +443,7 @@ export interface FileRoutesById {
   '/_app/ai-agents': typeof AppAiAgentsRoute
   '/_app/ai-providers': typeof AppAiProvidersRoute
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/asset-library': typeof AppAssetLibraryRoute
   '/_app/assets': typeof AppAssetsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
@@ -435,7 +460,9 @@ export interface FileRoutesById {
   '/_app/media-studio': typeof AppMediaStudioRoute
   '/_app/monitoring': typeof AppMonitoringRoute
   '/_app/movie-composer': typeof AppMovieComposerRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/ocr': typeof AppOcrRoute
+  '/_app/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/publishing': typeof AppPublishingRoute
@@ -471,6 +498,7 @@ export interface FileRouteTypes {
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
+    | '/asset-library'
     | '/assets'
     | '/billing'
     | '/characters'
@@ -487,7 +515,9 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/monitoring'
     | '/movie-composer'
+    | '/notifications'
     | '/ocr'
+    | '/owner-analytics'
     | '/production'
     | '/projects'
     | '/publishing'
@@ -521,6 +551,7 @@ export interface FileRouteTypes {
     | '/ai-agents'
     | '/ai-providers'
     | '/analytics'
+    | '/asset-library'
     | '/assets'
     | '/billing'
     | '/characters'
@@ -537,7 +568,9 @@ export interface FileRouteTypes {
     | '/media-studio'
     | '/monitoring'
     | '/movie-composer'
+    | '/notifications'
     | '/ocr'
+    | '/owner-analytics'
     | '/production'
     | '/projects'
     | '/publishing'
@@ -572,6 +605,7 @@ export interface FileRouteTypes {
     | '/_app/ai-agents'
     | '/_app/ai-providers'
     | '/_app/analytics'
+    | '/_app/asset-library'
     | '/_app/assets'
     | '/_app/billing'
     | '/_app/characters'
@@ -588,7 +622,9 @@ export interface FileRouteTypes {
     | '/_app/media-studio'
     | '/_app/monitoring'
     | '/_app/movie-composer'
+    | '/_app/notifications'
     | '/_app/ocr'
+    | '/_app/owner-analytics'
     | '/_app/production'
     | '/_app/projects'
     | '/_app/publishing'
@@ -779,11 +815,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/owner-analytics': {
+      id: '/_app/owner-analytics'
+      path: '/owner-analytics'
+      fullPath: '/owner-analytics'
+      preLoaderRoute: typeof AppOwnerAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/ocr': {
       id: '/_app/ocr'
       path: '/ocr'
       fullPath: '/ocr'
       preLoaderRoute: typeof AppOcrRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/movie-composer': {
@@ -898,6 +948,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssetsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/asset-library': {
+      id: '/_app/asset-library'
+      path: '/asset-library'
+      fullPath: '/asset-library'
+      preLoaderRoute: typeof AppAssetLibraryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/analytics': {
       id: '/_app/analytics'
       path: '/analytics'
@@ -991,6 +1048,7 @@ interface AppRouteChildren {
   AppAiAgentsRoute: typeof AppAiAgentsRoute
   AppAiProvidersRoute: typeof AppAiProvidersRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAssetLibraryRoute: typeof AppAssetLibraryRoute
   AppAssetsRoute: typeof AppAssetsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
@@ -1007,7 +1065,9 @@ interface AppRouteChildren {
   AppMediaStudioRoute: typeof AppMediaStudioRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppMovieComposerRoute: typeof AppMovieComposerRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppOcrRoute: typeof AppOcrRoute
+  AppOwnerAnalyticsRoute: typeof AppOwnerAnalyticsRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppPublishingRoute: typeof AppPublishingRoute
@@ -1033,6 +1093,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAiAgentsRoute: AppAiAgentsRoute,
   AppAiProvidersRoute: AppAiProvidersRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAssetLibraryRoute: AppAssetLibraryRoute,
   AppAssetsRoute: AppAssetsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
@@ -1049,7 +1110,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppMediaStudioRoute: AppMediaStudioRoute,
   AppMonitoringRoute: AppMonitoringRoute,
   AppMovieComposerRoute: AppMovieComposerRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppOcrRoute: AppOcrRoute,
+  AppOwnerAnalyticsRoute: AppOwnerAnalyticsRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppPublishingRoute: AppPublishingRoute,
@@ -1084,13 +1147,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

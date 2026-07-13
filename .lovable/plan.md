@@ -1,94 +1,124 @@
-# Audio Studio Plan
+# Production Stabilization Plan
 
-Extend the existing Story Music Engine into a per-scene Audio Studio with music preview, sound effects, automatic ducking, ending credits, and Movie Composer integration. No changes to billing, AI providers, publishing, or auth.
+Scope: harden StorySpark AI for production. Seven work items, no experimental features. Preserve billing, publishing, credits, AI providers, and auth. Zero TypeScript errors.
 
-## 1. Data model (client-only, no DB migration)
+## 1. Surface real save errors everywhere
 
-`projects.background_music` (jsonb) becomes the authoritative Audio Studio blob. Backward compatible — existing `scenes[]` field kept.
+Create a single helper `src/lib/dbError.ts` that converts a Supabase/PostgREST error into a readable string (message + details + hint + code) and always logs the raw error to console. Replace every `toast.error("Failed to save")` and similar generic catches with this helper.
 
-New shape (all optional so old projects keep working):
+Files touched:
+- `src/routes/_app.project-settings.$id.tsx` — project settings save
+- `src/routes/_app.story-generator.tsx` — already partially done, migrate to helper
+- `src/routes/_app.movie-composer.tsx` — movie save
+- `src/routes/_app.timeline.tsx` — timeline save
+- `src/routes/_app.publishing.tsx` — publishing save
+- `src/lib/projects.ts` — wrap `updateProject`/`createProject` so callers get rich errors
+- Any other `updateProject(...)` call site using a generic toast
 
-```ts
-type AudioStudioState = {
-  version: 2;
-  scenes: Array<{
-    sceneNumber: number;
-    bgmMood: BgmMood;
-    bgmTrackUrl?: string;   // per-scene track override
-    musicVolume: number;    // 0..1 (was `volume`)
-    narrationVolume: number;// 0..1 default 1
-    sfx: Array<{ id: string; kind: SfxKind; url?: string; volume: number; startOffset?: number }>;
-  }>;
-  endingCredits?: {
-    enabled: boolean;
-    trackUrl?: string;
-    fadeOutSeconds: number;
-    text?: string;
-  };
-  ducking: { enabled: boolean; duckedLevel: number; attackMs: number; releaseMs: number };
-  globalTrackUrl?: string;   // legacy fallback
-};
+Behavior: on failure, toast shows `message — details — hint: X — code: Y` and console logs the full error object. No behavior change on success.
+
+## 2. Story Bible
+
+Canonical JSON stored on `projects.story_bible` (jsonb, nullable) with a versioned schema:
+
+```
+StoryBible v1 {
+  version: 1,
+  characters: [{ name, appearance, personality, voiceStyle }],
+  world: string,
+  theme: string,
+  artStyle: string,
+  cameraStyle: string,
+  voiceStyle: string,
+  updatedAt: string,
+}
 ```
 
-New helpers in `src/lib/storyMusic.ts`: `parseAudioStudio`, `serializeAudioStudio`, `SFX_KINDS`, migration from v1.
+New files:
+- `src/lib/storyBible.ts` — types, zod-ish parser, `emptyBible()`, `mergeBible(existing, partial)`, `bibleToPromptContext(bible)` returning a compact system-prompt snippet.
+- `src/lib/storyBible.functions.ts` — `getStoryBible({projectId})`, `saveStoryBible({projectId, bible})`, `deriveStoryBible({projectId})` that reads existing story/characters/storyboard and asks Qwen once to synthesize the bible, then persists.
 
-## 2. Server: extend analyzer
+Wiring (minimal, no prompt regressions): every AI stage that currently builds its own context (`generateCharacters`, `generateStoryboard`, `generateMediaPack`, image/voice/video prompt builders in `pipelineEngine.functions.ts` and `qwenImage.functions.ts`) accepts an optional `bibleContext: string` and prepends it to the existing prompt when provided. Story Generator + Storyboard/Video studio load the bible for the active project and pass it. If no bible exists we do not block generation — we fall back to today's behavior.
 
-`src/lib/storyMusicEngine.functions.ts` — extend the Qwen JSON schema so every scene also returns:
-- `narrationVolume` (0..1, default 1)
-- `sfx: Array<{ kind: "birds"|"forest"|"rain"|"ocean"|"wind"|"footsteps"|"door"|"school"|"crowd"|"magic"|"celebration"; volume: number }>` — 0-3 items per scene picked from the story
+Migration: add `story_bible jsonb` to `projects`. GRANTs are already in place for `projects`.
 
-Add `endingCredits` recommendation when `songPosition === "ending"` or mode `story_ending`/`musical`.
+## 3. Asset Library
 
-No provider or credit changes.
+Reuse existing `project_assets` table (already present). Add a unified surface:
 
-## 3. Songs page → Audio Studio UI
+- `src/lib/assetLibrary.ts` — `saveAsset({projectId, kind, url, meta})`, `listAssets({projectId?, kind?})`, `deleteAsset(id)`. Kinds: `story | character | storyboard | image | voice | music | video | movie | thumbnail`.
+- Hook automatic saves into existing generation success paths: each service (`imageService`, `voiceService`, `musicService`, `videoService`, `thumbnailService`, `movieComposer`) calls `saveAsset` after a successful generation. Idempotent by `(project_id, kind, url)`.
+- New route `src/routes/_app.asset-library.tsx` with filter-by-kind grid, copy URL, delete, and "reuse" button that emits a global event so the current tool can pick it up (Storyboard/Video Studio listen).
 
-Rewrite `src/routes/_app.songs.tsx` (rename tab label to "Audio Studio", route stays `/songs` for compatibility). Sections:
+Migration: add uniqueness index `(project_id, asset_type, url)` on `project_assets` if not present, and confirm GRANTs.
 
-1. Mode selector (unchanged)
-2. Story analysis (unchanged)
-3. Song card (unchanged)
-4. **Per-scene panel** — for each scene:
-   - Mood chip picker
-   - Music preview mini-player: Play / Pause / Loop toggle + Replace Track (URL input) + Download
-   - Music volume, Narration volume sliders
-   - SFX chips (add/remove from recommended kinds) with per-SFX volume + optional URL
-5. **Ducking panel** — enable toggle + ducked level + attack/release
-6. **Ending Credits panel** — enable + track URL + fade-out seconds + optional text
+## 4. Owner Analytics dashboard
 
-Preview uses a small client helper `src/lib/audioPreview.ts` (HTMLAudioElement wrapper with loop).
+New route `src/routes/_app.owner-analytics.tsx`, gated by `has_role(uid,'admin')`. Server function `src/lib/ownerAnalytics.functions.ts` (admin-only middleware check inside handler) returns:
 
-## 4. Movie Composer integration
+- API cost: sum of `credit_transactions.credits` where operation is a provider call, multiplied by configured cost-per-credit.
+- Revenue: sum of `credit_purchases.amount_cents` where status=`succeeded`.
+- Credits sold: sum of `credit_purchases.credits`.
+- Credits consumed: sum of negative `credit_transactions.credits` where `status='completed'`.
+- Profit estimate: revenue − API cost.
+- Most active users: top 10 by `credit_transactions` volume in the last 30 days, joined to `profiles.display_name`.
+- Storage usage: sum of `project_assets.size_bytes` grouped by user (falls back to count when size is null).
 
-Extend `src/lib/movieComposer.ts`:
-- `ComposerSettings.audioStudio?: AudioStudioState`
-- Per-clip build a scheduled `AudioContext` graph: narration source (already mixed) + per-scene BGM (looped, gain-per-scene) + per-scene SFX (one-shots at scene start) + optional ending credits track with linear ramp fade-out.
-- **Automatic ducking**: analyze narration via `AnalyserNode` RMS every rAF; when RMS > threshold, ramp BGM gain to `duckedLevel` (attack), else back to scene `musicVolume` (release). Falls back to constant scene volume when `ducking.enabled=false`.
-- Scene transitions switch scene index based on the running clip's start/end times.
+## 5. System Health dashboard
 
-Update `src/routes/_app.movie-composer.tsx`:
-- Replace the single background-music URL panel with an "Audio Studio" summary card showing scene BGM/SFX/ducking counts, plus a "Preview mix" button that plays the assembled audio graph (no video) so users can hear the mix before rendering.
-- If a project has `audioStudio`, pass it into `composeMovie(..., { audioStudio })`.
+Extend existing `_app.system-health.tsx` with a metrics section fed by `src/lib/systemHealth.functions.ts`:
 
-## 5. TypeScript & scope
+- Queue size: `count(generation_queue where status in ('queued','running'))`.
+- Active renders: `count(generation_queue where status='running')`.
+- API latency (p50/p95): from `generation_history.duration_ms` last hour.
+- Failure rate: `failed / total` last 24h from `generation_history`.
+- Average generation time: mean `duration_ms` last 24h.
+- Provider health: reuse existing `PROVIDERS` + last-hour success ratio from `generation_history.provider`.
 
-- No changes to `billing.functions.ts`, `publishing.functions.ts`, `qwen.functions.ts`, `cosyvoice.functions.ts`, providers, auth, DB schema.
-- Strict TS across new files; no `any`.
-- Legacy v1 `{scenes:[{sceneNumber,bgmMood,volume}]}` auto-migrates on read.
+Auto-refresh via TanStack Query `refetchInterval: 15s`.
 
-## Files
+## 6. Notification Center
 
-Created: `src/lib/audioPreview.ts`
-Edited:
-- `src/lib/storyMusic.ts` (v2 types, migrator, SFX enum)
-- `src/lib/storyMusicEngine.functions.ts` (extend schema/prompt/normalizer)
-- `src/routes/_app.songs.tsx` (Audio Studio UI)
-- `src/lib/movieComposer.ts` (scheduler + ducking + SFX + credits)
-- `src/routes/_app.movie-composer.tsx` (Audio Studio card, wiring)
+New table `notifications`:
 
-## Out of scope
+```
+id uuid pk, user_id uuid, kind text, title text, body text,
+project_id uuid null, read_at timestamptz null,
+created_at timestamptz default now()
+```
 
-- No music synthesis provider (still lyrics + user-supplied URLs).
-- No new DB columns; everything fits in `background_music` jsonb.
-- No auto-generated SFX audio files — users paste URLs; recommendations are metadata.
+With GRANTs + RLS (`user_id = auth.uid()` for select/update; insert via `service_role` from server fns).
+
+Server helpers `src/lib/notifications.functions.ts`:
+- `listNotifications`, `markRead`, `markAllRead`.
+- `pushNotification({userId, kind, title, body, projectId?})` — invoked from server-side hooks:
+  - generation completed / failed (in `pipelineEngine.functions.ts`)
+  - publishing completed (`publishing.functions.ts`)
+  - credits low (in `credit_reserve` result path when `balance < 20`)
+  - subscription renewed (webhook: `paystack-webhook.ts` / `flutterwave-webhook.ts`)
+
+UI:
+- `src/components/notification-bell.tsx` in topbar with unread badge + popover list.
+- `src/routes/_app.notifications.tsx` full page with filter and mark-all.
+
+Kinds: `generation_complete | generation_failed | publish_complete | credits_low | subscription_renewed`.
+
+## 7. Guardrails
+
+- No changes to `client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`, `.env`.
+- No provider swaps, no billing formula changes.
+- Every new server fn returns typed DTOs; no `any`. `tsgo` must pass.
+- Every new `public` table migration includes CREATE → GRANT → ENABLE RLS → CREATE POLICY in that order.
+
+## Delivery order
+
+1. Migration: add `projects.story_bible` + create `notifications` table + `project_assets` unique index.
+2. `dbError.ts` + refactor all save call sites (item 1).
+3. Story Bible module + wiring (item 2).
+4. Asset Library service + route (item 3).
+5. Notifications table wiring + bell + page (item 6).
+6. Owner Analytics route + server fn (item 4).
+7. System Health metrics extension (item 5).
+8. Typecheck sweep.
+
+Out of scope: real-time push (in-app polling only), email notifications, new AI providers, UI theme changes.
