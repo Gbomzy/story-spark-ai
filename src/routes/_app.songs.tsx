@@ -145,7 +145,7 @@ function EngineBody({ project }: { project: ProjectLike }) {
         background_music: {
           ...serializeAudioStudio(merged),
           backgroundStyle: nextPlan.recommendation.backgroundStyle,
-        },
+        } as unknown as import("@/integrations/supabase/types").Json,
       });
       setPlan(nextPlan);
       setStudio(merged);
@@ -163,9 +163,9 @@ function EngineBody({ project }: { project: ProjectLike }) {
   const saveScenesMut = useMutation({
     mutationFn: async () => {
       await updateProject(project.id, {
-        background_music: {
+        background_music: ({
           ...serializeAudioStudio(studio),
-        },
+        }) as unknown as import("@/integrations/supabase/types").Json,
       });
     },
     onSuccess: () => {
