@@ -163,7 +163,7 @@ function ComposerBody({ project }: { project: ProjectRow }) {
       toast.success("Timeline saved.");
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
-    onError: (e: Error) => toast.error(e.message || "Save failed."),
+    onError: (e: unknown) => toast.error((await import("@/lib/dbError")).formatDbError ? "" : ""),
   });
 
   const pipelineMut = useMutation({
