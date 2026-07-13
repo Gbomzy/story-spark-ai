@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { StoryMusicPlan, MusicMode, SongPosition, BgmMood } from "@/lib/storyMusic";
+import type { StoryMusicPlan, MusicMode, SongPosition, BgmMood, SfxKind } from "@/lib/storyMusic";
 
 const QWEN_ENDPOINT =
   "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
@@ -49,6 +49,20 @@ const BGM_MOODS = [
   "mystery",
   "emotional",
   "funny",
+] as const;
+
+const SFX_KINDS = [
+  "birds",
+  "forest",
+  "rain",
+  "ocean",
+  "wind",
+  "footsteps",
+  "door",
+  "school",
+  "crowd",
+  "magic",
+  "celebration",
 ] as const;
 
 const AnalyzeInput = z.object({
@@ -117,9 +131,18 @@ You MUST return ONLY a strict JSON object matching this TypeScript type — no p
       "sceneNumber": number,  // starting at 1
       "title": string,        // short scene title
       "bgmMood": "happy" | "calm" | "bedtime" | "adventure" | "celebration" | "mystery" | "emotional" | "funny",
-      "volume": number        // 0..1 recommended duck level under narration; default 0.2
+      "volume": number,       // 0..1 recommended duck level under narration; default 0.2
+      "narrationVolume": number, // 0..1 default 1
+      "sfx": [                // 0..3 recommended sound effects for the scene
+        { "kind": "birds"|"forest"|"rain"|"ocean"|"wind"|"footsteps"|"door"|"school"|"crowd"|"magic"|"celebration", "volume": number }
+      ]
     }
   ],
+  "endingCredits": {
+    "enabled": boolean,        // true when a song or credits closer suits this story
+    "fadeOutSeconds": number,  // 2-6
+    "text": string             // optional short closing line
+  },
   "song": null | {
     "position": "intro" | "middle" | "ending" | "multiple",
     "title": string,
@@ -135,6 +158,7 @@ You MUST return ONLY a strict JSON object matching this TypeScript type — no p
 Requirements:
 - The song MUST reinforce the story's lesson, not retell the plot.
 - Cover EVERY scene in the story (infer 4-8 scenes if not explicit).
+- Recommend 0-3 sound effects per scene that ACTUALLY appear in that scene (birds only if outdoors, rain only if raining, etc.). Never invent effects.
 - Keep language age-appropriate.${data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""}${data.language ? ` Write lyrics in ${data.language}.` : ""}
 - Return ONLY JSON. No commentary.`;
 
@@ -183,11 +207,25 @@ function normalizePlan(input: unknown, mode: MusicMode): StoryMusicPlan {
       ? (mood as BgmMood)
       : "calm";
     const vol = Number(so.volume);
+    const narrVol = Number(so.narrationVolume);
+    const sfxRaw = Array.isArray(so.sfx) ? (so.sfx as unknown[]) : [];
+    const sfx = sfxRaw
+      .map((x) => {
+        const o = (x ?? {}) as Record<string, unknown>;
+        const kind = String(o.kind ?? "");
+        if (!(SFX_KINDS as readonly string[]).includes(kind)) return null;
+        const v = Number(o.volume);
+        return { kind: kind as SfxKind, volume: Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6 };
+      })
+      .filter((x): x is { kind: SfxKind; volume: number } => x !== null)
+      .slice(0, 3);
     return {
       sceneNumber: Number.isFinite(Number(so.sceneNumber)) ? Number(so.sceneNumber) : i + 1,
       title: String(so.title ?? `Scene ${i + 1}`),
       bgmMood,
       volume: Number.isFinite(vol) ? Math.min(1, Math.max(0, vol)) : 0.2,
+      narrationVolume: Number.isFinite(narrVol) ? Math.min(1, Math.max(0, narrVol)) : 1,
+      sfx,
     };
   });
 
@@ -228,5 +266,17 @@ function normalizePlan(input: unknown, mode: MusicMode): StoryMusicPlan {
     },
     scenes,
     song,
+    endingCredits: readEndingCredits(o),
+  };
+}
+
+function readEndingCredits(o: Record<string, unknown>): StoryMusicPlan["endingCredits"] {
+  const ec = o.endingCredits && typeof o.endingCredits === "object" ? (o.endingCredits as Record<string, unknown>) : null;
+  if (!ec) return undefined;
+  const fade = Number(ec.fadeOutSeconds);
+  return {
+    enabled: Boolean(ec.enabled),
+    fadeOutSeconds: Number.isFinite(fade) ? Math.min(10, Math.max(1, fade)) : 3,
+    text: typeof ec.text === "string" ? ec.text : undefined,
   };
 }
