@@ -1,27 +1,37 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Music, Sparkles, Copy, Download, Wand2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Music, Sparkles, Copy, Download, Wand2, Play, Pause, Repeat, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, updateProject } from "@/lib/projects";
 import { analyzeStoryMusic } from "@/lib/storyMusicEngine.functions";
 import {
   BGM_MOODS,
+  SFX_KINDS,
   MUSIC_MODES,
   parseSongsField,
-  parseBackgroundMusic,
+  parseAudioStudio,
+  serializeAudioStudio,
   serializeSongsField,
   formatSongText,
+  newSfxItem,
+  DEFAULT_DUCKING,
   type BgmMood,
+  type SfxKind,
   type MusicMode,
   type SongPosition,
   type StoryMusicPlan,
+  type AudioStudioState,
+  type AudioStudioScene,
+  type SfxItem,
 } from "@/lib/storyMusic";
+import { AudioPreview, type PreviewState } from "@/lib/audioPreview";
 
 export const Route = createFileRoute("/_app/songs")({
   head: () => ({
