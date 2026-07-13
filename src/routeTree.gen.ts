@@ -31,6 +31,7 @@ import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
+import { Route as AppOwnerAnalyticsRouteImport } from './routes/_app.owner-analytics'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
@@ -168,6 +169,11 @@ const AppProjectsRoute = AppProjectsRouteImport.update({
 const AppProductionRoute = AppProductionRouteImport.update({
   id: '/production',
   path: '/production',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOwnerAnalyticsRoute = AppOwnerAnalyticsRouteImport.update({
+  id: '/owner-analytics',
+  path: '/owner-analytics',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOcrRoute = AppOcrRouteImport.update({
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/_app/movie-composer': typeof AppMovieComposerRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/ocr': typeof AppOcrRoute
+  '/_app/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/publishing': typeof AppPublishingRoute
@@ -508,6 +517,7 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/owner-analytics'
     | '/production'
     | '/projects'
     | '/publishing'
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/owner-analytics'
     | '/production'
     | '/projects'
     | '/publishing'
@@ -613,6 +624,7 @@ export interface FileRouteTypes {
     | '/_app/movie-composer'
     | '/_app/notifications'
     | '/_app/ocr'
+    | '/_app/owner-analytics'
     | '/_app/production'
     | '/_app/projects'
     | '/_app/publishing'
@@ -801,6 +813,13 @@ declare module '@tanstack/react-router' {
       path: '/production'
       fullPath: '/production'
       preLoaderRoute: typeof AppProductionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/owner-analytics': {
+      id: '/_app/owner-analytics'
+      path: '/owner-analytics'
+      fullPath: '/owner-analytics'
+      preLoaderRoute: typeof AppOwnerAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ocr': {
@@ -1048,6 +1067,7 @@ interface AppRouteChildren {
   AppMovieComposerRoute: typeof AppMovieComposerRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppOcrRoute: typeof AppOcrRoute
+  AppOwnerAnalyticsRoute: typeof AppOwnerAnalyticsRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppPublishingRoute: typeof AppPublishingRoute
@@ -1092,6 +1112,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMovieComposerRoute: AppMovieComposerRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppOcrRoute: AppOcrRoute,
+  AppOwnerAnalyticsRoute: AppOwnerAnalyticsRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppPublishingRoute: AppPublishingRoute,
