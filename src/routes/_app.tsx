@@ -1,5 +1,5 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopBar } from "@/components/topbar";
 import { useAuth } from "@/lib/auth";
@@ -19,12 +19,29 @@ export const Route = createFileRoute("/_app")({
 function AppLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [checkedOnboarding, setCheckedOnboarding] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate({ to: "/login" });
     }
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    if (!user || checkedOnboarding) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("onboarding").eq("id", user.id).maybeSingle();
+      if (cancelled) return;
+      setCheckedOnboarding(true);
+      const done = (data?.onboarding as { completed?: boolean } | null)?.completed === true;
+      if (!done && pathname !== "/onboarding") {
+        navigate({ to: "/onboarding" });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, checkedOnboarding, pathname, navigate]);
 
   if (loading || !user) {
     return (

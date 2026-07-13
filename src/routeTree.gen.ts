@@ -32,6 +32,8 @@ import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProductionRouteImport } from './routes/_app.production'
 import { Route as AppOwnerAnalyticsRouteImport } from './routes/_app.owner-analytics'
+import { Route as AppOrchestratorRouteImport } from './routes/_app.orchestrator'
+import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppOcrRouteImport } from './routes/_app.ocr'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppMovieComposerRouteImport } from './routes/_app.movie-composer'
@@ -47,6 +49,7 @@ import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
+import { Route as AppCreateMovieRouteImport } from './routes/_app.create-movie'
 import { Route as AppCharactersRouteImport } from './routes/_app.characters'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAssetsRouteImport } from './routes/_app.assets'
@@ -176,6 +179,16 @@ const AppOwnerAnalyticsRoute = AppOwnerAnalyticsRouteImport.update({
   path: '/owner-analytics',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrchestratorRoute = AppOrchestratorRouteImport.update({
+  id: '/orchestrator',
+  path: '/orchestrator',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppOcrRoute = AppOcrRouteImport.update({
   id: '/ocr',
   path: '/ocr',
@@ -249,6 +262,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppCreditsRoute = AppCreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCreateMovieRoute = AppCreateMovieRouteImport.update({
+  id: '/create-movie',
+  path: '/create-movie',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCharactersRoute = AppCharactersRouteImport.update({
@@ -339,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
@@ -354,6 +373,8 @@ export interface FileRoutesByFullPath {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/onboarding': typeof AppOnboardingRoute
+  '/orchestrator': typeof AppOrchestratorRoute
   '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -392,6 +413,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AppAssetsRoute
   '/billing': typeof AppBillingRoute
   '/characters': typeof AppCharactersRoute
+  '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
   '/error-log': typeof AppErrorLogRoute
@@ -407,6 +429,8 @@ export interface FileRoutesByTo {
   '/movie-composer': typeof AppMovieComposerRoute
   '/notifications': typeof AppNotificationsRoute
   '/ocr': typeof AppOcrRoute
+  '/onboarding': typeof AppOnboardingRoute
+  '/orchestrator': typeof AppOrchestratorRoute
   '/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/production': typeof AppProductionRoute
   '/projects': typeof AppProjectsRouteWithChildren
@@ -447,6 +471,7 @@ export interface FileRoutesById {
   '/_app/assets': typeof AppAssetsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/characters': typeof AppCharactersRoute
+  '/_app/create-movie': typeof AppCreateMovieRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/error-log': typeof AppErrorLogRoute
@@ -462,6 +487,8 @@ export interface FileRoutesById {
   '/_app/movie-composer': typeof AppMovieComposerRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/ocr': typeof AppOcrRoute
+  '/_app/onboarding': typeof AppOnboardingRoute
+  '/_app/orchestrator': typeof AppOrchestratorRoute
   '/_app/owner-analytics': typeof AppOwnerAnalyticsRoute
   '/_app/production': typeof AppProductionRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
@@ -502,6 +529,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/create-movie'
     | '/credits'
     | '/dashboard'
     | '/error-log'
@@ -517,6 +545,8 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/onboarding'
+    | '/orchestrator'
     | '/owner-analytics'
     | '/production'
     | '/projects'
@@ -555,6 +585,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/billing'
     | '/characters'
+    | '/create-movie'
     | '/credits'
     | '/dashboard'
     | '/error-log'
@@ -570,6 +601,8 @@ export interface FileRouteTypes {
     | '/movie-composer'
     | '/notifications'
     | '/ocr'
+    | '/onboarding'
+    | '/orchestrator'
     | '/owner-analytics'
     | '/production'
     | '/projects'
@@ -609,6 +642,7 @@ export interface FileRouteTypes {
     | '/_app/assets'
     | '/_app/billing'
     | '/_app/characters'
+    | '/_app/create-movie'
     | '/_app/credits'
     | '/_app/dashboard'
     | '/_app/error-log'
@@ -624,6 +658,8 @@ export interface FileRouteTypes {
     | '/_app/movie-composer'
     | '/_app/notifications'
     | '/_app/ocr'
+    | '/_app/onboarding'
+    | '/_app/orchestrator'
     | '/_app/owner-analytics'
     | '/_app/production'
     | '/_app/projects'
@@ -822,6 +858,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOwnerAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/orchestrator': {
+      id: '/_app/orchestrator'
+      path: '/orchestrator'
+      fullPath: '/orchestrator'
+      preLoaderRoute: typeof AppOrchestratorRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/onboarding': {
+      id: '/_app/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/ocr': {
       id: '/_app/ocr'
       path: '/ocr'
@@ -925,6 +975,13 @@ declare module '@tanstack/react-router' {
       path: '/credits'
       fullPath: '/credits'
       preLoaderRoute: typeof AppCreditsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/create-movie': {
+      id: '/_app/create-movie'
+      path: '/create-movie'
+      fullPath: '/create-movie'
+      preLoaderRoute: typeof AppCreateMovieRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/characters': {
@@ -1052,6 +1109,7 @@ interface AppRouteChildren {
   AppAssetsRoute: typeof AppAssetsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCharactersRoute: typeof AppCharactersRoute
+  AppCreateMovieRoute: typeof AppCreateMovieRoute
   AppCreditsRoute: typeof AppCreditsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppErrorLogRoute: typeof AppErrorLogRoute
@@ -1067,6 +1125,8 @@ interface AppRouteChildren {
   AppMovieComposerRoute: typeof AppMovieComposerRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppOcrRoute: typeof AppOcrRoute
+  AppOnboardingRoute: typeof AppOnboardingRoute
+  AppOrchestratorRoute: typeof AppOrchestratorRoute
   AppOwnerAnalyticsRoute: typeof AppOwnerAnalyticsRoute
   AppProductionRoute: typeof AppProductionRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
@@ -1097,6 +1157,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssetsRoute: AppAssetsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCharactersRoute: AppCharactersRoute,
+  AppCreateMovieRoute: AppCreateMovieRoute,
   AppCreditsRoute: AppCreditsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppErrorLogRoute: AppErrorLogRoute,
@@ -1112,6 +1173,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppMovieComposerRoute: AppMovieComposerRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppOcrRoute: AppOcrRoute,
+  AppOnboardingRoute: AppOnboardingRoute,
+  AppOrchestratorRoute: AppOrchestratorRoute,
   AppOwnerAnalyticsRoute: AppOwnerAnalyticsRoute,
   AppProductionRoute: AppProductionRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
@@ -1147,13 +1210,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
