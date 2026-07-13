@@ -337,50 +337,236 @@ function EngineBody({ project }: { project: ProjectLike }) {
           <Card className="glass rounded-3xl p-6 shadow-soft">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">Scene background music</p>
-                <h3 className="text-lg font-bold">Mood + duck volume per scene</h3>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">Scene audio</p>
+                <h3 className="text-lg font-bold">Music, sound effects &amp; volumes per scene</h3>
               </div>
               <Button variant="outline" className="rounded-xl" onClick={() => saveScenesMut.mutate()} disabled={saveScenesMut.isPending}>
                 {saveScenesMut.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1.5 h-4 w-4" />} Save
               </Button>
             </div>
-            <div className="space-y-2">
-              {sceneOverrides.length === 0 ? (
+            <div className="space-y-3">
+              {studio.scenes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No scenes in the plan.</p>
-              ) : sceneOverrides.map((s) => {
-                const planScene = plan.scenes.find((p) => p.sceneNumber === s.sceneNumber);
-                return (
-                  <div key={s.sceneNumber} className="grid gap-2 rounded-2xl border border-border bg-card/60 p-3 md:grid-cols-[auto,1fr,auto]">
-                    <div className="md:w-40">
-                      <Badge className="rounded-full bg-primary/15 text-[10px] text-primary">Scene {s.sceneNumber}</Badge>
-                      <p className="mt-1 text-[11px] font-medium">{planScene?.title ?? ""}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {BGM_MOODS.map((m) => (
-                        <Button key={m} size="sm" variant={s.bgmMood === m ? "default" : "outline"} className="rounded-lg text-[11px]" onClick={() => updateSceneMood(s.sceneNumber, m)}>{m}</Button>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 md:w-48">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Vol</span>
-                      <input
-                        type="range" min={0} max={100} step={1}
-                        value={Math.round(s.volume * 100)}
-                        onChange={(e) => updateSceneVolume(s.sceneNumber, Number(e.target.value) / 100)}
-                        className="w-full"
-                      />
-                      <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(s.volume * 100)}%</span>
-                    </div>
-                  </div>
-                );
-              })}
+              ) : studio.scenes.map((s) => (
+                <SceneRow
+                  key={s.sceneNumber}
+                  scene={s}
+                  onPatch={(patch) => patchScene(s.sceneNumber, patch)}
+                />
+              ))}
             </div>
             <p className="mt-3 text-[11px] text-muted-foreground">
-              Volume controls how loud background music sits under narration in the Movie Composer. Lower values (10-25%) work best for spoken scenes.
+              Music volume sits under narration. Automatic ducking (below) lowers it further while narration is speaking.
             </p>
           </Card>
+
+          <DuckingCard ducking={studio.ducking} onChange={(d) => patchStudio({ ducking: d })} />
+          <EndingCreditsCard ec={studio.endingCredits} onChange={(ec) => patchStudio({ endingCredits: ec })} />
         </>
       ) : null}
     </>
+  );
+}
+
+function mergeScenes(current: AudioStudioScene[], planScenes: StoryMusicPlan["scenes"]): AudioStudioScene[] {
+  return planScenes.map((ps) => {
+    const cur = current.find((c) => c.sceneNumber === ps.sceneNumber);
+    return {
+      sceneNumber: ps.sceneNumber,
+      title: ps.title,
+      bgmMood: cur?.bgmMood ?? ps.bgmMood,
+      bgmTrackUrl: cur?.bgmTrackUrl,
+      musicVolume: cur?.musicVolume ?? ps.volume,
+      narrationVolume: cur?.narrationVolume ?? ps.narrationVolume ?? 1,
+      sfx: cur?.sfx ?? (ps.sfx ?? []).map((x) => ({ id: Math.random().toString(36).slice(2, 10), kind: x.kind, volume: x.volume })),
+    };
+  });
+}
+
+function SceneRow({ scene, onPatch }: { scene: AudioStudioScene; onPatch: (p: Partial<AudioStudioScene>) => void }) {
+  const previewRef = useRef<AudioPreview | null>(null);
+  const [state, setState] = useState<PreviewState>("idle");
+  const [loop, setLoop] = useState(false);
+
+  useEffect(() => {
+    const p = new AudioPreview(scene.bgmTrackUrl);
+    previewRef.current = p;
+    const unsub = p.subscribe(setState);
+    return () => { unsub(); p.dispose(); previewRef.current = null; };
+    // scene id-only dependency: recreate on scene number
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene.sceneNumber]);
+
+  useEffect(() => { previewRef.current?.setUrl(scene.bgmTrackUrl); }, [scene.bgmTrackUrl]);
+  useEffect(() => { previewRef.current?.setLoop(loop); }, [loop]);
+
+  function downloadTrack() {
+    if (!scene.bgmTrackUrl) return;
+    const a = document.createElement("a");
+    a.href = scene.bgmTrackUrl;
+    a.download = `scene-${scene.sceneNumber}-music`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.click();
+  }
+
+  function addSfx(kind: SfxKind) {
+    onPatch({ sfx: [...scene.sfx, newSfxItem(kind)] });
+  }
+  function patchSfx(id: string, patch: Partial<SfxItem>) {
+    onPatch({ sfx: scene.sfx.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
+  }
+  function removeSfx(id: string) {
+    onPatch({ sfx: scene.sfx.filter((s) => s.id !== id) });
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge className="rounded-full bg-primary/15 text-[10px] text-primary">Scene {scene.sceneNumber}</Badge>
+        <p className="text-sm font-semibold">{scene.title ?? ""}</p>
+      </div>
+
+      <div>
+        <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Mood</p>
+        <div className="flex flex-wrap gap-1">
+          {BGM_MOODS.map((m) => (
+            <Button key={m} size="sm" variant={scene.bgmMood === m ? "default" : "outline"} className="rounded-lg text-[11px]" onClick={() => onPatch({ bgmMood: m })}>{m}</Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-[1fr,auto]">
+        <Input
+          value={scene.bgmTrackUrl ?? ""}
+          onChange={(e) => onPatch({ bgmTrackUrl: e.target.value || undefined })}
+          placeholder="Background music URL (mp3)…"
+          className="h-8 text-xs"
+        />
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="outline" className="rounded-lg" disabled={!scene.bgmTrackUrl} onClick={() => previewRef.current?.toggle()}>
+            {state === "playing" ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          </Button>
+          <Button size="sm" variant={loop ? "default" : "outline"} className="rounded-lg" onClick={() => setLoop((v) => !v)} title="Loop">
+            <Repeat className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-lg" disabled={!scene.bgmTrackUrl} onClick={downloadTrack} title="Download">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <VolumeSlider label="Music volume" value={scene.musicVolume} onChange={(v) => onPatch({ musicVolume: v })} />
+        <VolumeSlider label="Narration volume" value={scene.narrationVolume} onChange={(v) => onPatch({ narrationVolume: v })} />
+      </div>
+
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Sound effects</p>
+        </div>
+        <div className="space-y-2">
+          {scene.sfx.map((s) => (
+            <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/40 p-2">
+              <Badge className="rounded-full bg-muted text-[10px]">{s.kind}</Badge>
+              <Input
+                value={s.url ?? ""}
+                onChange={(e) => patchSfx(s.id, { url: e.target.value || undefined })}
+                placeholder="SFX URL (optional)"
+                className="h-7 flex-1 text-xs"
+              />
+              <div className="flex items-center gap-1 w-40">
+                <span className="text-[10px] text-muted-foreground">Vol</span>
+                <input type="range" min={0} max={100} value={Math.round(s.volume * 100)} onChange={(e) => patchSfx(s.id, { volume: Number(e.target.value) / 100 })} className="flex-1" />
+                <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(s.volume * 100)}%</span>
+              </div>
+              <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => removeSfx(s.id)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {SFX_KINDS.map((k) => (
+            <Button key={k} size="sm" variant="outline" className="rounded-lg text-[11px]" onClick={() => addSfx(k)}>
+              <Plus className="mr-1 h-3 w-3" /> {k}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">{label} · {Math.round(value * 100)}%</p>
+      <input type="range" min={0} max={100} value={Math.round(value * 100)} onChange={(e) => onChange(Number(e.target.value) / 100)} className="w-full" />
+    </div>
+  );
+}
+
+function DuckingCard({ ducking, onChange }: { ducking: AudioStudioState["ducking"]; onChange: (d: AudioStudioState["ducking"]) => void }) {
+  return (
+    <Card className="glass rounded-3xl p-6 shadow-soft">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Automatic ducking</p>
+          <h3 className="text-lg font-bold">Lower music while narration speaks</h3>
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant={ducking.enabled ? "default" : "outline"} className="rounded-lg" onClick={() => onChange({ ...ducking, enabled: true })}>On</Button>
+          <Button size="sm" variant={!ducking.enabled ? "default" : "outline"} className="rounded-lg" onClick={() => onChange({ ...ducking, enabled: false })}>Off</Button>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <VolumeSlider label="Ducked level" value={ducking.duckedLevel} onChange={(v) => onChange({ ...ducking, duckedLevel: v })} />
+        <VolumeSlider label="Speech threshold" value={ducking.threshold} onChange={(v) => onChange({ ...ducking, threshold: v })} />
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Attack · {ducking.attackMs}ms</p>
+          <input type="range" min={20} max={800} value={ducking.attackMs} onChange={(e) => onChange({ ...ducking, attackMs: Number(e.target.value) })} className="w-full" />
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Release · {ducking.releaseMs}ms</p>
+          <input type="range" min={50} max={1500} value={ducking.releaseMs} onChange={(e) => onChange({ ...ducking, releaseMs: Number(e.target.value) })} className="w-full" />
+        </div>
+      </div>
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        The Movie Composer analyses narration RMS in real time and ramps background music down while the narrator is speaking, then back up between segments.
+      </p>
+    </Card>
+  );
+}
+
+function EndingCreditsCard({ ec, onChange }: { ec: AudioStudioState["endingCredits"]; onChange: (v: AudioStudioState["endingCredits"]) => void }) {
+  return (
+    <Card className="glass rounded-3xl p-6 shadow-soft">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Ending credits</p>
+          <h3 className="text-lg font-bold">Optional closing music &amp; fade-out</h3>
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant={ec.enabled ? "default" : "outline"} className="rounded-lg" onClick={() => onChange({ ...ec, enabled: true })}>Enable</Button>
+          <Button size="sm" variant={!ec.enabled ? "default" : "outline"} className="rounded-lg" onClick={() => onChange({ ...ec, enabled: false })}>Disable</Button>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Credits track URL</p>
+          <Input value={ec.trackUrl ?? ""} onChange={(e) => onChange({ ...ec, trackUrl: e.target.value || undefined })} placeholder="https://…/credits.mp3" className="h-8 text-xs" />
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Fade-out · {ec.fadeOutSeconds.toFixed(1)}s</p>
+          <input type="range" min={1} max={10} step={0.5} value={ec.fadeOutSeconds} onChange={(e) => onChange({ ...ec, fadeOutSeconds: Number(e.target.value) })} className="w-full" />
+        </div>
+        <div className="sm:col-span-2">
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Credits text (optional)</p>
+          <Input value={ec.text ?? ""} onChange={(e) => onChange({ ...ec, text: e.target.value || undefined })} placeholder="Written &amp; produced by…" className="h-8 text-xs" />
+        </div>
+      </div>
+    </Card>
   );
 }
 
