@@ -27,6 +27,7 @@ import { Route as AppSongsRouteImport } from './routes/_app.songs'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSeoStudioRouteImport } from './routes/_app.seo-studio'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
+import { Route as AppRenderDashboardRouteImport } from './routes/_app.render-dashboard'
 import { Route as AppQueueRouteImport } from './routes/_app.queue'
 import { Route as AppPublishingRouteImport } from './routes/_app.publishing'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
@@ -153,6 +154,11 @@ const AppSeoStudioRoute = AppSeoStudioRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRenderDashboardRoute = AppRenderDashboardRouteImport.update({
+  id: '/render-dashboard',
+  path: '/render-dashboard',
   getParentRoute: () => AppRoute,
 } as any)
 const AppQueueRoute = AppQueueRouteImport.update({
@@ -387,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
   '/queue': typeof AppQueueRoute
+  '/render-dashboard': typeof AppRenderDashboardRoute
   '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
@@ -444,6 +451,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AppProjectsRouteWithChildren
   '/publishing': typeof AppPublishingRoute
   '/queue': typeof AppQueueRoute
+  '/render-dashboard': typeof AppRenderDashboardRoute
   '/search': typeof AppSearchRoute
   '/seo-studio': typeof AppSeoStudioRoute
   '/settings': typeof AppSettingsRoute
@@ -503,6 +511,7 @@ export interface FileRoutesById {
   '/_app/projects': typeof AppProjectsRouteWithChildren
   '/_app/publishing': typeof AppPublishingRoute
   '/_app/queue': typeof AppQueueRoute
+  '/_app/render-dashboard': typeof AppRenderDashboardRoute
   '/_app/search': typeof AppSearchRoute
   '/_app/seo-studio': typeof AppSeoStudioRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -562,6 +571,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/publishing'
     | '/queue'
+    | '/render-dashboard'
     | '/search'
     | '/seo-studio'
     | '/settings'
@@ -619,6 +629,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/publishing'
     | '/queue'
+    | '/render-dashboard'
     | '/search'
     | '/seo-studio'
     | '/settings'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/_app/projects'
     | '/_app/publishing'
     | '/_app/queue'
+    | '/_app/render-dashboard'
     | '/_app/search'
     | '/_app/seo-studio'
     | '/_app/settings'
@@ -833,6 +845,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/render-dashboard': {
+      id: '/_app/render-dashboard'
+      path: '/render-dashboard'
+      fullPath: '/render-dashboard'
+      preLoaderRoute: typeof AppRenderDashboardRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/queue': {
@@ -1152,6 +1171,7 @@ interface AppRouteChildren {
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppPublishingRoute: typeof AppPublishingRoute
   AppQueueRoute: typeof AppQueueRoute
+  AppRenderDashboardRoute: typeof AppRenderDashboardRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSeoStudioRoute: typeof AppSeoStudioRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -1201,6 +1221,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppPublishingRoute: AppPublishingRoute,
   AppQueueRoute: AppQueueRoute,
+  AppRenderDashboardRoute: AppRenderDashboardRoute,
   AppSearchRoute: AppSearchRoute,
   AppSeoStudioRoute: AppSeoStudioRoute,
   AppSettingsRoute: AppSettingsRoute,
