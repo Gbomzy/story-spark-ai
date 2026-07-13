@@ -36,7 +36,6 @@ import {
   Server,
   Bell,
   BookMarked,
-  Wand2,
   Workflow,
 } from "lucide-react";
 import { useState } from "react";
