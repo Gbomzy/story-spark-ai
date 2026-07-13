@@ -5,6 +5,7 @@
 // the canvas remains untainted).
 
 import type { MovieManifest, SceneClip } from "@/lib/pipelineEngine.functions";
+import type { AudioStudioState } from "@/lib/storyMusic";
 
 export type ComposerSettings = {
   resolution: "720p" | "1080p";
@@ -25,6 +26,8 @@ export type ComposerSettings = {
   backgroundMusicVolume?: number;
   /** 0..1 — gain applied to the narration track. Default 1.0. */
   narrationVolume?: number;
+  /** Optional per-scene Audio Studio configuration (BGM, SFX, ducking, credits). */
+  audioStudio?: AudioStudioState;
 };
 
 export type ComposerProgress = (info: {
