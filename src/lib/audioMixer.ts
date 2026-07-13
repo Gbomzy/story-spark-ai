@@ -49,7 +49,7 @@ export class AudioMixer {
   private narrationGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
-  private analyserBuf: Uint8Array | null = null;
+  private analyserBuf: Uint8Array<ArrayBuffer> | null = null;
   private raf: number | null = null;
   private mode: PreviewMode = "mix";
   private listeners = new Set<(s: PreviewMixerState) => void>();
@@ -175,7 +175,7 @@ export class AudioMixer {
       this.narrationGain = gain;
       this.analyser = ctx.createAnalyser();
       this.analyser.fftSize = 512;
-      this.analyserBuf = new Uint8Array(this.analyser.fftSize);
+      this.analyserBuf = new Uint8Array(new ArrayBuffer(this.analyser.fftSize));
       src.connect(this.analyser);
     }
     if (this.inputs.musicUrl) {
