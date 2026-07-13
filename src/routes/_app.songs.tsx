@@ -106,11 +106,9 @@ function EngineBody({ project }: { project: ProjectLike }) {
   const [customMood, setCustomMood] = useState<BgmMood | "">("");
   const [plan, setPlan] = useState<StoryMusicPlan | null>(initialPlan);
 
-  const initialBgm = useMemo(() => parseBackgroundMusic(project.background_music), [project.background_music]);
-  const [sceneOverrides, setSceneOverrides] = useState(() => {
-    if (initialBgm.scenes.length) return initialBgm.scenes;
-    return initialPlan?.scenes.map((s) => ({ sceneNumber: s.sceneNumber, bgmMood: s.bgmMood, volume: s.volume })) ?? [];
-  });
+  const [studio, setStudio] = useState<AudioStudioState>(() =>
+    parseAudioStudio(project.background_music, initialPlan?.scenes),
+  );
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -128,17 +126,29 @@ function EngineBody({ project }: { project: ProjectLike }) {
         },
       });
       const nextPlan: StoryMusicPlan = r.plan;
-      const nextOverrides = nextPlan.scenes.map((s) => ({ sceneNumber: s.sceneNumber, bgmMood: s.bgmMood, volume: s.volume }));
+      // Re-derive studio state from the fresh plan (preserving any URLs the
+      // user pasted for scenes that still exist).
+      const merged = parseAudioStudio(
+        serializeAudioStudio({ ...studio, scenes: mergeScenes(studio.scenes, nextPlan.scenes) }),
+        nextPlan.scenes,
+      );
+      if (nextPlan.endingCredits) {
+        merged.endingCredits = {
+          enabled: nextPlan.endingCredits.enabled,
+          fadeOutSeconds: nextPlan.endingCredits.fadeOutSeconds,
+          text: nextPlan.endingCredits.text,
+          trackUrl: merged.endingCredits.trackUrl,
+        };
+      }
       await updateProject(project.id, {
         songs: serializeSongsField(nextPlan),
         background_music: {
-          ...(typeof project.background_music === "object" && project.background_music ? project.background_music : {}),
-          scenes: nextOverrides,
+          ...serializeAudioStudio(merged),
           backgroundStyle: nextPlan.recommendation.backgroundStyle,
         },
       });
       setPlan(nextPlan);
-      setSceneOverrides(nextOverrides);
+      setStudio(merged);
     },
     onSuccess: () => {
       toast.success("Music plan generated");
@@ -154,23 +164,25 @@ function EngineBody({ project }: { project: ProjectLike }) {
     mutationFn: async () => {
       await updateProject(project.id, {
         background_music: {
-          ...(typeof project.background_music === "object" && project.background_music ? project.background_music : {}),
-          scenes: sceneOverrides,
+          ...serializeAudioStudio(studio),
         },
       });
     },
     onSuccess: () => {
-      toast.success("Scene music saved");
+      toast.success("Audio Studio saved");
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Save failed."),
   });
 
-  function updateSceneMood(sceneNumber: number, mood: BgmMood) {
-    setSceneOverrides((prev) => prev.map((s) => (s.sceneNumber === sceneNumber ? { ...s, bgmMood: mood } : s)));
+  function patchScene(sceneNumber: number, patch: Partial<AudioStudioScene>) {
+    setStudio((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => (s.sceneNumber === sceneNumber ? { ...s, ...patch } : s)),
+    }));
   }
-  function updateSceneVolume(sceneNumber: number, volume: number) {
-    setSceneOverrides((prev) => prev.map((s) => (s.sceneNumber === sceneNumber ? { ...s, volume } : s)));
+  function patchStudio(patch: Partial<AudioStudioState>) {
+    setStudio((prev) => ({ ...prev, ...patch }));
   }
 
   function copySong() {
