@@ -72,6 +72,7 @@ import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicHooksRenderTickRouteImport } from './routes/api/public/hooks/render-tick'
+import { Route as ApiPublicHooksRenderClipRouteImport } from './routes/api/public/hooks/render-clip'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -393,6 +394,12 @@ const ApiPublicHooksRenderTickRoute =
     path: '/api/public/hooks/render-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksRenderClipRoute =
+  ApiPublicHooksRenderClipRouteImport.update({
+    id: '/api/public/hooks/render-clip',
+    path: '/api/public/hooks/render-clip',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -456,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-clip': typeof ApiPublicHooksRenderClipRoute
   '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRoutesByTo {
@@ -520,6 +528,7 @@ export interface FileRoutesByTo {
   '/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-clip': typeof ApiPublicHooksRenderClipRoute
   '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRoutesById {
@@ -586,6 +595,7 @@ export interface FileRoutesById {
   '/_app/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-clip': typeof ApiPublicHooksRenderClipRoute
   '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRouteTypes {
@@ -652,6 +662,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-clip'
     | '/api/public/hooks/render-tick'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -716,6 +727,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-clip'
     | '/api/public/hooks/render-tick'
   id:
     | '__root__'
@@ -781,6 +793,7 @@ export interface FileRouteTypes {
     | '/_app/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-clip'
     | '/api/public/hooks/render-tick'
   fileRoutesById: FileRoutesById
 }
@@ -798,6 +811,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
+  ApiPublicHooksRenderClipRoute: typeof ApiPublicHooksRenderClipRoute
   ApiPublicHooksRenderTickRoute: typeof ApiPublicHooksRenderTickRoute
 }
 
@@ -1244,6 +1258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRenderTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/render-clip': {
+      id: '/api/public/hooks/render-clip'
+      path: '/api/public/hooks/render-clip'
+      fullPath: '/api/public/hooks/render-clip'
+      preLoaderRoute: typeof ApiPublicHooksRenderClipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1378,6 +1399,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
+  ApiPublicHooksRenderClipRoute: ApiPublicHooksRenderClipRoute,
   ApiPublicHooksRenderTickRoute: ApiPublicHooksRenderTickRoute,
 }
 export const routeTree = rootRouteImport
