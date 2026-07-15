@@ -92,20 +92,29 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
 
     // Honor control signals (pause/cancel) from the Render Dashboard.
     const control = (proj as { render_control?: string | null }).render_control ?? null;
+    const controlResult = {
+      queueTotal: 0,
+      queueCompleted: 0,
+      queueRemaining: 0,
+      clips: [] as SceneClip[],
+      done: false,
+      cancelled: false,
+      paused: false,
+    };
     if (control === "cancel") {
       await context.supabase.from("projects").update({
         render_status: "cancelled",
         render_control: null,
         render_error: "Cancelled by user",
       }).eq("id", proj.id);
-      return { ok: true, results: { done: true, cancelled: true } };
+      return { ok: true, results: { ...controlResult, done: true, cancelled: true } };
     }
     if (control === "pause") {
       await context.supabase.from("projects").update({
         render_status: "paused",
         render_heartbeat: new Date().toISOString(),
       }).eq("id", proj.id);
-      return { ok: true, results: { done: false, paused: true } };
+      return { ok: true, results: { ...controlResult, paused: true } };
     }
 
     const pipeline: Record<string, StageState> =
