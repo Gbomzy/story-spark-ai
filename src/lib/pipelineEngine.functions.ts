@@ -85,10 +85,28 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
+
+    // Honor control signals (pause/cancel) from the Render Dashboard.
+    const control = (proj as { render_control?: string | null }).render_control ?? null;
+    if (control === "cancel") {
+      await context.supabase.from("projects").update({
+        render_status: "cancelled",
+        render_control: null,
+        render_error: "Cancelled by user",
+      }).eq("id", proj.id);
+      return { ok: true, results: { done: true, cancelled: true } };
+    }
+    if (control === "pause") {
+      await context.supabase.from("projects").update({
+        render_status: "paused",
+        render_heartbeat: new Date().toISOString(),
+      }).eq("id", proj.id);
+      return { ok: true, results: { done: false, paused: true } };
+    }
 
     const pipeline: Record<string, StageState> =
       (proj.media_pipeline as Record<string, StageState> | null) ?? {};
