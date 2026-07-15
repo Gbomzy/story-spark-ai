@@ -1197,6 +1197,102 @@ export type Database = {
           },
         ]
       }
+      render_clip_jobs: {
+        Row: {
+          attempts: number
+          clip_number: number
+          cover_url: string | null
+          created_at: string
+          credits_charged: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_id: string
+          last_heartbeat_at: string | null
+          latency_ms: number | null
+          locked_until: string | null
+          max_attempts: number
+          metadata: Json
+          model: string | null
+          output_url: string | null
+          project_id: string
+          provider: string | null
+          scene_number: number
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          clip_number: number
+          cover_url?: string | null
+          created_at?: string
+          credits_charged?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job_id: string
+          last_heartbeat_at?: string | null
+          latency_ms?: number | null
+          locked_until?: string | null
+          max_attempts?: number
+          metadata?: Json
+          model?: string | null
+          output_url?: string | null
+          project_id: string
+          provider?: string | null
+          scene_number: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          clip_number?: number
+          cover_url?: string | null
+          created_at?: string
+          credits_charged?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job_id?: string
+          last_heartbeat_at?: string | null
+          latency_ms?: number | null
+          locked_until?: string | null
+          max_attempts?: number
+          metadata?: Json
+          model?: string | null
+          output_url?: string | null
+          project_id?: string
+          provider?: string | null
+          scene_number?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "render_clip_jobs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "render_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "render_clip_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       render_jobs: {
         Row: {
           attempts: number
@@ -1431,6 +1527,46 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_next_clips: {
+        Args: {
+          _job_id: string
+          _lease_seconds?: number
+          _limit?: number
+          _worker_id: string
+        }
+        Returns: {
+          attempts: number
+          clip_number: number
+          cover_url: string | null
+          created_at: string
+          credits_charged: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_id: string
+          last_heartbeat_at: string | null
+          latency_ms: number | null
+          locked_until: string | null
+          max_attempts: number
+          metadata: Json
+          model: string | null
+          output_url: string | null
+          project_id: string
+          provider: string | null
+          scene_number: number
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "render_clip_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_render_job: {
         Args: { _lease_seconds?: number; _worker_id: string }
         Returns: {
@@ -1508,7 +1644,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      reclaim_stalled_clip_jobs: { Args: never; Returns: number }
       reclaim_stalled_render_jobs: { Args: never; Returns: number }
+      release_clip_job: {
+        Args: {
+          _clip_id: string
+          _cover_url?: string
+          _credits_charged?: number
+          _error?: string
+          _latency_ms?: number
+          _model?: string
+          _output_url?: string
+          _provider?: string
+          _status: string
+          _worker_id: string
+        }
+        Returns: undefined
+      }
       release_render_job: {
         Args: {
           _error?: string
@@ -1517,6 +1669,10 @@ export type Database = {
           _worker_id: string
         }
         Returns: undefined
+      }
+      reset_failed_clips_for_repair: {
+        Args: { _job_id: string }
+        Returns: number
       }
     }
     Enums: {
