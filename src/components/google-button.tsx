@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-export function GoogleButton({ label = "Continue with Google" }: { label?: string }) {
+export function GoogleButton({ label = "Continue with Google", next }: { label?: string; next?: string }) {
   const [loading, setLoading] = useState(false);
 
   async function onClick() {
     setLoading(true);
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: safeNext ? `${window.location.origin}${safeNext}` : window.location.origin,
     });
     if (result.error) {
       setLoading(false);
@@ -19,7 +20,7 @@ export function GoogleButton({ label = "Continue with Google" }: { label?: strin
     }
     if (result.redirected) return; // browser redirect happens
     // Session set in iframe — navigate
-    window.location.assign("/dashboard");
+    window.location.assign(safeNext ?? "/dashboard");
   }
 
   return (

@@ -38,7 +38,7 @@ const SaveInput = z.object({
   url: z.string().optional(),
   description: z.string().optional(),
   provider: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // Idempotent save: dedupe on (project, kind, url) if url is provided.

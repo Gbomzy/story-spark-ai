@@ -12,18 +12,26 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — StorySpark AI" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   component: SignupPage,
 });
 
 function SignupPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { next } = Route.useSearch();
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/dashboard" });
-  }, [user, navigate]);
+    if (user) {
+      if (safeNext) window.location.assign(safeNext);
+      else navigate({ to: "/dashboard" });
+    }
+  }, [user, navigate, safeNext]);
 
   function set<K extends keyof typeof form>(k: K) {
     return (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -36,7 +44,7 @@ function SignupPage() {
       email: form.email,
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}${safeNext ?? "/dashboard"}`,
         data: { display_name: form.name },
       },
     });
@@ -46,7 +54,8 @@ function SignupPage() {
       return;
     }
     toast.success("Account created! Let's spark some stories.");
-    navigate({ to: "/dashboard" });
+    if (safeNext) window.location.assign(safeNext);
+    else navigate({ to: "/dashboard" });
   }
 
   return (
@@ -56,14 +65,14 @@ function SignupPage() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="font-medium text-primary hover:underline">
+          <Link to="/login" search={safeNext ? { next: safeNext } : undefined} className="font-medium text-primary hover:underline">
             Sign in
           </Link>
         </>
       }
     >
       <form className="space-y-4" onSubmit={onSubmit}>
-        <GoogleButton label="Sign up with Google" />
+        <GoogleButton label="Sign up with Google" next={safeNext} />
         <div className="relative my-2 flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
           <span className="text-xs uppercase tracking-wider text-muted-foreground">or</span>

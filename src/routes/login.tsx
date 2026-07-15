@@ -12,19 +12,28 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — StorySpark AI" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { next } = Route.useSearch();
+  // Only allow same-origin relative paths.
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/dashboard" });
-  }, [user, navigate]);
+    if (user) {
+      if (safeNext) window.location.assign(safeNext);
+      else navigate({ to: "/dashboard" });
+    }
+  }, [user, navigate, safeNext]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,7 +45,8 @@ function LoginPage() {
       return;
     }
     toast.success("Welcome back!");
-    navigate({ to: "/dashboard" });
+    if (safeNext) window.location.assign(safeNext);
+    else navigate({ to: "/dashboard" });
   }
 
   return (
@@ -46,14 +56,14 @@ function LoginPage() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to="/signup" className="font-medium text-primary hover:underline">
+          <Link to="/signup" search={safeNext ? { next: safeNext } : undefined} className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </>
       }
     >
       <form className="space-y-4" onSubmit={onSubmit}>
-        <GoogleButton />
+        <GoogleButton next={safeNext} />
         <div className="relative my-2 flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
           <span className="text-xs uppercase tracking-wider text-muted-foreground">or</span>
