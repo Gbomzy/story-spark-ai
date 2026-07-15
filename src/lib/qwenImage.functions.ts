@@ -69,8 +69,9 @@ export const generateQwenImage = createServerFn({ method: "POST" })
 
     // Log to generation_history (server-side, RLS-safe via user JWT).
     const durationMs = Date.now() - t0;
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "generated_image",
@@ -81,8 +82,6 @@ export const generateQwenImage = createServerFn({ method: "POST" })
         error_message: providerError,
         metadata: { sceneId: data.sceneId ?? null, size, aspect: data.aspect ?? null },
       });
-    } catch {
-      // swallow: history is best-effort
     }
 
     if (providerError) {

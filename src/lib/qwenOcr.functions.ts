@@ -57,8 +57,9 @@ export const qwenOcr = createServerFn({ method: "POST" })
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const text = json.choices?.[0]?.message?.content ?? "";
 
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "ocr",
@@ -68,7 +69,7 @@ export const qwenOcr = createServerFn({ method: "POST" })
         credits_used: 1,
         metadata: { chars: text.length },
       });
-    } catch { /* best-effort */ }
+    }
 
     await charge.commit("qwen-vl-ocr-2025-11-20");
     return { text, provider: "qwen-vl-ocr-2025-11-20", durationMs: Date.now() - t0, creditsUsed: charge.credits };

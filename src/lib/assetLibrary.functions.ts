@@ -60,7 +60,10 @@ export const saveAsset = createServerFn({ method: "POST" })
         .maybeSingle();
       if (existing) return { id: (existing as { id: string }).id, deduped: true };
     }
-    const { data: inserted, error } = await supabase
+    // RLS blocks INSERT from user sessions on project_assets to protect
+    // business-critical fields; use service_role for the write only.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserted, error } = await supabaseAdmin
       .from("project_assets")
       .insert({
         project_id: data.projectId,

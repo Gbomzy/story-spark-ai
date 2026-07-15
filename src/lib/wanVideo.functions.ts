@@ -119,8 +119,9 @@ export const generateWanVideo = createServerFn({ method: "POST" })
       } catch { /* fall back to provider url */ }
     }
 
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "video",
@@ -131,7 +132,7 @@ export const generateWanVideo = createServerFn({ method: "POST" })
         error_message: providerError,
         metadata: { mode, size, resolution, ratio, bytes, cover: coverUrl },
       });
-    } catch { /* history is best-effort */ }
+    }
 
     if (data.projectId) {
       try {
