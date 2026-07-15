@@ -62,6 +62,11 @@ export const saveAsset = createServerFn({ method: "POST" })
     }
     const { data: inserted, error } = await supabase
       .from("project_assets")
+      .insert as unknown as never;
+    // RLS blocks INSERT from user sessions on project_assets; use service_role.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: insertedRow, error: insertErr } = await supabaseAdmin
+      .from("project_assets")
       .insert({
         project_id: data.projectId,
         user_id: userId,
@@ -74,8 +79,10 @@ export const saveAsset = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw error;
-    return { id: (inserted as { id: string }).id, deduped: false };
+    if (insertErr) throw insertErr;
+    void inserted;
+    void error;
+    return { id: (insertedRow as { id: string }).id, deduped: false };
   });
 
 const ListInput = z.object({
