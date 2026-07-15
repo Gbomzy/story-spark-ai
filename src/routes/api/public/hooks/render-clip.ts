@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/public/hooks/render-clip")({
 
         const { data: clip } = await supabaseAdmin
           .from("render_clip_jobs")
-          .select("id,job_id,project_id,user_id,scene_number,clip_number,metadata,attempts,max_attempts,status,worker_id")
+          .select("id,job_id,project_id,user_id,scene_number,clip_number,metadata,attempts,max_attempts,status,worker_id,billing_ref")
           .eq("id", clipJobId)
           .maybeSingle();
         if (!clip) return json(404, { error: "clip not found" });
@@ -83,6 +83,16 @@ export const Route = createFileRoute("/api/public/hooks/render-clip")({
           .update({ status: "rendering", last_heartbeat_at: new Date().toISOString() })
           .eq("id", clipJobId);
 
+        // Ensure a deterministic billing_ref is persisted the first time we
+        // touch this clip. Retries reuse the same value.
+        const billingRef = (clip as { billing_ref?: string | null }).billing_ref ?? `bgclip_${clip.id}`;
+        if (!(clip as { billing_ref?: string | null }).billing_ref) {
+          await supabaseAdmin
+            .from("render_clip_jobs")
+            .update({ billing_ref: billingRef })
+            .eq("id", clipJobId);
+        }
+
         const outcome = await renderClipInBackground({
           userId: clip.user_id,
           projectId: clip.project_id,
@@ -92,6 +102,7 @@ export const Route = createFileRoute("/api/public/hooks/render-clip")({
           clipNumber: clip.clip_number,
           prompt: target.prompt,
           duration: Math.max(2, Math.min(10, Math.round(target.durationSeconds || 5))),
+          billingRef,
         });
 
         if (outcome.ok) {
