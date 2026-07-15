@@ -34,7 +34,29 @@ export type SceneClip = {
   model?: string;
   trimStart?: number;
   trimEnd?: number;
+  status?: ClipStatus;
+  progress?: number;
+  retryCount?: number;
+  startedAt?: string;
+  updatedAt?: string;
+  completedAt?: string;
+  error?: string | null;
 };
+
+export type ClipStatus =
+  | "pending"
+  | "queued"
+  | "starting"
+  | "uploading"
+  | "rendering"
+  | "processing"
+  | "saving"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "paused"
+  | "retrying"
+  | "stalled";
 
 export type MovieManifest = {
   kind: "chained" | "single";
