@@ -49,6 +49,7 @@ import { Route as AppHelpRouteImport } from './routes/_app.help'
 import { Route as AppFeatureFlagsRouteImport } from './routes/_app.feature-flags'
 import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppErrorLogRouteImport } from './routes/_app.error-log'
+import { Route as AppDirectorRouteImport } from './routes/_app.director'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppCreateMovieRouteImport } from './routes/_app.create-movie'
@@ -273,6 +274,11 @@ const AppErrorLogRoute = AppErrorLogRouteImport.update({
   path: '/error-log',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDirectorRoute = AppDirectorRouteImport.update({
+  id: '/director',
+  path: '/director',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -423,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
+  '/director': typeof AppDirectorRoute
   '/error-log': typeof AppErrorLogRoute
   '/export': typeof AppExportRoute
   '/feature-flags': typeof AppFeatureFlagsRoute
@@ -488,6 +495,7 @@ export interface FileRoutesByTo {
   '/create-movie': typeof AppCreateMovieRoute
   '/credits': typeof AppCreditsRoute
   '/dashboard': typeof AppDashboardRoute
+  '/director': typeof AppDirectorRoute
   '/error-log': typeof AppErrorLogRoute
   '/export': typeof AppExportRoute
   '/feature-flags': typeof AppFeatureFlagsRoute
@@ -555,6 +563,7 @@ export interface FileRoutesById {
   '/_app/create-movie': typeof AppCreateMovieRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/director': typeof AppDirectorRoute
   '/_app/error-log': typeof AppErrorLogRoute
   '/_app/export': typeof AppExportRoute
   '/_app/feature-flags': typeof AppFeatureFlagsRoute
@@ -622,6 +631,7 @@ export interface FileRouteTypes {
     | '/create-movie'
     | '/credits'
     | '/dashboard'
+    | '/director'
     | '/error-log'
     | '/export'
     | '/feature-flags'
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/create-movie'
     | '/credits'
     | '/dashboard'
+    | '/director'
     | '/error-log'
     | '/export'
     | '/feature-flags'
@@ -753,6 +764,7 @@ export interface FileRouteTypes {
     | '/_app/create-movie'
     | '/_app/credits'
     | '/_app/dashboard'
+    | '/_app/director'
     | '/_app/error-log'
     | '/_app/export'
     | '/_app/feature-flags'
@@ -1097,6 +1109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppErrorLogRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/director': {
+      id: '/_app/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof AppDirectorRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -1296,6 +1315,7 @@ interface AppRouteChildren {
   AppCreateMovieRoute: typeof AppCreateMovieRoute
   AppCreditsRoute: typeof AppCreditsRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDirectorRoute: typeof AppDirectorRoute
   AppErrorLogRoute: typeof AppErrorLogRoute
   AppExportRoute: typeof AppExportRoute
   AppFeatureFlagsRoute: typeof AppFeatureFlagsRoute
@@ -1346,6 +1366,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCreateMovieRoute: AppCreateMovieRoute,
   AppCreditsRoute: AppCreditsRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDirectorRoute: AppDirectorRoute,
   AppErrorLogRoute: AppErrorLogRoute,
   AppExportRoute: AppExportRoute,
   AppFeatureFlagsRoute: AppFeatureFlagsRoute,
