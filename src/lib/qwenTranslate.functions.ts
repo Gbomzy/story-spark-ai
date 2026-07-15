@@ -67,8 +67,9 @@ export const qwenTranslate = createServerFn({ method: "POST" })
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const translated = json.choices?.[0]?.message?.content ?? "";
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "translation",
@@ -77,7 +78,7 @@ export const qwenTranslate = createServerFn({ method: "POST" })
         duration_ms: Date.now() - t0,
         credits_used: 1,
       });
-    } catch { /* best-effort */ }
+    }
     await charge.commit("qwen-mt-flash");
     return { translated, provider: "qwen-mt-flash", durationMs: Date.now() - t0, creditsUsed: charge.credits };
   });

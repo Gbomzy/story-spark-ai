@@ -87,8 +87,9 @@ export const transcribeAudio = createServerFn({ method: "POST" })
 
     const durationMs = Date.now() - t0;
 
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "subtitle",
@@ -99,8 +100,6 @@ export const transcribeAudio = createServerFn({ method: "POST" })
         error_message: providerError,
         metadata: { sentences: sentences.length },
       });
-    } catch {
-      // best-effort
     }
 
     if (providerError) throw new Error(providerError);

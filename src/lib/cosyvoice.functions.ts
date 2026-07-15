@@ -89,8 +89,9 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
       }
     }
 
-    try {
-      await context.supabase.from("generation_history").insert({
+    {
+      const { recordGenerationHistory } = await import("./generationHistory.server");
+      await recordGenerationHistory({
         user_id: context.userId,
         project_id: data.projectId ?? null,
         asset_type: "voice_audio",
@@ -101,8 +102,6 @@ export const generateCosyVoice = createServerFn({ method: "POST" })
         error_message: providerError,
         metadata: { voice, format, bytes },
       });
-    } catch {
-      // history is best-effort
     }
 
     if (providerError) {
