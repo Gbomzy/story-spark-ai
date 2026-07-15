@@ -823,8 +823,12 @@ export type Database = {
           objective: string | null
           orchestrator_state: Json | null
           preferred_ai_provider: string | null
+          render_control: string | null
           render_duration: number | null
+          render_error: string | null
+          render_heartbeat: string | null
           render_progress: number | null
+          render_started_at: string | null
           render_status: string | null
           seo: string | null
           settings: Json
@@ -879,8 +883,12 @@ export type Database = {
           objective?: string | null
           orchestrator_state?: Json | null
           preferred_ai_provider?: string | null
+          render_control?: string | null
           render_duration?: number | null
+          render_error?: string | null
+          render_heartbeat?: string | null
           render_progress?: number | null
+          render_started_at?: string | null
           render_status?: string | null
           seo?: string | null
           settings?: Json
@@ -935,8 +943,12 @@ export type Database = {
           objective?: string | null
           orchestrator_state?: Json | null
           preferred_ai_provider?: string | null
+          render_control?: string | null
           render_duration?: number | null
+          render_error?: string | null
+          render_heartbeat?: string | null
           render_progress?: number | null
+          render_started_at?: string | null
           render_status?: string | null
           seo?: string | null
           settings?: Json
