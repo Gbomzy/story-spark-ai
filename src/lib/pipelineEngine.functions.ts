@@ -34,7 +34,29 @@ export type SceneClip = {
   model?: string;
   trimStart?: number;
   trimEnd?: number;
+  status?: ClipStatus;
+  progress?: number;
+  retryCount?: number;
+  startedAt?: string;
+  updatedAt?: string;
+  completedAt?: string;
+  error?: string | null;
 };
+
+export type ClipStatus =
+  | "pending"
+  | "queued"
+  | "starting"
+  | "uploading"
+  | "rendering"
+  | "processing"
+  | "saving"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "paused"
+  | "retrying"
+  | "stalled";
 
 export type MovieManifest = {
   kind: "chained" | "single";
@@ -63,10 +85,37 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
+
+    // Honor control signals (pause/cancel) from the Render Dashboard.
+    const control = (proj as { render_control?: string | null }).render_control ?? null;
+    const controlResult = {
+      queueTotal: 0,
+      queueCompleted: 0,
+      queueRemaining: 0,
+      clips: [] as SceneClip[],
+      done: false,
+      cancelled: false,
+      paused: false,
+    };
+    if (control === "cancel") {
+      await context.supabase.from("projects").update({
+        render_status: "cancelled",
+        render_control: null,
+        render_error: "Cancelled by user",
+      }).eq("id", proj.id);
+      return { ok: true, results: { ...controlResult, done: true, cancelled: true } };
+    }
+    if (control === "pause") {
+      await context.supabase.from("projects").update({
+        render_status: "paused",
+        render_heartbeat: new Date().toISOString(),
+      }).eq("id", proj.id);
+      return { ok: true, results: { ...controlResult, paused: true } };
+    }
 
     const pipeline: Record<string, StageState> =
       (proj.media_pipeline as Record<string, StageState> | null) ?? {};
@@ -259,6 +308,9 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
           video_file: manifest,
           render_status: "generating",
           render_progress: 1,
+          render_started_at: new Date().toISOString(),
+          render_heartbeat: new Date().toISOString(),
+          render_error: null,
         })
         .eq("id", proj.id);
       console.log(`[pipeline] scenes=${scenes.length} clips_queued=${queued.length}`);
@@ -267,7 +319,13 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     if (!manifest) throw new Error("Failed to build clip queue.");
 
     const total = manifest.clips.length;
-    const isPending = (c: SceneClip) => !c.url || c.url.length === 0;
+    const isPending = (c: SceneClip) =>
+      (!c.url || c.url.length === 0) && c.status !== "failed" && c.status !== "cancelled";
+    // Ensure every clip has a status set (defaults for legacy manifests).
+    for (const c of manifest.clips) {
+      if (!c.status) c.status = c.url ? "completed" : "pending";
+      if (typeof c.retryCount !== "number") c.retryCount = 0;
+    }
     const pendingIdxs = manifest.clips.map((c, i) => (isPending(c) ? i : -1)).filter((i) => i >= 0);
     console.log(`[pipeline] total=${total} pending=${pendingIdxs.length} completed=${total - pendingIdxs.length}`);
 
@@ -300,69 +358,98 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     }
     let submitted = 0;
     let providerLabel = manifest.provider ?? "wan";
-    try {
-      for (const idx of pendingIdxs.slice(0, maxClipsPerCall)) {
-        const target = manifest.clips[idx];
-        const dur = Math.max(2, Math.min(maxClip, Math.round(target.durationSeconds)));
-        const r = await generateWanVideo({
-          data: {
-            prompt: target.prompt,
-            projectId: proj.id,
-            mode: "t2v",
-            duration: dur,
-            skipProjectVideoUpdate: true, // don't clobber our manifest
-            ...(data.size ? { size: data.size } : {}),
-          },
-        });
-        providerLabel = r.provider;
-        manifest.clips[idx] = {
-          ...target,
-          url: r.url,
-          cover: r.cover,
-          durationSeconds: dur,
-          provider: r.provider,
-        };
-        submitted++;
-
-        // Persist after every successful clip → resume-safe.
-        const completedNow = manifest.clips.filter((c) => !isPending(c)).length;
+    const heartbeat = async (patch: Record<string, unknown> = {}) => {
+      await context.supabase.from("projects").update({
+        render_heartbeat: new Date().toISOString(),
+        ...patch,
+      }).eq("id", proj.id);
+    };
+    for (const idx of pendingIdxs.slice(0, maxClipsPerCall)) {
+      const target = manifest.clips[idx];
+      const dur = Math.max(2, Math.min(maxClip, Math.round(target.durationSeconds)));
+      const now = () => new Date().toISOString();
+      const writeClip = async (patch: Partial<SceneClip>, projPatch: Record<string, unknown> = {}) => {
+        manifest!.clips[idx] = { ...manifest!.clips[idx], ...patch, updatedAt: now() };
+        const completedNow = manifest!.clips.filter((c) => c.status === "completed").length;
         const progressPct = Math.max(1, Math.min(99, Math.round((completedNow / total) * 100)));
-        manifest.url = manifest.clips.find((c) => !isPending(c))?.url ?? manifest.url;
-        manifest.provider = providerLabel;
-        await context.supabase
-          .from("projects")
-          .update({
-            video_file: manifest,
-            render_status: "generating",
-            render_progress: progressPct,
-            video_provider: providerLabel,
-          })
-          .eq("id", proj.id);
-        console.log(`[pipeline] wrote clip ${completedNow}/${total} scene=${target.sceneNumber} part=${target.clipNumber}`);
+        await context.supabase.from("projects").update({
+          video_file: manifest,
+          render_progress: progressPct,
+          render_heartbeat: new Date().toISOString(),
+          ...projPatch,
+        }).eq("id", proj.id);
+      };
+
+      await writeClip({ status: "starting", startedAt: now(), error: null }, {
+        render_status: "generating",
+      });
+
+      const MAX_RETRIES = 3;
+      let lastErr: string | null = null;
+      let success = false;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          await writeClip({ status: attempt === 1 ? "rendering" : "retrying", retryCount: attempt - 1 });
+          const r = await generateWanVideo({
+            data: {
+              prompt: target.prompt,
+              projectId: proj.id,
+              mode: "t2v",
+              duration: dur,
+              skipProjectVideoUpdate: true,
+              ...(data.size ? { size: data.size } : {}),
+            },
+          });
+          providerLabel = r.provider;
+          await writeClip({
+            status: "completed",
+            url: r.url,
+            cover: r.cover,
+            durationSeconds: dur,
+            provider: r.provider,
+            progress: 100,
+            completedAt: now(),
+            error: null,
+          }, { video_provider: providerLabel });
+          console.log(`[pipeline] clip scene=${target.sceneNumber} part=${target.clipNumber} completed (attempt ${attempt})`);
+          success = true;
+          submitted++;
+          break;
+        } catch (e) {
+          lastErr = e instanceof Error ? e.message : String(e);
+          console.warn(`[pipeline] clip attempt ${attempt} failed: ${lastErr}`);
+          if (attempt < MAX_RETRIES) {
+            await writeClip({ status: "retrying", retryCount: attempt, error: lastErr });
+            await new Promise((res) => setTimeout(res, 1500 * attempt));
+          }
+        }
       }
-    } catch (e) {
-      // Persist whatever we managed so the next call resumes.
-      await context.supabase
-        .from("projects")
-        .update({ media_pipeline: pipeline, video_file: manifest, render_status: "failed" })
-        .eq("id", proj.id);
-      throw e;
+      if (!success) {
+        // Mark THIS clip failed but continue with remaining clips.
+        await writeClip({ status: "failed", error: lastErr, retryCount: MAX_RETRIES }, {
+          render_error: lastErr,
+        });
+        await heartbeat();
+        // continue to next pending idx
+      }
     }
 
-    const completed = manifest.clips.filter((c) => !isPending(c)).length;
-    const remaining = total - completed;
+    const completed = manifest.clips.filter((c) => c.status === "completed").length;
+    const failed = manifest.clips.filter((c) => c.status === "failed").length;
+    const remaining = total - completed - failed;
     const done = remaining === 0;
     if (done) {
-      pipeline.video = "completed";
-      manifest.url = manifest.clips[0]?.url ?? manifest.url;
+      pipeline.video = failed > 0 && completed === 0 ? "failed" : "completed";
+      manifest.url = manifest.clips.find((c) => c.url)?.url ?? manifest.url;
       manifest.totalDurationSeconds = manifest.clips.reduce((n, c) => n + c.durationSeconds, 0);
       await context.supabase
         .from("projects")
         .update({
           media_pipeline: pipeline,
           video_file: manifest,
-          render_status: "completed",
+          render_status: failed > 0 ? (completed > 0 ? "partial" : "failed") : "completed",
           render_progress: 100,
+          render_heartbeat: new Date().toISOString(),
           video_provider: providerLabel,
         })
         .eq("id", proj.id);
