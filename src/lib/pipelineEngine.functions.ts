@@ -308,6 +308,9 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
           video_file: manifest,
           render_status: "generating",
           render_progress: 1,
+          render_started_at: new Date().toISOString(),
+          render_heartbeat: new Date().toISOString(),
+          render_error: null,
         })
         .eq("id", proj.id);
       console.log(`[pipeline] scenes=${scenes.length} clips_queued=${queued.length}`);
