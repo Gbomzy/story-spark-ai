@@ -1197,6 +1197,71 @@ export type Database = {
           },
         ]
       }
+      render_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          last_heartbeat_at: string | null
+          locked_until: string | null
+          metadata: Json
+          mode: string
+          priority: number
+          project_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          locked_until?: string | null
+          metadata?: Json
+          mode?: string
+          priority?: number
+          project_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          locked_until?: string | null
+          metadata?: Json
+          mode?: string
+          priority?: number
+          project_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "render_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           concurrent_jobs: number
@@ -1366,6 +1431,33 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_render_job: {
+        Args: { _lease_seconds?: number; _worker_id: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          last_heartbeat_at: string | null
+          locked_until: string | null
+          metadata: Json
+          mode: string
+          priority: number
+          project_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "render_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       credit_commit: {
         Args: {
           _credits: number
@@ -1415,6 +1507,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reclaim_stalled_render_jobs: { Args: never; Returns: number }
+      release_render_job: {
+        Args: {
+          _error?: string
+          _job_id: string
+          _status: string
+          _worker_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

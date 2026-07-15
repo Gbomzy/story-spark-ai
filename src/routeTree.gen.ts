@@ -71,6 +71,7 @@ import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 import { Route as AppProjectSettingsIdRouteImport } from './routes/_app.project-settings.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicHooksRenderTickRouteImport } from './routes/api/public/hooks/render-tick'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -386,6 +387,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksRenderTickRoute =
+  ApiPublicHooksRenderTickRouteImport.update({
+    id: '/api/public/hooks/render-tick',
+    path: '/api/public/hooks/render-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -449,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -512,6 +520,7 @@ export interface FileRoutesByTo {
   '/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -577,6 +586,7 @@ export interface FileRoutesById {
   '/_app/projects/new': typeof AppProjectsNewRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/api/public/hooks/render-tick': typeof ApiPublicHooksRenderTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -642,6 +652,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-tick'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -705,6 +716,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-tick'
   id:
     | '__root__'
     | '/'
@@ -769,6 +781,7 @@ export interface FileRouteTypes {
     | '/_app/projects/new'
     | '/api/public/flutterwave-webhook'
     | '/api/public/paystack-webhook'
+    | '/api/public/hooks/render-tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -785,6 +798,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
+  ApiPublicHooksRenderTickRoute: typeof ApiPublicHooksRenderTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1223,6 +1237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/render-tick': {
+      id: '/api/public/hooks/render-tick'
+      path: '/api/public/hooks/render-tick'
+      fullPath: '/api/public/hooks/render-tick'
+      preLoaderRoute: typeof ApiPublicHooksRenderTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1357,6 +1378,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
+  ApiPublicHooksRenderTickRoute: ApiPublicHooksRenderTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
