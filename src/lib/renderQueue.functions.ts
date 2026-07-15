@@ -42,10 +42,14 @@ export const enqueueRenderJob = createServerFn({ method: "POST" })
 
     if (existing) {
       // Bump priority/mode if provided; keep the existing job.
-      const patch: Record<string, unknown> = { last_heartbeat_at: new Date().toISOString() };
-      if (data.mode) patch.mode = data.mode;
-      if (typeof data.priority === "number") patch.priority = data.priority;
-      await supabaseAdmin.from("render_jobs").update(patch).eq("id", existing.id);
+      await supabaseAdmin
+        .from("render_jobs")
+        .update({
+          last_heartbeat_at: new Date().toISOString(),
+          ...(data.mode ? { mode: data.mode } : {}),
+          ...(typeof data.priority === "number" ? { priority: data.priority } : {}),
+        })
+        .eq("id", existing.id);
       return { ok: true, jobId: existing.id, status: existing.status, reused: true };
     }
 
