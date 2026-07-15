@@ -1,122 +1,48 @@
-# Phase 6 — AI Orchestrator, Director, Producer & First-Time UX
+## Render Engine V4 — Production Hardening Plan
 
-Additive only. No changes to auth, billing, credits, publishing, AI providers, Movie Composer internals, or existing generators.
+This is a large, multi-phase upgrade. Before I start writing code I want to lock scope so we don't spend credits on the wrong thing. The 13 phases you listed span database, worker infrastructure, providers, UI, notifications, admin analytics, and QA — realistically that's several implementation passes, not one turn.
 
-## 1. Master Orchestrator (`src/lib/orchestrator.functions.ts`)
+Below is how I propose to sequence it. I'll implement in this order and stop for review between blocks.
 
-New `runOrchestrator` server fn (`createServerFn` + `requireSupabaseAuth`). Executes stages in dependency order, each stage isolated and resume-safe.
+### Block A — True background rendering + resiliency (Phases 1, 2, 5, 10)
+The single biggest reliability win. Everything else builds on it.
 
-Stage list stored on `projects.orchestrator_state` (new jsonb column):
+- New table `render_jobs` (additive): `id, project_id, user_id, status, mode, worker_id, locked_until, priority, attempts, last_heartbeat_at, started_at, finished_at, error, created_at, updated_at`. RLS: owners read; only service_role writes.
+- New table `render_clip_jobs` (additive): per-clip row (`job_id, scene_number, clip_number, status, provider, model, attempts, credits_charged, latency_ms, worker_id, started_at, finished_at, error, output_url`). This becomes the durable source of truth the dashboard reads.
+- Server route `POST /api/public/hooks/render-tick` (auth via `apikey` header): claims one job with `SELECT … FOR UPDATE SKIP LOCKED`, extends `locked_until` (lease-based lock, no duplicate workers), renders the next unfinished clip, releases. Idempotent — safe to call repeatedly.
+- `pg_cron` schedule (every 30s) calls the tick endpoint via `pg_net`. This is what makes rendering survive browser close, refresh, logout, and server restart.
+- Stall detector: any job with `locked_until < now()` and status `running` is reclaimable. Any clip whose `started_at` exceeds provider timeout is cancelled and re-queued.
+- `startRender` server fn only enqueues (writes `render_jobs` + `render_clip_jobs`) and returns immediately — no in-browser orchestration loop.
 
-```
-{
-  status: "idle" | "running" | "paused" | "completed" | "failed",
-  currentStage: string,
-  stages: { [stageId]: { state: "pending"|"running"|"completed"|"failed"|"skipped", startedAt, completedAt, creditsUsed, error? } },
-  progress: number,
-  creditsUsed: number,
-  eta: number,
-  currentScene?, currentClip?,
-  retryCount: number
-}
-```
+### Block B — Parallelism, failover, repair (Phases 3, 4, 6)
 
-Stages (dependency edges shown):
+- Concurrency per job driven by `mode` (Eco 1 / Balanced 2 / Turbo 4). Tick handler renders up to N independent clips per invocation.
+- Provider failover chain per clip: primary → retries with backoff → configured fallback → mark failed. Retryable errors: timeout, 429, 5xx, network. Non-retryable: 4xx auth/validation.
+- "Repair Movie" server fn: resets only clips with `status='failed'` back to `queued`, leaves completed clips untouched, re-enqueues the parent job.
 
-```
-story → storyBible → characters ↘
-                    → storyboard → director → imagePrompts → images ↘
-                                                        → voiceScript → voice ↘
-                                              → musicAnalysis → music ↘
-                                                                       → videos → subtitles → composition → thumbnail
-                                                                                                          → seo
-```
+### Block C — Cost tracking, notifications, dashboard, admin (Phases 7, 8, 9, 12)
 
-Independent branches (`characters`, `music`, `seo`) run via `Promise.all` where the graph allows. Sequential branches (voice, video) stay ordered.
+- Cost fields already listed on `render_clip_jobs`; aggregate view for admin.
+- Notification inserts on every lifecycle transition (queued/scene started/clip failed/retried/paused/resumed/completed/partial/repaired). Realtime already enabled on `notifications`.
+- Rewire `/render-dashboard` to read from `render_jobs` + `render_clip_jobs` (keep the current UI shape and controls — pause/resume/cancel/retry map onto the new job row). Add per-scene provider/model/cost/worker/heartbeat and overall ETA.
+- New admin route `/owner-analytics` panel: active/queued/completed/failed today, avg render time, avg retries, cost per movie, top users. Read-only via `has_role('admin')`.
 
-Each stage wrapper:
-- Skip if already `completed` (smart recovery — reuse existing story/characters/images/voice/videos).
-- Call existing generator server fn (reuse Qwen/CosyVoice/Wan pipeline — no rewrites).
-- Update `orchestrator_state`, credit ledger (existing `credit_reserve`/`credit_commit`), `generation_history`.
-- On error: mark stage `failed`, keep others, allow resume.
+### Block D — Perf + QA (Phases 11, 13)
 
-Called by the client via a polling loop (`useQuery` refetchInterval 3s) that re-invokes `runOrchestrator` until `status !== "running"`. Worker-timeout safe — each call does one stage or one clip and returns.
+- Batched heartbeat writes (single UPDATE per tick, not per state).
+- Realtime channel scoped to the current job row only.
+- Load simulation script under `/tmp/browser/` that inserts 5/20/100 synthetic jobs and asserts the worker drains them with no duplicate clip processing, no orphan `running` rows after lease expiry.
 
-## 2. AI Director (`src/lib/aiDirector.functions.ts`)
+### Backward compatibility
 
-`analyzeStoryboardDirection` server fn: takes storyboard, calls Qwen chat with a structured JSON schema returning per-scene `{ cameraAngle, cameraDistance, cameraMovement, lighting, weather, timeOfDay, emotion, musicMood, transition, colorPalette }`. Persist into `story_bible.direction[sceneId]`.
+- All new tables are additive. `projects.video_file`, existing manifests, `generation_history`, `generation_queue`, `pipelineEngine.functions.ts`, `renderControls.functions.ts`, Movie Composer, Story Bible, AI Director, Cinematic Director, Character Visual Memory, World Bible, Asset Library, credits/billing, publishing, notifications: untouched or additive only.
+- The existing `pipelineEngine` render path stays callable; the new worker calls into the same per-clip render functions rather than replacing them. Old in-browser starts still work but will short-circuit into the queue.
 
-`buildScenePrompt(sceneId, basePrompt, bible)` helper merges direction into the prompt so image + video stages consume it. Called from existing `pipelineEngine` prompt-composition step (small edit — prefix the direction line into `prompt`).
+### What I need from you before I start
 
-## 3. AI Producer (`src/lib/aiProducer.ts`)
+1. **Approve the block sequencing above** — or tell me to collapse blocks / skip any.
+2. **Worker cadence**: default `pg_cron` every 30s okay, or do you want 10s (faster pickup, more DB load)?
+3. **Provider fallback map**: current primary is Wan for video. What is the fallback you want the worker to try after Wan retries are exhausted? (Options I see wired: none configured. I can leave the slot empty and just mark failed until you name a fallback.)
+4. **Turbo concurrency ceiling**: 4 clips is what you listed. Confirm — provider rate limits on Wan will bite before that if a single user runs multiple movies.
 
-Pure client util `estimateProduction(project)`:
-- scenes = storyboard.length
-- images = scenes; clips = scenes; voiceSec ≈ words/2.5
-- credits via existing `creditEstimator` summed per stage
-- time = clips × ~30s + voice + images
-- storage ≈ clips × 8MB + images × 0.5MB
-
-## 4. One-Click Create Movie UI (`src/routes/_app.create-movie.tsx`)
-
-New primary route "Create Movie". Steps:
-1. Prompt textarea + template picker + producer estimate card.
-2. Confirm dialog: "Start Production / Cancel".
-3. Live orchestrator dashboard: current stage badge, overall progress bar, stage list with per-stage state, current scene/clip, ETA, credits used, Pause / Resume / Cancel buttons.
-
-Pause/Resume set `orchestrator_state.status`. Cancel marks `failed` and stops polling.
-
-Sidebar entry "Create Movie" added at top.
-
-## 5. Orchestrator Dashboard (`src/routes/_app.orchestrator.tsx`)
-
-Read-only view of `orchestrator_state` across all in-progress projects. Columns: project, stage, provider (from ORCHESTRATOR map), credits, ETA, current scene/clip, retry count, queue health (sourced from existing `systemHealth`).
-
-## 6. Onboarding Wizard
-
-New route `src/routes/_app.onboarding.tsx` (6 steps) writing to `profiles.onboarding` jsonb (new column):
-`{ completed: true, useCase, artStyle, voice, language, aspectRatio }`.
-
-Root `_app.tsx` reads `profiles.onboarding.completed`; if false, redirects to `/onboarding`. Wizard step 6 creates first project via existing project creation server fn and marks completed.
-
-## 7. Templates (`src/lib/projectTemplates.ts`)
-
-Static array with the 9 templates (Bedtime, Bible, Educational, Moral, Science, History, Nursery, Adventure, Language). Each has `{ id, name, prompt, artStyle, voice, music, transitions, exportSettings }`. Used by Create Movie prompt step and existing project wizard.
-
-## 8. Notifications
-
-Reuse existing `notifications` table + `pushNotification` helper. New kinds: `production_started`, `stage_completed`, `credits_low`, `production_completed`, `production_failed`, `resume_available`. Orchestrator inserts them at stage boundaries.
-
-Browser notifications: on Create Movie mount, `Notification.requestPermission()`. When a poll response flips a stage to completed and page is hidden, fire `new Notification(...)`.
-
-## 9. Data & migration
-
-Single migration:
-
-```sql
-alter table public.projects add column if not exists orchestrator_state jsonb;
-alter table public.profiles add column if not exists onboarding jsonb default '{"completed":false}'::jsonb;
-create index if not exists idx_projects_orch_status on public.projects ((orchestrator_state->>'status'));
-```
-
-No grant/RLS changes — both tables already have policies.
-
-## 10. Deliverables
-
-- New: `src/lib/orchestrator.functions.ts`, `src/lib/aiDirector.functions.ts`, `src/lib/aiProducer.ts`, `src/lib/projectTemplates.ts`, `src/routes/_app.create-movie.tsx`, `src/routes/_app.orchestrator.tsx`, `src/routes/_app.onboarding.tsx`, `supabase/migrations/<ts>_orchestrator.sql`.
-- Edited: `src/components/app-sidebar.tsx` (nav entries), `src/routes/_app.tsx` (onboarding gate), `src/lib/pipelineEngine.functions.ts` (consume `bible.direction`), `src/integrations/supabase/types.ts` (regenerated by migration tooling).
-
-## 11. Guardrails
-
-- Every new server fn: `requireSupabaseAuth`, Zod input, typed DTO.
-- Reuse existing `credit_reserve`/`credit_commit` — no new billing paths.
-- Reuse existing generators — orchestrator only sequences them.
-- Orchestrator poll = one stage per invocation → Worker-timeout safe & resume-safe by construction.
-- `tsgo` clean at completion.
-
-## 12. Out of scope
-
-- New AI providers or models.
-- Video editor changes.
-- Real-time websockets (polling only).
-- Push notifications (browser Notification API only).
+Once you confirm, I'll start with Block A in the next turn (migration + worker route + cron + enqueue-only start). Nothing ships until you say go.
