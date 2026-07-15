@@ -431,20 +431,22 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       }
     }
 
-    const completed = manifest.clips.filter((c) => !isPending(c)).length;
-    const remaining = total - completed;
+    const completed = manifest.clips.filter((c) => c.status === "completed").length;
+    const failed = manifest.clips.filter((c) => c.status === "failed").length;
+    const remaining = total - completed - failed;
     const done = remaining === 0;
     if (done) {
-      pipeline.video = "completed";
-      manifest.url = manifest.clips[0]?.url ?? manifest.url;
+      pipeline.video = failed > 0 && completed === 0 ? "failed" : "completed";
+      manifest.url = manifest.clips.find((c) => c.url)?.url ?? manifest.url;
       manifest.totalDurationSeconds = manifest.clips.reduce((n, c) => n + c.durationSeconds, 0);
       await context.supabase
         .from("projects")
         .update({
           media_pipeline: pipeline,
           video_file: manifest,
-          render_status: "completed",
+          render_status: failed > 0 ? (completed > 0 ? "partial" : "failed") : "completed",
           render_progress: 100,
+          render_heartbeat: new Date().toISOString(),
           video_provider: providerLabel,
         })
         .eq("id", proj.id);
