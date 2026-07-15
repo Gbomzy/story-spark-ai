@@ -30,6 +30,11 @@ export type RenderClipInput = {
   duration: number;
   size?: string;
   imageUrl?: string;
+  /**
+   * Deterministic billing reference. Every retry of the same clip MUST reuse
+   * the same value so we can detect a prior successful charge and skip it.
+   */
+  billingRef?: string;
 };
 
 export type RenderClipOutcome = {
@@ -52,14 +57,31 @@ export async function renderClipInBackground(input: RenderClipInput): Promise<Re
   const mode = input.imageUrl ? "i2v" : "t2v";
   const preferred = MODEL_FALLBACKS[mode] ?? MODEL_FALLBACKS.t2v;
 
-  // Reserve credits up-front so billing behaviour matches the interactive path.
-  const charge = await beginCharge({
-    userId: input.userId,
-    operation: "video",
-    units: Math.max(1, Math.round(input.duration)),
-    projectId: input.projectId,
-    ref: `bgrender_${input.clipJobId}`,
-  });
+  // Deterministic per-clip billing reference — reused across every retry so
+  // the same clip can never be billed twice. See Block B.5 §1.
+  const billingRef = input.billingRef ?? `bgclip_${input.clipJobId}`;
+
+  // Idempotency guard: if a prior worker already committed a charge for
+  // this ref, skip reserve/commit entirely and continue rendering. Duplicate
+  // completions therefore never create a second charge row.
+  const { data: alreadyCharged } = await supabaseAdmin.rpc("has_charged_ref", { _ref: billingRef });
+  const skipCharge = alreadyCharged === true;
+
+  const charge = skipCharge
+    ? {
+        credits: 0,
+        operation: "video" as const,
+        ref: billingRef,
+        async commit() { /* already charged */ },
+        async refund() { /* already charged — refunds handled out-of-band */ },
+      }
+    : await beginCharge({
+        userId: input.userId,
+        operation: "video",
+        units: Math.max(1, Math.round(input.duration)),
+        projectId: input.projectId,
+        ref: billingRef,
+      });
 
   const { runAsyncTaskWithFallback, getBase, DEFAULT_DASHSCOPE_BASE } = await import("./dashscope.server");
   const base = getBase("WAN_BASE_URL", DEFAULT_DASHSCOPE_BASE);
@@ -147,6 +169,8 @@ export async function renderClipInBackground(input: RenderClipInput): Promise<Re
       ratio,
       bytes,
       cover: coverUrl,
+      billing_ref: billingRef,
+      billing_skipped: skipCharge,
     },
   });
 

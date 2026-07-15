@@ -87,7 +87,7 @@ export const Route = createFileRoute("/api/public/hooks/render-tick")({
         //    First transition queued jobs → running with a fresh lease.
         const { data: pickable } = await admin
           .from("render_jobs")
-          .select("id, project_id, mode, status")
+          .select("id, project_id, user_id, mode, status, last_notified_progress, notifications_sent, composition_state")
           .in("status", ["queued", "running", "stalled"])
           .order("priority", { ascending: false })
           .order("created_at", { ascending: true })
@@ -132,7 +132,39 @@ export const Route = createFileRoute("/api/public/hooks/render-tick")({
           }
         }
 
-        // 4. Finalize jobs whose clip queue is drained.
+        // 4a. Emit progress notifications at 25/50/75% (idempotent per job).
+        //     Uses last_notified_progress as a monotonic watermark.
+        for (const job of pickable ?? []) {
+          const { data: statusRows } = await admin
+            .from("render_clip_jobs")
+            .select("status")
+            .eq("job_id", job.id);
+          if (!statusRows || statusRows.length === 0) continue;
+          const total = statusRows.length;
+          const done = statusRows.filter((r) => r.status === "completed").length;
+          const pct = Math.floor((done / total) * 100);
+          const watermark = (job as { last_notified_progress?: number | null }).last_notified_progress ?? 0;
+          const userId = (job as { user_id?: string | null }).user_id;
+          if (!userId) continue;
+          const thresholds = [25, 50, 75];
+          const next = thresholds.find((t) => pct >= t && watermark < t);
+          if (next != null) {
+            await admin.rpc("notify_user", {
+              _user_id: userId,
+              _kind: "generation_complete",
+              _title: `Rendering ${next}%`,
+              _body: `${done} of ${total} clips completed`,
+              _project_id: job.project_id,
+              _dedupe_key: `render_progress_${job.id}_${next}`,
+            });
+            await admin
+              .from("render_jobs")
+              .update({ last_notified_progress: next })
+              .eq("id", job.id);
+          }
+        }
+
+        // 4b. Finalize jobs whose clip queue is drained.
         //    A job is done when every clip is completed / failed / cancelled.
         let finalized = 0;
         for (const job of pickable ?? []) {
@@ -162,6 +194,11 @@ export const Route = createFileRoute("/api/public/hooks/render-tick")({
               worker_id: null,
               locked_until: null,
               error: counts.failed > 0 ? `${counts.failed} clip(s) failed — Repair Movie to retry` : null,
+              // Mark composition ready to run. Movie composition remains
+              // browser-triggered (Canvas + MediaRecorder are not available
+              // in the Worker runtime); the dashboard picks this up and
+              // finalises the MP4/WebM once the user opens the project.
+              composition_state: counts.completed > 0 ? "pending" : "failed",
             })
             .eq("id", job.id)
             .in("status", ["running", "queued", "stalled"]);
@@ -174,6 +211,31 @@ export const Route = createFileRoute("/api/public/hooks/render-tick")({
               render_error: counts.failed > 0 ? `${counts.failed} clip(s) failed` : null,
             })
             .eq("id", job.project_id);
+
+          // Terminal notification (idempotent).
+          const userId = (job as { user_id?: string | null }).user_id;
+          if (userId) {
+            const kind =
+              counts.completed === 0 ? "render_failed" :
+              counts.failed > 0 ? "render_failed" :
+              "render_complete";
+            const title =
+              counts.completed === 0 ? "Movie failed to render" :
+              counts.failed > 0 ? `Movie partially rendered (${counts.failed} clip(s) failed)` :
+              "Movie ready";
+            const body =
+              counts.completed === 0 ? "No clips completed. Try Repair Movie."
+              : counts.failed > 0 ? "You can retry failed clips with Repair Movie."
+              : `${counts.completed} clip(s) rendered successfully.`;
+            await admin.rpc("notify_user", {
+              _user_id: userId,
+              _kind: kind,
+              _title: title,
+              _body: body,
+              _project_id: job.project_id,
+              _dedupe_key: `render_final_${job.id}`,
+            });
+          }
           finalized++;
         }
 
