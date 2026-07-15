@@ -100,10 +100,10 @@ export const Route = createFileRoute("/api/public/hooks/render-clip")({
             _worker_id: workerId,
             _status: "completed",
             _provider: outcome.provider ?? "wan",
-            _model: outcome.model ?? null,
-            _output_url: outcome.url ?? null,
-            _cover_url: outcome.cover ?? null,
-            _credits_charged: outcome.credits ?? null,
+            ...(outcome.model ? { _model: outcome.model } : {}),
+            ...(outcome.url ? { _output_url: outcome.url } : {}),
+            ...(outcome.cover ? { _cover_url: outcome.cover } : {}),
+            ...(outcome.credits != null ? { _credits_charged: outcome.credits } : {}),
             _latency_ms: outcome.latencyMs,
           });
         } else {
@@ -113,7 +113,7 @@ export const Route = createFileRoute("/api/public/hooks/render-clip")({
             _worker_id: workerId,
             _status: willRetry ? "retrying" : "failed",
             _provider: outcome.provider ?? "wan",
-            _model: outcome.model ?? null,
+            ...(outcome.model ? { _model: outcome.model } : {}),
             _latency_ms: outcome.latencyMs,
             _error: outcome.error ?? "unknown error",
           });
