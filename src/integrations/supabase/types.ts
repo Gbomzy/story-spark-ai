@@ -1200,6 +1200,7 @@ export type Database = {
       render_clip_jobs: {
         Row: {
           attempts: number
+          billing_ref: string | null
           clip_number: number
           cover_url: string | null
           created_at: string
@@ -1226,6 +1227,7 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          billing_ref?: string | null
           clip_number: number
           cover_url?: string | null
           created_at?: string
@@ -1252,6 +1254,7 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          billing_ref?: string | null
           clip_number?: number
           cover_url?: string | null
           created_at?: string
@@ -1296,14 +1299,21 @@ export type Database = {
       render_jobs: {
         Row: {
           attempts: number
+          composition_error: string | null
+          composition_started_at: string | null
+          composition_state: string | null
           created_at: string
           error: string | null
           finished_at: string | null
           id: string
           last_heartbeat_at: string | null
+          last_notified_progress: number
           locked_until: string | null
           metadata: Json
           mode: string
+          movie_ready_at: string | null
+          movie_url: string | null
+          notifications_sent: Json
           priority: number
           project_id: string
           started_at: string | null
@@ -1314,14 +1324,21 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          composition_error?: string | null
+          composition_started_at?: string | null
+          composition_state?: string | null
           created_at?: string
           error?: string | null
           finished_at?: string | null
           id?: string
           last_heartbeat_at?: string | null
+          last_notified_progress?: number
           locked_until?: string | null
           metadata?: Json
           mode?: string
+          movie_ready_at?: string | null
+          movie_url?: string | null
+          notifications_sent?: Json
           priority?: number
           project_id: string
           started_at?: string | null
@@ -1332,14 +1349,21 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          composition_error?: string | null
+          composition_started_at?: string | null
+          composition_state?: string | null
           created_at?: string
           error?: string | null
           finished_at?: string | null
           id?: string
           last_heartbeat_at?: string | null
+          last_notified_progress?: number
           locked_until?: string | null
           metadata?: Json
           mode?: string
+          movie_ready_at?: string | null
+          movie_url?: string | null
+          notifications_sent?: Json
           priority?: number
           project_id?: string
           started_at?: string | null
@@ -1536,6 +1560,7 @@ export type Database = {
         }
         Returns: {
           attempts: number
+          billing_ref: string | null
           clip_number: number
           cover_url: string | null
           created_at: string
@@ -1571,14 +1596,21 @@ export type Database = {
         Args: { _lease_seconds?: number; _worker_id: string }
         Returns: {
           attempts: number
+          composition_error: string | null
+          composition_started_at: string | null
+          composition_state: string | null
           created_at: string
           error: string | null
           finished_at: string | null
           id: string
           last_heartbeat_at: string | null
+          last_notified_progress: number
           locked_until: string | null
           metadata: Json
           mode: string
+          movie_ready_at: string | null
+          movie_url: string | null
+          notifications_sent: Json
           priority: number
           project_id: string
           started_at: string | null
@@ -1637,12 +1669,24 @@ export type Database = {
         }
         Returns: Json
       }
+      has_charged_ref: { Args: { _ref: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      notify_user: {
+        Args: {
+          _body?: string
+          _dedupe_key?: string
+          _kind: string
+          _project_id?: string
+          _title: string
+          _user_id: string
+        }
+        Returns: string
       }
       reclaim_stalled_clip_jobs: { Args: never; Returns: number }
       reclaim_stalled_render_jobs: { Args: never; Returns: number }
