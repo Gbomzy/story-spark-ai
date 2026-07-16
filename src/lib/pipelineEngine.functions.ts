@@ -140,6 +140,9 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
     const maxClipsPerCall = data.maxClipsPerCall ?? 1; // process one Wan clip per invocation to avoid Worker timeouts
+    const testMode = data.testMode === true;
+    const maxScenes = data.maxScenes ?? (testMode ? 3 : undefined);
+    const regenerateSceneOnly = data.regenerateSceneOnly ?? null;
     const characterName = (data.characterName ?? "").trim();
     const characterDesc = (data.characterDescription ?? "").trim();
     const characterPrefix = characterDesc
