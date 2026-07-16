@@ -57,7 +57,7 @@ function clipColor(status?: string): string {
 }
 
 function fmtDuration(ms: number): string {
-  if (!ms || ms < 0) return "—";
+  if (!ms || !Number.isFinite(ms) || ms < 0) return "—";
   const s = Math.floor(ms / 1000);
   const m = Math.floor(s / 60);
   const r = s % 60;
@@ -291,13 +291,13 @@ function RenderDashboard() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => runControl("pause")} disabled={!s || s.status !== "generating"} variant="outline" className="gap-2">
+        <Button onClick={() => runControl("pause")} disabled={!s || !["generating","rendering","processing","queued"].includes(String(s.status))} variant="outline" className="gap-2">
           <Pause className="h-4 w-4" /> Pause
         </Button>
-        <Button onClick={() => runControl("resume")} disabled={!s || (s.status !== "paused" && s.status !== "stalled" && s.status !== "failed")} className="gap-2">
+        <Button onClick={() => runControl("resume")} disabled={!s || !["paused","stalled","failed","cancelled"].includes(String(s.status))} className="gap-2">
           <Play className="h-4 w-4" /> Resume
         </Button>
-        <Button onClick={() => runControl("retry_failed")} disabled={!s || (s.failed === 0 && s.status !== "stalled")} variant="outline" className="gap-2">
+        <Button onClick={() => runControl("retry_failed")} disabled={!s || (s.failed === 0 && s.status !== "stalled" && s.status !== "failed")} variant="outline" className="gap-2">
           <RotateCw className="h-4 w-4" /> Retry Failed
         </Button>
         <Button onClick={() => runControl("cancel")} disabled={!s || ["completed", "cancelled"].includes(s.status ?? "")} variant="destructive" className="gap-2">
