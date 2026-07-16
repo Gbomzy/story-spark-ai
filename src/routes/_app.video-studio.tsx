@@ -7,12 +7,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor } from "lucide-react";
+import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor, PlayCircle, RotateCcw, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
 import { generateWanVideo } from "@/lib/wanVideo.functions";
 import { runFullMoviePipeline, type MovieManifest, type SceneClip } from "@/lib/pipelineEngine.functions";
+import { getRenderState, controlRender } from "@/lib/renderControls.functions";
 import { PIPELINE, stageStatus, type PipelineState } from "@/lib/pipeline";
 import { CHARACTER_PRESETS, findCharacter } from "@/lib/characters";
 
@@ -103,14 +104,49 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const qc = useQueryClient();
   const generateVideo = useServerFn(generateWanVideo);
   const runPipeline = useServerFn(runFullMoviePipeline);
+  const readRenderState = useServerFn(getRenderState);
+  const doControl = useServerFn(controlRender);
+
+  // Authoritative render state from the durable queue. Every button and
+  // counter reads from this so Video Studio, Create Movie, Render Dashboard,
+  // Movie Composer, Dashboard, and Projects all display identical values.
+  const renderQ = useQuery({
+    queryKey: ["render-state", project.id],
+    queryFn: () => readRenderState({ data: { projectId: project.id } }),
+    refetchInterval: 4000,
+  });
+  const renderState = renderQ.data ?? null;
+
+  // Scene count is derived ONLY from the storyboard (or the persisted
+  // queue, which itself was built from the storyboard). Never inferred
+  // from a single-shot fallback clip.
+  const storyboardScenes = countStoryboardScenes(project.storyboard, project.images);
 
   const status = (project.render_status ?? "pending") as "pending" | "generating" | "completed" | "failed";
-  const progress = project.render_progress ?? 0;
+  const progress = renderState?.progress ?? project.render_progress ?? 0;
   const provider = project.video_provider ?? videoService.defaultProvider();
   const manifest = parseManifest(project.video_file);
   const clips = manifest?.clips ?? [];
   const videoUrl = manifest?.url ?? extractUrl(project.video_file);
   const narrationUrl = manifest?.narrationUrl ?? extractUrl(project.voice_audio);
+
+  const queueTotal = renderState?.total ?? clips.length;
+  const queueCompleted = renderState?.completed ?? clips.filter((c) => c.status === "completed").length;
+  const queueFailed = renderState?.failed ?? clips.filter((c) => c.status === "failed").length;
+  const queueRemaining = renderState?.remaining ?? Math.max(0, queueTotal - queueCompleted - queueFailed);
+  const sceneCount = storyboardScenes || (renderState ? new Set(renderState.clips.map((c) => c.sceneNumber)).size : new Set(clips.map((c) => c.sceneNumber)).size);
+
+  // Primary CTA state — see FIX 3 / FIX 7 / FIX 8. This is the single
+  // source of truth for the button; Video Studio never opens a new
+  // pipeline when one already exists for the project.
+  const primary = derivePrimaryAction({
+    hasJob: Boolean(renderState?.jobId),
+    jobStatus: renderState?.status ?? null,
+    total: queueTotal,
+    completed: queueCompleted,
+    failed: queueFailed,
+  });
+
   const [perScene, setPerScene] = useState<number>(5);
   const [previewClip, setPreviewClip] = useState<SceneClip | null>(null);
   const [characterId, setCharacterId] = useState<string>("none");
@@ -142,6 +178,14 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
 
   const pipelineMut = useMutation({
     mutationFn: async () => {
+      // FIX 9 — Project Integrity Check + Repair. If failed clips exist,
+      // requeue them first via the durable controller so we never open a
+      // parallel pipeline just to retry.
+      if (primary === "repair" && renderState?.jobId) {
+        await doControl({ data: { projectId: project.id, action: "retry_failed" } }).catch(() => {});
+      } else if (primary === "resume" && renderState?.status === "paused") {
+        await doControl({ data: { projectId: project.id, action: "resume" } }).catch(() => {});
+      }
       // Loop until the server reports the queue is fully drained.
       // Each invocation generates one clip → avoids Worker timeouts and
       // gives resume-from-interruption for free.
@@ -164,6 +208,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
         const completed = last?.results?.queueCompleted ?? 0;
         const total = last?.results?.queueTotal ?? 0;
         qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["render-state", project.id] });
         if (done) break;
         if (total > 0) {
           toast.message(`Rendering clip ${completed}/${total}…`, { id: "movie-pipeline" });
@@ -176,12 +221,18 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
       const n = r?.results?.clips?.filter((c) => c.url).length ?? 0;
       toast.success(n > 1 ? `Movie built from ${n} scene clips.` : "Movie ready.", { id: "movie-pipeline" });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["render-state", project.id] });
     },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
   const busy = videoMut.isPending || pipelineMut.isPending;
   const pipelineState = (project.media_pipeline as PipelineState | null) ?? {};
+
+  // Standalone single-clip generation is only valid when the project has
+  // exactly one storyboard scene (FIX 4). Otherwise it would fork a
+  // second pipeline that overrides the multi-scene queue.
+  const allowStandalone = sceneCount <= 1;
 
   async function downloadAllClips() {
     if (!clips.length) return;
@@ -252,13 +303,13 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             </div>
             <dl className="grid grid-cols-2 gap-3 text-xs">
               <Field label="Total length" value={manifest ? `${manifest.totalDurationSeconds}s` : project.render_duration ? `${project.render_duration}s` : "—"} />
-              <Field label="Scene clips" value={clips.length ? String(clips.length) : "—"} />
-              <Field label="Scenes" value={clips.length ? String(new Set(clips.map((c) => c.sceneNumber)).size) : "—"} />
+              <Field label="Scene clips" value={queueTotal ? `${queueCompleted}/${queueTotal}` : "—"} />
+              <Field label="Scenes" value={sceneCount ? String(sceneCount) : "—"} />
               <Field label="Resolution" value={size.replace("*", "×")} />
               <Field label="Aspect" value={aspectRatio} />
               <Field label="Provider" value={provider} />
               <Field label="Model" value="wan2.7-t2v" />
-              <Field label="Status" value={status} />
+              <Field label="Status" value={renderState?.status ?? status} />
             </dl>
             <div className="rounded-2xl border border-border bg-card/60 p-3">
               <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Seconds per scene clip</p>
@@ -358,14 +409,33 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             </div>
             <div>
               <Progress value={progress} className="h-2" />
+              {queueTotal > 0 ? (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {queueCompleted}/{queueTotal} clips · {queueRemaining} remaining
+                  {queueFailed ? ` · ${queueFailed} failed` : ""}
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-2">
-              <Button onClick={() => videoMut.mutate()} disabled={!configured || busy} className="rounded-xl gradient-primary text-white shadow-glow disabled:opacity-60">
-                {videoMut.isPending ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Rendering…</> : <><Sparkles className="mr-1.5 h-4 w-4" /> Generate video</>}
-              </Button>
-              <Button onClick={() => pipelineMut.mutate()} disabled={!configured || busy} variant="secondary" className="rounded-xl">
-                {pipelineMut.isPending ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Generating movie…</> : <><Wand2 className="mr-1.5 h-4 w-4" /> Generate entire movie</>}
-              </Button>
+              <PrimaryMovieButton
+                action={primary}
+                projectId={project.id}
+                busy={busy}
+                disabled={!configured}
+                pending={pipelineMut.isPending}
+                onRun={() => pipelineMut.mutate()}
+              />
+              {allowStandalone ? (
+                <Button
+                  onClick={() => videoMut.mutate()}
+                  disabled={!configured || busy}
+                  variant="outline"
+                  className="rounded-xl"
+                  title="Single-scene projects only"
+                >
+                  {videoMut.isPending ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Rendering…</> : <><Sparkles className="mr-1.5 h-4 w-4" /> Generate single clip</>}
+                </Button>
+              ) : null}
               <Button asChild disabled={!videoUrl} variant="outline" className="rounded-xl">
                 {videoUrl ? <a href={videoUrl} download><Download className="mr-1.5 h-4 w-4" /> Download MP4</a> : <span><Download className="mr-1.5 h-4 w-4" /> Download MP4</span>}
               </Button>
@@ -550,4 +620,88 @@ function parseManifest(v: unknown): MovieManifest | null {
   const o = v as Record<string, unknown>;
   if (!Array.isArray(o.clips)) return null;
   return v as unknown as MovieManifest;
+}
+
+/** Count scenes from the persisted storyboard. Mirrors the server-side
+ *  parser (blank-line split) so the UI reports the same scene count the
+ *  render pipeline will produce. Falls back to the persisted image list
+ *  when the storyboard column is a structured JSON payload. */
+function countStoryboardScenes(storyboard: unknown, images: unknown): number {
+  if (typeof storyboard === "string" && storyboard.trim()) {
+    return storyboard.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).slice(0, 40).length;
+  }
+  if (storyboard && typeof storyboard === "object") {
+    const o = storyboard as Record<string, unknown>;
+    if (Array.isArray(o.scenes)) return o.scenes.length;
+  }
+  if (Array.isArray(images)) return (images as unknown[]).length;
+  if (images && typeof images === "object") {
+    const o = images as Record<string, unknown>;
+    if (Array.isArray(o.scenes)) return (o.scenes as unknown[]).length;
+  }
+  return 0;
+}
+
+type PrimaryAction = "generate" | "resume" | "repair" | "open";
+
+function derivePrimaryAction(input: {
+  hasJob: boolean;
+  jobStatus: string | null;
+  total: number;
+  completed: number;
+  failed: number;
+}): PrimaryAction {
+  const { hasJob, jobStatus, total, completed, failed } = input;
+  if (hasJob && total > 0 && completed >= total && failed === 0) return "open";
+  if (jobStatus === "completed" && failed === 0) return "open";
+  if (failed > 0) return "repair";
+  if (hasJob && jobStatus && ["generating", "queued", "paused", "stalled", "rendering", "processing"].includes(jobStatus)) return "resume";
+  return "generate";
+}
+
+function PrimaryMovieButton({
+  action,
+  projectId,
+  busy,
+  disabled,
+  pending,
+  onRun,
+}: {
+  action: PrimaryAction;
+  projectId: string;
+  busy: boolean;
+  disabled: boolean;
+  pending: boolean;
+  onRun: () => void;
+}) {
+  if (action === "open") {
+    return (
+      <Button asChild className="rounded-xl gradient-primary text-white shadow-glow">
+        <Link to="/movie-composer" search={{ projectId }}>
+          <Film className="mr-1.5 h-4 w-4" /> Open Movie Composer
+        </Link>
+      </Button>
+    );
+  }
+  const label =
+    action === "repair" ? "Repair Movie" :
+    action === "resume" ? "Resume Movie" :
+    "Generate Movie";
+  const Icon =
+    action === "repair" ? Wrench :
+    action === "resume" ? PlayCircle :
+    Wand2;
+  return (
+    <Button
+      onClick={onRun}
+      disabled={disabled || busy}
+      className="rounded-xl gradient-primary text-white shadow-glow disabled:opacity-60"
+    >
+      {pending ? (
+        <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> {action === "repair" ? "Repairing…" : action === "resume" ? "Resuming…" : "Generating…"}</>
+      ) : (
+        <><Icon className="mr-1.5 h-4 w-4" /> {label}</>
+      )}
+    </Button>
+  );
 }
