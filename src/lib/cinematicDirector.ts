@@ -275,41 +275,58 @@ function soundDesignFor(r: SceneRole, mood?: string): string {
 // ---------- Prompt enrichment ----------
 
 export const QUALITY_TAGS = [
-  "Pixar-quality",
-  "Disney-inspired family animation",
-  "high-detail children's illustration",
-  "soft global illumination",
-  "volumetric lighting",
-  "natural depth of field",
-  "professional cinematic composition",
-  "high-quality animation",
+  "Pixar-quality 3D animation",
+  "Disney-inspired family film",
+  "expressive character faces with clear emotions",
+  "cinematic soft global illumination",
+  "volumetric lighting with rim light",
+  "natural depth of field, subtle bokeh",
+  "rule-of-thirds composition",
+  "rich detailed environment",
+  "warm cinematic color grading",
+  "ultra-detailed 4K animation quality",
 ];
+
+/** Video-specific motion / acting tags — appended only to VIDEO prompts
+ *  so every clip has meaningful character motion and camera movement
+ *  instead of a static slideshow. */
+export const VIDEO_MOTION_TAGS = [
+  "smooth character animation with natural weight",
+  "expressive facial acting: eyes, brows, mouth shapes",
+  "subtle secondary motion: hair, cloth, breath",
+  "cinematic camera movement with parallax",
+  "environmental animation: leaves, dust, light rays",
+  "no static slideshow, continuous 24fps motion",
+ ];
 
 /** Enrich a base scene prompt (video) with cinematic direction, motion, and quality tags. */
 export function enrichVideoPrompt(basePrompt: string, plan?: CinematicShotPlan | null): string {
   if (!plan) {
-    return `${basePrompt}\n\nStyle: ${QUALITY_TAGS.slice(0, 5).join(", ")}.`;
+    return `${basePrompt}\n\nStyle: ${QUALITY_TAGS.slice(0, 5).join(", ")}.\nMotion: ${VIDEO_MOTION_TAGS.join(", ")}.`;
   }
   const cinematic = [
     `${plan.cameraShot} shot, ${plan.cameraAngle}, ${plan.cameraLens}`,
     `camera: ${plan.cameraMovement}`,
     `lighting: ${plan.lightingStyle}, ${plan.timeOfDay}, ${plan.weather}`,
     `mood: ${plan.emotionalIntent}`,
+    `facial expression: ${plan.facialExpression}`,
+    `body language: ${plan.bodyLanguage}`,
     `palette: ${plan.colorPalette}`,
     `blocking: ${plan.characterBlocking}`,
     `motion: ${plan.motionInstructions.join(", ")}`,
   ].join(" · ");
-  return `${basePrompt}\n\nDirector: ${cinematic}.\nStyle: ${QUALITY_TAGS.join(", ")}.`;
+  return `${basePrompt}\n\nDirector: ${cinematic}.\nStyle: ${QUALITY_TAGS.join(", ")}.\nMotion: ${VIDEO_MOTION_TAGS.join(", ")}.`;
 }
 
 /** Enrich a base image prompt with lighter cinematic tags (no motion). */
 export function enrichImagePrompt(basePrompt: string, plan?: CinematicShotPlan | null): string {
-  if (!plan) return `${basePrompt}\n\nStyle: ${QUALITY_TAGS.slice(0, 4).join(", ")}.`;
+  if (!plan) return `${basePrompt}\n\nStyle: ${QUALITY_TAGS.slice(0, 6).join(", ")}.`;
   const bits = [
     `${plan.cameraShot} shot, ${plan.cameraAngle}, ${plan.cameraLens}`,
     `${plan.lightingStyle}, ${plan.timeOfDay}, ${plan.weather}`,
     `${plan.emotionalIntent} mood, ${plan.colorPalette}`,
+    `facial expression: ${plan.facialExpression}`,
     plan.characterBlocking,
   ].join(" · ");
-  return `${basePrompt}\n\nDirector: ${bits}.\nStyle: ${QUALITY_TAGS.slice(0, 6).join(", ")}.`;
+  return `${basePrompt}\n\nDirector: ${bits}.\nStyle: ${QUALITY_TAGS.join(", ")}.\nKeep the character's face, hair, outfit and colors identical to prior scenes.`;
 }
