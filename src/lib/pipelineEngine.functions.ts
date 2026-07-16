@@ -253,6 +253,25 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       manifest = null;
     }
 
+    // Regenerate-scene-only: reset a specific clip's status/url so the
+    // pending loop below picks it up again. No new queue is built.
+    if (regenerateSceneOnly != null && manifest && Array.isArray(manifest.clips)) {
+      for (const c of manifest.clips) {
+        if (c.sceneNumber === regenerateSceneOnly) {
+          c.url = "";
+          c.status = "pending";
+          c.error = null;
+          c.retryCount = 0;
+        }
+      }
+      await context.supabase.from("projects").update({
+        video_file: manifest,
+        render_status: "generating",
+        render_error: null,
+        render_heartbeat: new Date().toISOString(),
+      }).eq("id", proj.id);
+    }
+
     if (!looksLikeQueue || staleQueue) {
       // Build the full queue from storyboard scenes (or a single-shot fallback).
       const queued: SceneClip[] = [];
@@ -330,6 +349,29 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         wordsPerSecond: wps,
         maxClipSeconds: maxClip,
       };
+
+      // Pre-render Quality Gate: aborts BEFORE spending Wan credits if
+      // prompts are empty/duplicate/oversized or the narration still
+      // contains stage directions.
+      try {
+        const { validateRenderInputs, formatIssues } = await import("./qualityValidator");
+        const report = validateRenderInputs({
+          clips: queued,
+          narration: cleanScript,
+          maxClipSeconds: maxClip,
+        });
+        if (!report.ok) {
+          const msg = `Quality validation failed:\n${formatIssues(report)}`;
+          await context.supabase.from("projects").update({
+            render_status: "failed",
+            render_error: msg,
+          }).eq("id", proj.id);
+          throw new Error(`Render aborted — ${msg}`);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith("Render aborted")) throw err;
+        console.warn("[pipeline] quality validator skipped", err);
+      }
 
       pipeline.video = "generating";
       await context.supabase
