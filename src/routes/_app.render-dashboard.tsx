@@ -64,6 +64,9 @@ function fmtDuration(ms: number): string {
   return m > 0 ? `${m}m ${r}s` : `${r}s`;
 }
 
+// "Not enough data" sentinel for any metric we can't yet compute honestly.
+const NED = "Not enough data";
+
 function fmtTime(iso?: string | null): string {
   if (!iso) return "—";
   try {
@@ -613,13 +616,18 @@ function RenderLogsPanel({ logs, open, onToggle }: { logs: LogEntry[]; open: boo
 function ProductionStats({ rendering, queued, completedToday, avgMs, successPct }: {
   rendering: number; queued: number; completedToday: number; avgMs: number; successPct: number;
 }) {
+  const hasHistory = completedToday > 0 || avgMs > 0;
   return (
     <div className="grid gap-3 md:grid-cols-5">
       <Stat label="Movies rendering" value={String(rendering)} />
       <Stat label="Queued" value={String(queued)} />
       <Stat label="Completed today" value={String(completedToday)} />
-      <Stat label="Avg render time" value={avgMs > 0 ? fmtDuration(avgMs) : "—"} />
-      <Stat label="Success rate" value={`${successPct}%`} tone={successPct >= 90 ? "ok" : successPct < 70 ? "warn" : undefined} />
+      <Stat label="Avg render time" value={avgMs > 0 ? fmtDuration(avgMs) : NED} />
+      <Stat
+        label="Success rate"
+        value={hasHistory ? `${successPct}%` : NED}
+        tone={hasHistory ? (successPct >= 90 ? "ok" : successPct < 70 ? "warn" : undefined) : undefined}
+      />
     </div>
   );
 }
