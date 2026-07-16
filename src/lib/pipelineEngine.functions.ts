@@ -15,6 +15,13 @@ const Input = z.object({
   characterName: z.string().max(80).optional(),
   characterDescription: z.string().max(600).optional(),
   size: z.string().max(20).optional(),
+  /** Low-Cost Test Mode — cap scenes to 2-3 so a full render costs a
+   *  fraction of a normal one. Additive: default off. */
+  testMode: z.boolean().optional(),
+  maxScenes: z.number().int().min(1).max(40).optional(),
+  /** Regenerate only one scene (1-based). Skips images/narration stages
+   *  and only re-queues the target clip inside an existing manifest. */
+  regenerateSceneOnly: z.number().int().min(1).max(60).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
@@ -133,6 +140,14 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
     const chain = data.chainScenes !== false; // default: chain
     const maxClipsPerCall = data.maxClipsPerCall ?? 1; // process one Wan clip per invocation to avoid Worker timeouts
+    const testMode = data.testMode === true;
+    const maxScenes = data.maxScenes ?? (testMode ? 3 : undefined);
+    const regenerateSceneOnly = data.regenerateSceneOnly ?? null;
+    // Test Mode / explicit cap: shrink the scene list BEFORE building
+    // any clip queue so we never spend credits on scenes we'll throw away.
+    if (typeof maxScenes === "number" && scenes.length > maxScenes) {
+      scenes = scenes.slice(0, maxScenes);
+    }
     const characterName = (data.characterName ?? "").trim();
     const characterDesc = (data.characterDescription ?? "").trim();
     const characterPrefix = characterDesc
@@ -150,15 +165,30 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       done?: boolean;
     } = {};
 
-    // 1. Images
-    if (scenes.length > 0 && pipeline.generated_images !== "completed") {
+    // 1. Images — enrich every scene prompt with cinematic direction so
+    // the resulting frames are premium children's animation quality
+    // (consistent characters, cinematic lighting, expressive faces).
+    // In regenerate-scene-only mode we skip this stage entirely.
+    if (scenes.length > 0 && pipeline.generated_images !== "completed" && regenerateSceneOnly == null) {
       await setStage("generated_images", "generating");
       const images: Array<{ id: string; url: string }> = [];
       try {
-        for (const scene of scenes) {
+        const { buildShotPlan, enrichImagePrompt } = await import("./cinematicDirector");
+        let prevShotImg: import("./cinematicDirector").CameraShot | undefined;
+        for (let i = 0; i < scenes.length; i++) {
+          const scene = scenes[i];
+          const planImg = buildShotPlan({
+            sceneId: scene.id,
+            sceneNumber: i + 1,
+            total: scenes.length,
+            text: scene.prompt,
+            prevShot: prevShotImg,
+          });
+          prevShotImg = planImg.cameraShot;
+          const enriched = enrichImagePrompt(`${characterPrefix}${scene.prompt}`, planImg);
           const r = await generateQwenImage({
             data: {
-              prompt: `${characterPrefix}${scene.prompt}`,
+              prompt: enriched,
               projectId: proj.id,
               sceneId: scene.id,
               aspect: "16:9",
@@ -178,9 +208,10 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     // 2. Narration — the AI Storyteller layer picks expressive voice
     // parameters (voice preset, speed, pitch) based on the narration's
     // emotion + BGM mood before we hit the TTS provider.
-    const { sanitizeVoiceScript } = await import("./voiceScript");
-    const voiceScript = sanitizeVoiceScript(extractText(proj.voice));
-    if (voiceScript && pipeline.narration !== "completed") {
+    const { sanitizeVoiceScript, expressiveVoiceScript } = await import("./voiceScript");
+    const cleanScript = sanitizeVoiceScript(extractText(proj.voice));
+    const voiceScript = expressiveVoiceScript(cleanScript);
+    if (voiceScript && pipeline.narration !== "completed" && regenerateSceneOnly == null) {
       await setStage("narration", "generating");
       try {
         const { planStoryteller } = await import("./storyteller");
@@ -220,6 +251,25 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const staleQueue = looksLikeQueue && chain && scenes.length > manifestSceneCount;
     if (staleQueue) {
       manifest = null;
+    }
+
+    // Regenerate-scene-only: reset a specific clip's status/url so the
+    // pending loop below picks it up again. No new queue is built.
+    if (regenerateSceneOnly != null && manifest && Array.isArray(manifest.clips)) {
+      for (const c of manifest.clips) {
+        if (c.sceneNumber === regenerateSceneOnly) {
+          c.url = "";
+          c.status = "pending";
+          c.error = null;
+          c.retryCount = 0;
+        }
+      }
+      await context.supabase.from("projects").update({
+        video_file: manifest,
+        render_status: "generating",
+        render_error: null,
+        render_heartbeat: new Date().toISOString(),
+      }).eq("id", proj.id);
     }
 
     if (!looksLikeQueue || staleQueue) {
@@ -299,6 +349,29 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         wordsPerSecond: wps,
         maxClipSeconds: maxClip,
       };
+
+      // Pre-render Quality Gate: aborts BEFORE spending Wan credits if
+      // prompts are empty/duplicate/oversized or the narration still
+      // contains stage directions.
+      try {
+        const { validateRenderInputs, formatIssues } = await import("./qualityValidator");
+        const report = validateRenderInputs({
+          clips: queued,
+          narration: cleanScript,
+          maxClipSeconds: maxClip,
+        });
+        if (!report.ok) {
+          const msg = `Quality validation failed:\n${formatIssues(report)}`;
+          await context.supabase.from("projects").update({
+            render_status: "failed",
+            render_error: msg,
+          }).eq("id", proj.id);
+          throw new Error(`Render aborted — ${msg}`);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith("Render aborted")) throw err;
+        console.warn("[pipeline] quality validator skipped", err);
+      }
 
       pipeline.video = "generating";
       await context.supabase

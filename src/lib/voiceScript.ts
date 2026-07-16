@@ -103,3 +103,32 @@ export function sanitizeVoiceScript(
   }
   return out.join(" ").replace(/\s+/g, " ").replace(/\s+\./g, ".").trim();
 }
+
+// ---------- Expressive narration builder ----------
+//
+// Turns a sanitized narration into a more expressive read for CosyVoice /
+// gpt-4o-mini-tts by:
+//   - inserting natural micro-pauses after commas and stronger pauses
+//     after sentences (encoded as extra whitespace + punctuation so any
+//     TTS engine respects the prosody, not just SSML-capable ones)
+//   - normalising exclamation runs ("!!!" → "!") so the voice doesn't
+//     hard-clip on excitement
+//   - collapsing ALL-CAPS shouting into title case so the TTS uses
+//     emphasis, not a robotic letter-by-letter spelling
+//
+// This never re-introduces stage directions — it operates only on the
+// already-sanitized spoken text.
+export function expressiveVoiceScript(clean: string): string {
+  if (!clean) return "";
+  let t = clean;
+  // Deflate exclamation/question runs but keep one for emphasis.
+  t = t.replace(/([!?])\1{1,}/g, "$1");
+  // ALL-CAPS words → sentence case so the voice speaks them naturally.
+  t = t.replace(/\b([A-Z]{4,})\b/g, (_, w: string) => w.charAt(0) + w.slice(1).toLowerCase());
+  // Slight breathing pause after every sentence terminator (double space
+  // helps TTS engines that ignore SSML still hear the boundary).
+  t = t.replace(/([.!?])\s+/g, "$1  ");
+  // Micro-pause after commas / semicolons.
+  t = t.replace(/([,;:])\s+/g, "$1 ");
+  return t.replace(/\s{3,}/g, "  ").trim();
+}

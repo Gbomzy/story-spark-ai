@@ -153,6 +153,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const [customCharacter, setCustomCharacter] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1" | "4:5">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
+  // Low-Cost Test Mode — caps the render to the first 3 scenes so a
+  // quality pass costs a fraction of a full 13-scene movie.
+  const [testMode, setTestMode] = useState<boolean>(false);
   const size = ASPECT_SIZES[aspectRatio][resolution];
   const selectedCharacter =
     characterId === "none"
@@ -197,6 +200,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             perSceneDuration: perScene,
             chainScenes: true,
             size,
+            ...(testMode ? { testMode: true, maxScenes: 3 } : {}),
             ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
             ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
               ? { characterDescription: selectedCharacter.description }
@@ -224,6 +228,34 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
       qc.invalidateQueries({ queryKey: ["render-state", project.id] });
     },
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
+  });
+
+  const regenSceneMut = useMutation({
+    mutationFn: async (sceneNumber: number) => {
+      let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
+      for (let i = 0; i < 40; i++) {
+        last = await runPipeline({
+          data: {
+            projectId: project.id,
+            perSceneDuration: perScene,
+            chainScenes: true,
+            size,
+            regenerateSceneOnly: sceneNumber,
+            ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
+            ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
+              ? { characterDescription: selectedCharacter.description }
+              : {}),
+          },
+        });
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["render-state", project.id] });
+        if (last?.results?.done) break;
+        if ((last?.results?.queueRemaining ?? 0) === 0) break;
+      }
+      return last;
+    },
+    onSuccess: () => toast.success("Scene regenerated.", { id: "regen-scene" }),
+    onError: (e: Error) => toast.error(e.message || "Regeneration failed."),
   });
 
   const busy = videoMut.isPending || pipelineMut.isPending;
@@ -407,6 +439,22 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
                 Output size: <span className="font-mono">{size.replace("*", "×")}</span>
               </p>
             </div>
+            <label className="flex cursor-pointer items-start gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3">
+              <input
+                type="checkbox"
+                checked={testMode}
+                onChange={(e) => setTestMode(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5"
+              />
+              <div>
+                <p className="text-xs font-semibold">Low-Cost Test Mode</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Renders only the first 3 scenes (~20–30s) so you can preview
+                  quality without paying for the full movie. Turn off before
+                  the final render.
+                </p>
+              </div>
+            </label>
             <div>
               <Progress value={progress} className="h-2" />
               {queueTotal > 0 ? (
@@ -455,21 +503,35 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Scene clips ({clips.length})</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {clips.map((c) => (
-              <button
+              <div
                 key={`${c.sceneNumber}-${c.clipNumber}-${c.url}`}
-                onClick={() => setPreviewClip(c)}
                 className="group flex flex-col gap-2 rounded-2xl border border-border bg-card/60 p-3 text-left transition hover:border-primary/60"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold">Scene {c.sceneNumber} · Part {c.clipNumber}</span>
-                  <span className="text-[10px] text-muted-foreground">{c.durationSeconds}s</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {formatTime(c.startTime)} → {formatTime(c.endTime)}
-                </div>
-                <p className="line-clamp-2 text-[11px] text-muted-foreground">{c.prompt}</p>
-                <span className="text-[10px] uppercase tracking-widest text-primary opacity-0 transition group-hover:opacity-100">Preview →</span>
-              </button>
+                <button
+                  onClick={() => setPreviewClip(c)}
+                  className="flex flex-col gap-2 text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">Scene {c.sceneNumber} · Part {c.clipNumber}</span>
+                    <span className="text-[10px] text-muted-foreground">{c.durationSeconds}s</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {formatTime(c.startTime)} → {formatTime(c.endTime)}
+                  </div>
+                  <p className="line-clamp-2 text-[11px] text-muted-foreground">{c.prompt}</p>
+                </button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || regenSceneMut.isPending}
+                  onClick={() => regenSceneMut.mutate(c.sceneNumber)}
+                  className="h-7 self-start rounded-lg px-2 text-[10px]"
+                >
+                  {regenSceneMut.isPending && regenSceneMut.variables === c.sceneNumber
+                    ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Regenerating…</>
+                    : "↻ Regenerate this scene"}
+                </Button>
+              </div>
             ))}
           </div>
           {previewClip ? (
