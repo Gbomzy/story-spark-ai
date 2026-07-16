@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor, PlayCircle, RotateCcw, Wrench } from "lucide-react";
+import { Film, Download, Sparkles, Share2, Loader2, Wand2, User, FolderOpen, Monitor, PlayCircle, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { listProjects, type ProjectRow } from "@/lib/projects";
 import { videoService } from "@/lib/videoService";
@@ -661,7 +661,7 @@ function derivePrimaryAction(input: {
 
 function PrimaryMovieButton({
   action,
-  projectId,
+  projectId: _projectId,
   busy,
   disabled,
   pending,
@@ -677,7 +677,7 @@ function PrimaryMovieButton({
   if (action === "open") {
     return (
       <Button asChild className="rounded-xl gradient-primary text-white shadow-glow">
-        <Link to="/movie-composer" search={{ projectId }}>
+        <Link to="/movie-composer">
           <Film className="mr-1.5 h-4 w-4" /> Open Movie Composer
         </Link>
       </Button>
