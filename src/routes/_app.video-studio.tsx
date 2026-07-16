@@ -628,7 +628,15 @@ function parseManifest(v: unknown): MovieManifest | null {
  *  when the storyboard column is a structured JSON payload. */
 function countStoryboardScenes(storyboard: unknown, images: unknown): number {
   if (typeof storyboard === "string" && storyboard.trim()) {
-    return storyboard.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).slice(0, 40).length;
+    const raw = storyboard.replace(/\r\n/g, "\n");
+    const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+    const headingHits = (raw.match(/(?:^|\n)\s*(?:#{1,6}\s*)?(?:Scene|SCENE|scene)\s+\d+\b/g) ?? []).length;
+    if (headingHits >= 2 && blocks.length < headingHits) return Math.min(headingHits, 40);
+    if (blocks.length < 2) {
+      const numHits = (raw.match(/(?:^|\n)\s*\d{1,2}[.)]\s+/g) ?? []).length;
+      if (numHits >= 2) return Math.min(numHits, 40);
+    }
+    return blocks.slice(0, 40).length;
   }
   if (storyboard && typeof storyboard === "object") {
     const o = storyboard as Record<string, unknown>;

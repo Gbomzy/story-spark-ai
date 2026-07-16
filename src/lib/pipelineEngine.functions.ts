@@ -507,9 +507,37 @@ function _splitWords(script: string, scenes: Array<{ narrationWords?: number }>)
 }
 
 /** Parse the plain-text storyboard column into scene entries. Mirrors the
- *  parser used on the Storyboard page: split on blank lines, first line = title. */
+ *  parser used on the Storyboard page. Robust to storyboards that ship
+ *  without blank-line separators between scenes: we ALSO split on scene
+ *  headings ("## Scene 1", "Scene 1:", "1.") so the pipeline never
+ *  collapses a 13-scene storyboard into a single 1-clip render. */
 function parseStoryboardText(text: string): Array<{ id: string; prompt: string; narrationWords?: number }> {
-  const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const raw = text.replace(/\r\n/g, "\n");
+  let blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  // If double-newline splitting yields fewer than 2 blocks, or if the very
+  // first block already contains multiple embedded scene headings, fall back
+  // to splitting on scene-heading boundaries so a run-on storyboard still
+  // produces one entry per scene.
+  const headingRe = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:Scene|SCENE|scene)\s+\d+\b/g;
+  const headingHits = (raw.match(headingRe) ?? []).length;
+  if (headingHits >= 2 && (blocks.length < headingHits)) {
+    // Split on positions that begin with a Scene N heading. Keep the
+    // heading with its block by using a lookahead.
+    blocks = raw
+      .split(/(?=(?:^|\n)\s*(?:#{1,6}\s*)?(?:Scene|SCENE|scene)\s+\d+\b)/)
+      .map((b) => b.trim())
+      .filter(Boolean);
+  }
+  // Numbered fallback: "1. …\n2. …" without blank lines.
+  if (blocks.length < 2) {
+    const numHits = raw.match(/(?:^|\n)\s*\d{1,2}[.)]\s+/g) ?? [];
+    if (numHits.length >= 2) {
+      blocks = raw
+        .split(/(?=(?:^|\n)\s*\d{1,2}[.)]\s+)/)
+        .map((b) => b.trim())
+        .filter(Boolean);
+    }
+  }
   return blocks.slice(0, 40).map((block, i) => {
     const firstLine = block.split("\n")[0].trim();
     const rest = block.split("\n").slice(1).join("\n").trim();
