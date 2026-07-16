@@ -325,7 +325,16 @@ function RenderDashboard() {
             <Stat label="Status" value={String(s.status ?? "idle")} tone={stalled ? "warn" : s.status === "completed" ? "ok" : undefined} />
             <Stat label="Movie progress" value={`${s.progress ?? 0}%`} />
             <Stat label="Clips" value={`${s.completed}/${s.total}`} />
-            <Stat label="ETA" value={etaMs > 0 ? fmtDuration(etaMs) : "—"} />
+            <Stat
+              label="ETA"
+              value={
+                (s.remaining ?? 0) === 0
+                  ? "—"
+                  : historyAvg > 0
+                    ? fmtDuration(etaMs)
+                    : NED
+              }
+            />
           </div>
           <Progress value={s.progress ?? 0} className="transition-all duration-500" />
 
@@ -371,8 +380,8 @@ function RenderDashboard() {
               <Info label="Completed clips" value={`${s.completed}/${s.total}`} />
               <Info label="Remaining clips" value={String(s.remaining)} />
               <Info label="Elapsed" value={fmtDuration(elapsedMs)} />
-              <Info label="Avg clip time" value={fmtDuration(avgClipMs)} />
-              <Info label="ETA" value={fmtDuration(etaMs)} />
+              <Info label="Avg clip time" value={historyAvg > 0 ? fmtDuration(avgClipMs) : NED} />
+              <Info label="ETA" value={(s.remaining ?? 0) === 0 ? "—" : historyAvg > 0 ? fmtDuration(etaMs) : NED} />
               <Info label="Provider" value={s.provider ?? "—"} />
               <Info label="Last heartbeat" value={s.heartbeat ? `${fmtDuration(heartbeatMs)} ago` : "—"} />
             </div>
