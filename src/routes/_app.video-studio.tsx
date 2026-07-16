@@ -503,21 +503,35 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
           <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">Scene clips ({clips.length})</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {clips.map((c) => (
-              <button
+              <div
                 key={`${c.sceneNumber}-${c.clipNumber}-${c.url}`}
-                onClick={() => setPreviewClip(c)}
                 className="group flex flex-col gap-2 rounded-2xl border border-border bg-card/60 p-3 text-left transition hover:border-primary/60"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold">Scene {c.sceneNumber} · Part {c.clipNumber}</span>
-                  <span className="text-[10px] text-muted-foreground">{c.durationSeconds}s</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {formatTime(c.startTime)} → {formatTime(c.endTime)}
-                </div>
-                <p className="line-clamp-2 text-[11px] text-muted-foreground">{c.prompt}</p>
-                <span className="text-[10px] uppercase tracking-widest text-primary opacity-0 transition group-hover:opacity-100">Preview →</span>
-              </button>
+                <button
+                  onClick={() => setPreviewClip(c)}
+                  className="flex flex-col gap-2 text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">Scene {c.sceneNumber} · Part {c.clipNumber}</span>
+                    <span className="text-[10px] text-muted-foreground">{c.durationSeconds}s</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {formatTime(c.startTime)} → {formatTime(c.endTime)}
+                  </div>
+                  <p className="line-clamp-2 text-[11px] text-muted-foreground">{c.prompt}</p>
+                </button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || regenSceneMut.isPending}
+                  onClick={() => regenSceneMut.mutate(c.sceneNumber)}
+                  className="h-7 self-start rounded-lg px-2 text-[10px]"
+                >
+                  {regenSceneMut.isPending && regenSceneMut.variables === c.sceneNumber
+                    ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Regenerating…</>
+                    : "↻ Regenerate this scene"}
+                </Button>
+              </div>
             ))}
           </div>
           {previewClip ? (
