@@ -64,6 +64,9 @@ function fmtDuration(ms: number): string {
   return m > 0 ? `${m}m ${r}s` : `${r}s`;
 }
 
+// "Not enough data" sentinel for any metric we can't yet compute honestly.
+const NED = "Not enough data";
+
 function fmtTime(iso?: string | null): string {
   if (!iso) return "—";
   try {
@@ -322,7 +325,16 @@ function RenderDashboard() {
             <Stat label="Status" value={String(s.status ?? "idle")} tone={stalled ? "warn" : s.status === "completed" ? "ok" : undefined} />
             <Stat label="Movie progress" value={`${s.progress ?? 0}%`} />
             <Stat label="Clips" value={`${s.completed}/${s.total}`} />
-            <Stat label="ETA" value={etaMs > 0 ? fmtDuration(etaMs) : "—"} />
+            <Stat
+              label="ETA"
+              value={
+                (s.remaining ?? 0) === 0
+                  ? "—"
+                  : historyAvg > 0
+                    ? fmtDuration(etaMs)
+                    : NED
+              }
+            />
           </div>
           <Progress value={s.progress ?? 0} className="transition-all duration-500" />
 
@@ -368,8 +380,8 @@ function RenderDashboard() {
               <Info label="Completed clips" value={`${s.completed}/${s.total}`} />
               <Info label="Remaining clips" value={String(s.remaining)} />
               <Info label="Elapsed" value={fmtDuration(elapsedMs)} />
-              <Info label="Avg clip time" value={fmtDuration(avgClipMs)} />
-              <Info label="ETA" value={fmtDuration(etaMs)} />
+              <Info label="Avg clip time" value={historyAvg > 0 ? fmtDuration(avgClipMs) : NED} />
+              <Info label="ETA" value={(s.remaining ?? 0) === 0 ? "—" : historyAvg > 0 ? fmtDuration(etaMs) : NED} />
               <Info label="Provider" value={s.provider ?? "—"} />
               <Info label="Last heartbeat" value={s.heartbeat ? `${fmtDuration(heartbeatMs)} ago` : "—"} />
             </div>
@@ -613,13 +625,18 @@ function RenderLogsPanel({ logs, open, onToggle }: { logs: LogEntry[]; open: boo
 function ProductionStats({ rendering, queued, completedToday, avgMs, successPct }: {
   rendering: number; queued: number; completedToday: number; avgMs: number; successPct: number;
 }) {
+  const hasHistory = completedToday > 0 || avgMs > 0;
   return (
     <div className="grid gap-3 md:grid-cols-5">
       <Stat label="Movies rendering" value={String(rendering)} />
       <Stat label="Queued" value={String(queued)} />
       <Stat label="Completed today" value={String(completedToday)} />
-      <Stat label="Avg render time" value={avgMs > 0 ? fmtDuration(avgMs) : "—"} />
-      <Stat label="Success rate" value={`${successPct}%`} tone={successPct >= 90 ? "ok" : successPct < 70 ? "warn" : undefined} />
+      <Stat label="Avg render time" value={avgMs > 0 ? fmtDuration(avgMs) : NED} />
+      <Stat
+        label="Success rate"
+        value={hasHistory ? `${successPct}%` : NED}
+        tone={hasHistory ? (successPct >= 90 ? "ok" : successPct < 70 ? "warn" : undefined) : undefined}
+      />
     </div>
   );
 }
