@@ -165,15 +165,30 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       done?: boolean;
     } = {};
 
-    // 1. Images
-    if (scenes.length > 0 && pipeline.generated_images !== "completed") {
+    // 1. Images — enrich every scene prompt with cinematic direction so
+    // the resulting frames are premium children's animation quality
+    // (consistent characters, cinematic lighting, expressive faces).
+    // In regenerate-scene-only mode we skip this stage entirely.
+    if (scenes.length > 0 && pipeline.generated_images !== "completed" && regenerateSceneOnly == null) {
       await setStage("generated_images", "generating");
       const images: Array<{ id: string; url: string }> = [];
       try {
-        for (const scene of scenes) {
+        const { buildShotPlan, enrichImagePrompt } = await import("./cinematicDirector");
+        let prevShotImg: import("./cinematicDirector").CameraShot | undefined;
+        for (let i = 0; i < scenes.length; i++) {
+          const scene = scenes[i];
+          const planImg = buildShotPlan({
+            sceneId: scene.id,
+            sceneNumber: i + 1,
+            total: scenes.length,
+            text: scene.prompt,
+            prevShot: prevShotImg,
+          });
+          prevShotImg = planImg.cameraShot;
+          const enriched = enrichImagePrompt(`${characterPrefix}${scene.prompt}`, planImg);
           const r = await generateQwenImage({
             data: {
-              prompt: `${characterPrefix}${scene.prompt}`,
+              prompt: enriched,
               projectId: proj.id,
               sceneId: scene.id,
               aspect: "16:9",
