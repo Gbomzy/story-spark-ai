@@ -153,6 +153,9 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
   const [customCharacter, setCustomCharacter] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1" | "4:5">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
+  // Low-Cost Test Mode — caps the render to the first 3 scenes so a
+  // quality pass costs a fraction of a full 13-scene movie.
+  const [testMode, setTestMode] = useState<boolean>(false);
   const size = ASPECT_SIZES[aspectRatio][resolution];
   const selectedCharacter =
     characterId === "none"
@@ -197,6 +200,7 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
             perSceneDuration: perScene,
             chainScenes: true,
             size,
+            ...(testMode ? { testMode: true, maxScenes: 3 } : {}),
             ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
             ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
               ? { characterDescription: selectedCharacter.description }
