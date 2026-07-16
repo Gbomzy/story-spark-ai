@@ -208,9 +208,10 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     // 2. Narration — the AI Storyteller layer picks expressive voice
     // parameters (voice preset, speed, pitch) based on the narration's
     // emotion + BGM mood before we hit the TTS provider.
-    const { sanitizeVoiceScript } = await import("./voiceScript");
-    const voiceScript = sanitizeVoiceScript(extractText(proj.voice));
-    if (voiceScript && pipeline.narration !== "completed") {
+    const { sanitizeVoiceScript, expressiveVoiceScript } = await import("./voiceScript");
+    const cleanScript = sanitizeVoiceScript(extractText(proj.voice));
+    const voiceScript = expressiveVoiceScript(cleanScript);
+    if (voiceScript && pipeline.narration !== "completed" && regenerateSceneOnly == null) {
       await setStage("narration", "generating");
       try {
         const { planStoryteller } = await import("./storyteller");
