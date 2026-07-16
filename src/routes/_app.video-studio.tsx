@@ -230,6 +230,34 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
     onError: (e: Error) => toast.error(e.message || "Pipeline failed."),
   });
 
+  const regenSceneMut = useMutation({
+    mutationFn: async (sceneNumber: number) => {
+      let last: Awaited<ReturnType<typeof runPipeline>> | null = null;
+      for (let i = 0; i < 40; i++) {
+        last = await runPipeline({
+          data: {
+            projectId: project.id,
+            perSceneDuration: perScene,
+            chainScenes: true,
+            size,
+            regenerateSceneOnly: sceneNumber,
+            ...(selectedCharacter?.name ? { characterName: selectedCharacter.name } : {}),
+            ...(selectedCharacter && "description" in selectedCharacter && selectedCharacter.description
+              ? { characterDescription: selectedCharacter.description }
+              : {}),
+          },
+        });
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["render-state", project.id] });
+        if (last?.results?.done) break;
+        if ((last?.results?.queueRemaining ?? 0) === 0) break;
+      }
+      return last;
+    },
+    onSuccess: () => toast.success("Scene regenerated.", { id: "regen-scene" }),
+    onError: (e: Error) => toast.error(e.message || "Regeneration failed."),
+  });
+
   const busy = videoMut.isPending || pipelineMut.isPending;
   const pipelineState = (project.media_pipeline as PipelineState | null) ?? {};
 
