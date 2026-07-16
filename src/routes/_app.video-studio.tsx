@@ -411,6 +411,22 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
                 Output size: <span className="font-mono">{size.replace("*", "×")}</span>
               </p>
             </div>
+            <label className="flex cursor-pointer items-start gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3">
+              <input
+                type="checkbox"
+                checked={testMode}
+                onChange={(e) => setTestMode(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5"
+              />
+              <div>
+                <p className="text-xs font-semibold">Low-Cost Test Mode</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Renders only the first 3 scenes (~20–30s) so you can preview
+                  quality without paying for the full movie. Turn off before
+                  the final render.
+                </p>
+              </div>
+            </label>
             <div>
               <Progress value={progress} className="h-2" />
               {queueTotal > 0 ? (
