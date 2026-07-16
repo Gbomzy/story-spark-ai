@@ -135,11 +135,6 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     if (scenes.length === 0 && typeof proj.storyboard === "string" && proj.storyboard.trim()) {
       scenes = parseStoryboardText(proj.storyboard);
     }
-    // Test Mode / explicit cap: shrink the scene list BEFORE building
-    // any clip queue so we never spend credits on scenes we'll throw away.
-    if (typeof maxScenes === "number" && scenes.length > maxScenes) {
-      scenes = scenes.slice(0, maxScenes);
-    }
     const perScene = data.perSceneDuration ?? 5;
     const wps = data.wordsPerSecond ?? 2.5; // ~150 wpm narration pace
     const maxClip = data.maxClipSeconds ?? 10; // Wan hard limit
@@ -148,6 +143,11 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
     const testMode = data.testMode === true;
     const maxScenes = data.maxScenes ?? (testMode ? 3 : undefined);
     const regenerateSceneOnly = data.regenerateSceneOnly ?? null;
+    // Test Mode / explicit cap: shrink the scene list BEFORE building
+    // any clip queue so we never spend credits on scenes we'll throw away.
+    if (typeof maxScenes === "number" && scenes.length > maxScenes) {
+      scenes = scenes.slice(0, maxScenes);
+    }
     const characterName = (data.characterName ?? "").trim();
     const characterDesc = (data.characterDescription ?? "").trim();
     const characterPrefix = characterDesc
