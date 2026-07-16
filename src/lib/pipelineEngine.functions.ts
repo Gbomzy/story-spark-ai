@@ -15,6 +15,13 @@ const Input = z.object({
   characterName: z.string().max(80).optional(),
   characterDescription: z.string().max(600).optional(),
   size: z.string().max(20).optional(),
+  /** Low-Cost Test Mode — cap scenes to 2-3 so a full render costs a
+   *  fraction of a normal one. Additive: default off. */
+  testMode: z.boolean().optional(),
+  maxScenes: z.number().int().min(1).max(40).optional(),
+  /** Regenerate only one scene (1-based). Skips images/narration stages
+   *  and only re-queues the target clip inside an existing manifest. */
+  regenerateSceneOnly: z.number().int().min(1).max(60).optional(),
 });
 
 type Stage = "generated_images" | "narration" | "video";
