@@ -35,9 +35,8 @@ const PLATFORM_PRESETS: Array<{ id: string; label: string; ratio: "16:9" | "9:16
 
 export const Route = createFileRoute("/_app/video-studio")({
   head: () => ({ meta: [{ title: "Video Studio — StorySpark AI" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    projectId: typeof s.projectId === "string" ? s.projectId : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { projectId?: string } =>
+    typeof s.projectId === "string" ? { projectId: s.projectId } : {},
   component: VideoStudioPage,
 });
 

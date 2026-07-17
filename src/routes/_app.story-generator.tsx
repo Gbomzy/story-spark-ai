@@ -20,9 +20,8 @@ import { formatDbError } from "@/lib/dbError";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    prompt: typeof s.prompt === "string" ? s.prompt : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { prompt?: string } =>
+    typeof s.prompt === "string" ? { prompt: s.prompt } : {},
   component: StoryGeneratorPage,
 });
 
