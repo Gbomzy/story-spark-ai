@@ -88,6 +88,101 @@ The platform allows creators to generate educational and entertaining children's
 - ✅ Admin Dashboard
 
 ---
+## 🏗️ StorySpark AI Enterprise Architecture
+
+flowchart TB
+
+    User([User])
+
+    Frontend["StorySpark AI
+    React + TypeScript"]
+
+    Auth["Authentication"]
+
+    Supabase["Supabase
+    Database + Storage"]
+
+    Story["Story Engine"]
+
+    Memory["Character Memory"]
+
+    Storyboard["Storyboard Engine"]
+
+    Images["Image Generation"]
+
+    Voice["Voice Narration"]
+
+    Video["Video Generation"]
+
+    Qwen["Alibaba Cloud
+    Qwen API"]
+
+    Wan["Alibaba Cloud
+    Wan Video API"]
+
+    Movie["Movie Composer"]
+
+    Export["Export
+    MP4 / Download"]
+
+    User --> Frontend
+
+    Frontend --> Auth
+    Frontend --> Story
+    Frontend --> Storyboard
+    Frontend --> Memory
+    Frontend --> Images
+    Frontend --> Voice
+    Frontend --> Video
+
+    Auth --> Supabase
+
+    Story --> Qwen
+    Storyboard --> Qwen
+    Memory --> Qwen
+    Images --> Qwen
+    Voice --> Qwen
+
+    Video --> Wan
+
+    Qwen --> Movie
+    Wan --> Movie
+
+    Movie --> Export
+
+    Export --> User
+
+    Supabase --> Frontend
+
+## 🚀 AI Workflow
+
+User Idea
+    │
+    ▼
+Story Generation (Qwen)
+    │
+    ▼
+Character Memory
+    │
+    ▼
+Storyboard Generation
+    │
+    ▼
+Image Generation
+    │
+    ▼
+Voice Narration
+    │
+    ▼
+Video Generation (Wan)
+    │
+    ▼
+Movie Composition
+    │
+    ▼
+Final Animated Movie
+
+---
 
 ## 📈 Future Roadmap
 
