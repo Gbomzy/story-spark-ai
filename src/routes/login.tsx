@@ -12,9 +12,8 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — StorySpark AI" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    next: typeof s.next === "string" ? s.next : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } =>
+    typeof s.next === "string" ? { next: s.next } : {},
   component: LoginPage,
 });
 
@@ -56,7 +55,7 @@ function LoginPage() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to="/signup" search={safeNext ? { next: safeNext } : undefined} className="font-medium text-primary hover:underline">
+          <Link to="/signup" search={safeNext ? { next: safeNext } : {}} className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </>
