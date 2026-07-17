@@ -1,3 +1,4 @@
+![StorySpark AI Banner](https://raw.githubusercontent.com/Gbomzy/story-spark-ai/main/asset/storyspark-ai-banner.png)
 # 🎬 StorySpark AI
 
 **StorySpark AI** is an AI-powered platform that transforms simple story ideas into complete animated movies for children.
