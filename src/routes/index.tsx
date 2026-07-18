@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Wand2, Film, Mic, ArrowRight, BookOpen, Music, Palette } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { trace } from "@/lib/startup-trace";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,6 +29,7 @@ const features = [
 function Index() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => { trace("Home (/) rendered"); }, []);
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
   }, [user, loading, navigate]);

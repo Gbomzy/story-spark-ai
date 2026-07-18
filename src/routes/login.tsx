@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
+import { trace } from "@/lib/startup-trace";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — StorySpark AI" }] }),
@@ -21,6 +22,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { next } = Route.useSearch();
+  useEffect(() => { trace("Login (/login) rendered"); }, []);
   // Only allow same-origin relative paths.
   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
   const [email, setEmail] = useState("");
