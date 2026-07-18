@@ -92,7 +92,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control,story_bible")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
@@ -131,7 +131,33 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
       await context.supabase.from("projects").update({ media_pipeline: pipeline, ...patch }).eq("id", proj.id);
     };
 
-    let scenes = parseScenes(proj.images);
+    // Prefer the Scene Plan as the single source of truth. When a plan
+    // exists on story_bible, derive scenes, video prompts and narration
+    // durations from it — no downstream stage is allowed to invent scene
+    // content. Fall back to the legacy storyboard/images columns only if
+    // the plan is missing (older projects).
+    const { readScenePlanFromBible } = await import("./scenePlan.functions");
+    const scenePlan = readScenePlanFromBible((proj as { story_bible?: unknown }).story_bible);
+    let scenes: Array<{ id: string; prompt: string; narrationWords?: number; videoPrompt?: string; plannedDuration?: number }> = [];
+    if (scenePlan) {
+      const { scenePlanToImagesJson, scenePlanToVoiceScript } = await import("./scenePlan");
+      const rows = scenePlanToImagesJson(scenePlan);
+      scenes = rows.map((r) => ({
+        id: r.id,
+        prompt: r.prompt,
+        videoPrompt: r.videoPrompt,
+        narrationWords: r.narration ? r.narration.split(/\s+/).filter(Boolean).length : undefined,
+        plannedDuration: r.durationSeconds,
+      }));
+      // Keep the persisted narration script in sync with the plan.
+      const derivedScript = scenePlanToVoiceScript(scenePlan);
+      if (derivedScript && typeof proj.voice === "string" && !proj.voice.includes("[NARRATOR]")) {
+        (proj as { voice?: unknown }).voice = derivedScript;
+      }
+    }
+    if (scenes.length === 0) {
+      scenes = parseScenes(proj.images);
+    }
     if (scenes.length === 0 && typeof proj.storyboard === "string" && proj.storyboard.trim()) {
       scenes = parseStoryboardText(proj.storyboard);
     }
