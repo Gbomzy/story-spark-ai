@@ -14,6 +14,12 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../components/theme-provider";
 import { Toaster } from "sonner";
 import { AuthProvider } from "../lib/auth";
+import { installStartupTrace, trace } from "../lib/startup-trace";
+
+if (typeof window !== "undefined") {
+  installStartupTrace();
+  trace("__root.tsx: module evaluated");
+}
 
 function NotFoundComponent() {
   return (
@@ -118,6 +124,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    trace("RootComponent: mounted");
+    trace("Router: initialized (root mount)");
+    return () => trace("RootComponent: unmounted");
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
