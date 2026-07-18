@@ -14,6 +14,8 @@ import {
   generateStoryboard,
   generateMediaPack,
 } from "@/lib/qwen.functions";
+import { generateScenePlan } from "@/lib/scenePlan.functions";
+import { scenePlanToStoryboard, scenePlanToVoiceScript, scenePlanToImagesJson } from "@/lib/scenePlan";
 import { OutputWorkspace } from "@/components/output-workspace";
 import { createProject, updateProject } from "@/lib/projects";
 import { formatDbError } from "@/lib/dbError";
@@ -38,6 +40,7 @@ function StoryGeneratorPage() {
   const [images, setImages] = useState<string | null>(null);
   const [seo, setSeo] = useState<string | null>(null);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [scenePlan, setScenePlan] = useState<Awaited<ReturnType<typeof generateScenePlan>>["plan"] | null>(null);
   const mutation = useMutation({
     mutationFn: async (p: string) => {
       setStory(null);
@@ -48,21 +51,29 @@ function StoryGeneratorPage() {
       setImages(null);
       setSeo(null);
       setSavedProjectId(null);
+      setScenePlan(null);
       const s = await generateStory({ data: { prompt: p } });
       setStory(s.story);
-      const [c, sb, pack] = await Promise.all([
+      // Generate the Scene Plan (single source of truth) FIRST so we can
+      // derive storyboard, narration and image prompts from it. Characters
+      // and songs/seo still run in parallel from the story.
+      const [plan, c, pack] = await Promise.all([
+        generateScenePlan({ data: { prompt: p, story: s.story } }),
         generateCharacters({ data: { prompt: p, story: s.story } }),
-        generateStoryboard({ data: { prompt: p, story: s.story } }),
         generateMediaPack({ data: { prompt: p, story: s.story } }),
       ]);
+      const derivedStoryboard = scenePlanToStoryboard(plan.plan);
+      const derivedVoice = scenePlanToVoiceScript(plan.plan);
+      const derivedImages = JSON.stringify(scenePlanToImagesJson(plan.plan), null, 2);
       return {
         story: s.story,
         characters: c.characters,
-        storyboard: sb.storyboard,
-        voice: pack.voice,
+        storyboard: derivedStoryboard,
+        voice: derivedVoice,
         songs: pack.songs,
-        images: pack.images,
+        images: derivedImages,
         seo: pack.seo,
+        scenePlan: plan.plan,
       };
     },
     onSuccess: (res) => {
@@ -73,6 +84,7 @@ function StoryGeneratorPage() {
       setSongs(res.songs);
       setImages(res.images);
       setSeo(res.seo);
+      setScenePlan(res.scenePlan);
     },
     onError: (err: unknown) =>
       toast.error(err instanceof Error ? err.message : "Failed to generate"),
@@ -85,7 +97,7 @@ function StoryGeneratorPage() {
     mutationFn: async () => {
       if (!story) throw new Error("Generate a story first");
       const name = prompt.split("\n")[0].slice(0, 60) || "Untitled story";
-      const payload = {
+      const payload: Record<string, unknown> = {
         name,
         story,
         characters: characters ?? "",
@@ -95,6 +107,13 @@ function StoryGeneratorPage() {
         images: images ?? "",
         seo: seo ?? "",
       };
+      if (scenePlan) {
+        payload.story_bible = {
+          version: 1,
+          scenePlan,
+          updatedAt: new Date().toISOString(),
+        };
+      }
       try {
         if (savedProjectId) {
           await updateProject(savedProjectId, payload);
