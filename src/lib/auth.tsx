@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     trace("AuthProvider: mounted");
+    trace("Supabase client: accessed (lazy init)");
 
     // Subscribe FIRST so we don't miss the initial event in some browsers.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
