@@ -116,10 +116,10 @@ function StoryGeneratorPage() {
       }
       try {
         if (savedProjectId) {
-          await updateProject(savedProjectId, payload);
+          await updateProject(savedProjectId, payload as never);
           return savedProjectId;
         }
-        const p = await createProject(payload);
+        const p = await createProject(payload as never);
         return p.id as string;
       } catch (err) {
         throw new Error(formatDbError(err, "Save failed"));
