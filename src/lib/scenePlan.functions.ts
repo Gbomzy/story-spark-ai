@@ -140,7 +140,7 @@ export const generateScenePlan = createServerFn({ method: "POST" })
           .update({
             story_bible: nextBible,
             storyboard,
-            voice: { text: voiceScript },
+            voice: voiceScript,
             images: JSON.stringify(images),
           })
           .eq("id", data.projectId);
