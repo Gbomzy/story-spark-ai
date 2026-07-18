@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { trace } from "@/lib/startup-trace";
 
 export type Profile = {
   id: string;
@@ -36,10 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    trace("AuthProvider: mounted");
+    trace("Supabase client: accessed (lazy init)");
 
     // Subscribe FIRST so we don't miss the initial event in some browsers.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       if (!active) return;
+      trace("auth.onAuthStateChange:event", { event: _event, hasSession: !!sess });
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
@@ -49,13 +53,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
     });
+    trace("auth.onAuthStateChange: subscribed");
+    trace("supabase.auth.getSession(): started");
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
+      trace("supabase.auth.getSession(): completed", { hasSession: !!data.session });
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) loadProfile(data.session.user.id);
       setLoading(false);
+      trace("AuthProvider: loading=false (startup complete)");
     });
 
     return () => {
