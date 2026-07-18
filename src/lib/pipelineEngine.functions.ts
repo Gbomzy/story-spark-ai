@@ -307,13 +307,20 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
         for (let i = 0; i < scenes.length; i++) {
           const scene = scenes[i];
           const words = scene.narrationWords ?? perSceneWords[i] ?? 0;
-          const estimated = Math.max(perScene, Math.ceil(words / wps));
+          const planned = (scene as { plannedDuration?: number }).plannedDuration;
+          const estimated = planned && planned > 0
+            ? planned
+            : Math.max(perScene, Math.ceil(words / wps));
           const segments = segmentDuration(estimated, maxClip);
           for (let j = 0; j < segments.length; j++) {
             const dur = segments[j];
+            // Prefer the Scene Plan's video prompt (motion + camera cues)
+            // over the raw image prompt so the video matches what the
+            // narrator is describing.
+            const base = (scene as { videoPrompt?: string }).videoPrompt ?? scene.prompt;
             const promptText = segments.length > 1
-              ? `${scene.prompt} — continuous shot, part ${j + 1} of ${segments.length}`
-              : scene.prompt;
+              ? `${base} — continuous shot, part ${j + 1} of ${segments.length}`
+              : base;
             queued.push({
               sceneNumber: i + 1,
               clipNumber: j + 1,
