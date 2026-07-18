@@ -86,14 +86,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StorySpark AI — Create educational video stories with AI" },
-      { name: "description", content: "StorySpark AI helps parents, teachers and creators turn a single prompt into a complete educational video story." },
+      { title: "StorySpark AI — Educational video stories from one prompt" },
+      { name: "description", content: "A creative AI studio for parents, teachers and kids' content creators. Generate stories, voiceovers, songs and storyboards in minutes." },
       { name: "author", content: "StorySpark AI" },
-      { property: "og:title", content: "StorySpark AI" },
-      { property: "og:description", content: "Turn a single prompt into a complete educational video story." },
+      { property: "og:title", content: "StorySpark AI — Educational video stories from one prompt" },
+      { property: "og:description", content: "A creative AI studio for parents, teachers and kids' content creators. Generate stories, voiceovers, songs and storyboards in minutes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@StorySparkAI" },
+      { name: "twitter:title", content: "StorySpark AI — Educational video stories from one prompt" },
+      { name: "twitter:description", content: "A creative AI studio for parents, teachers and kids' content creators. Generate stories, voiceovers, songs and storyboards in minutes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/de206090-d2a8-4609-83ac-8f5c80246513/id-preview-1da44643--75c9849d-2341-4b24-b808-ddaf782d9c71.lovable.app-1784383039091.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/de206090-d2a8-4609-83ac-8f5c80246513/id-preview-1da44643--75c9849d-2341-4b24-b808-ddaf782d9c71.lovable.app-1784383039091.png" },
     ],
     links: [
       {

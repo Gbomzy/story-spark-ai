@@ -10,8 +10,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "StorySpark AI — Educational video stories from one prompt" },
       { name: "description", content: "A creative AI studio for parents, teachers and kids' content creators. Generate stories, voiceovers, songs and storyboards in minutes." },
-      { property: "og:title", content: "StorySpark AI" },
-      { property: "og:description", content: "Create educational video stories from a single prompt." },
+      { property: "og:title", content: "StorySpark AI — Educational video stories from one prompt" },
+      { property: "og:description", content: "A creative AI studio for parents, teachers and kids' content creators. Generate stories, voiceovers, songs and storyboards in minutes." },
     ],
   }),
   component: Index,
