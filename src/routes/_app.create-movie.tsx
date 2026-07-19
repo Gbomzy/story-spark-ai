@@ -63,6 +63,7 @@ function CreateMoviePage() {
         style: tpl?.artStyle ?? null,
         settings: {
           templateId: tpl?.id ?? null,
+          category: tpl?.category ?? null,
           aspectRatio: tpl?.aspectRatio ?? "16:9",
           targetLengthSec: targetLen,
           music: tpl?.music ?? null,
