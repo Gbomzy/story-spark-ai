@@ -221,7 +221,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
             prevShot: prevShotImg,
           });
           prevShotImg = planImg.cameraShot;
-          const enriched = enrichImagePrompt(`${characterPrefix}${scene.prompt}`, planImg);
+          const enriched = enrichImagePrompt(`${categoryTag}${characterPrefix}${scene.prompt}`, planImg);
           const r = await generateQwenImage({
             data: {
               prompt: enriched,
@@ -376,7 +376,7 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
             prevShot,
           });
           prevShot = plan.cameraShot;
-          c.prompt = enrichVideoPrompt(c.prompt, plan);
+          c.prompt = enrichVideoPrompt(`${categoryTag}${c.prompt}`, plan) + categorySuffix;
         }
       } catch (err) {
         console.warn("[pipeline] cinematic enrichment skipped", err);
