@@ -22,8 +22,10 @@ import { formatDbError } from "@/lib/dbError";
 
 export const Route = createFileRoute("/_app/story-generator")({
   head: () => ({ meta: [{ title: "Story Generator — StorySpark AI" }] }),
-  validateSearch: (s: Record<string, unknown>): { prompt?: string } =>
-    typeof s.prompt === "string" ? { prompt: s.prompt } : {},
+  validateSearch: (s: Record<string, unknown>): { prompt?: string; category?: string } => ({
+    ...(typeof s.prompt === "string" ? { prompt: s.prompt } : {}),
+    ...(typeof s.category === "string" ? { category: s.category } : {}),
+  }),
   component: StoryGeneratorPage,
 });
 
@@ -32,6 +34,7 @@ function StoryGeneratorPage() {
   const [prompt, setPrompt] = useState(
     search.prompt ?? "A shy fox who wants to make friends at school.",
   );
+  const category = search.category;
   const [story, setStory] = useState<string | null>(null);
   const [characters, setCharacters] = useState<string | null>(null);
   const [storyboard, setStoryboard] = useState<string | null>(null);
@@ -52,15 +55,15 @@ function StoryGeneratorPage() {
       setSeo(null);
       setSavedProjectId(null);
       setScenePlan(null);
-      const s = await generateStory({ data: { prompt: p } });
+      const s = await generateStory({ data: { prompt: p, ...(category ? { category } : {}) } });
       setStory(s.story);
       // Generate the Scene Plan (single source of truth) FIRST so we can
       // derive storyboard, narration and image prompts from it. Characters
       // and songs/seo still run in parallel from the story.
       const [plan, c, pack] = await Promise.all([
-        generateScenePlan({ data: { prompt: p, story: s.story } }),
-        generateCharacters({ data: { prompt: p, story: s.story } }),
-        generateMediaPack({ data: { prompt: p, story: s.story } }),
+        generateScenePlan({ data: { prompt: p, story: s.story, ...(category ? { category } : {}) } }),
+        generateCharacters({ data: { prompt: p, story: s.story, ...(category ? { category } : {}) } }),
+        generateMediaPack({ data: { prompt: p, story: s.story, ...(category ? { category } : {}) } }),
       ]);
       const derivedStoryboard = scenePlanToStoryboard(plan.plan);
       const derivedVoice = scenePlanToVoiceScript(plan.plan);
