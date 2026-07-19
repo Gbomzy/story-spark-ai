@@ -112,6 +112,7 @@ const CharactersInput = z.object({
   ageGroup: z.string().optional(),
   language: z.string().optional(),
   count: z.number().int().min(1).max(8).optional(),
+  category: z.string().optional(),
 });
 
 export const generateCharacters = createServerFn({ method: "POST" })
@@ -123,7 +124,9 @@ export const generateCharacters = createServerFn({ method: "POST" })
     const count = data.count ?? 4;
     const system = `You are StorySpark AI's Character Agent. Design ${count} memorable, age-appropriate characters for a children's educational story.${
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
-    }${data.language ? ` Write in ${data.language}.` : ""}
+    }${data.language ? ` Write in ${data.language}.` : ""}${
+      data.category ? ` Category: ${data.category}. Characters MUST fit this category — visuals, names, personality and voice all coherent with it.` : ""
+    }
 
 For each character output this exact markdown structure, separated by a blank line:
 
@@ -158,6 +161,7 @@ const StoryboardInput = z.object({
   language: z.string().optional(),
   style: z.string().optional(),
   scenes: z.number().int().min(3).max(20).optional(),
+  category: z.string().optional(),
 });
 
 export const generateStoryboard = createServerFn({ method: "POST" })
@@ -171,7 +175,7 @@ export const generateStoryboard = createServerFn({ method: "POST" })
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
     }${data.language ? ` Write in ${data.language}.` : ""}${
       data.style ? ` Animation style: ${data.style}.` : ""
-    }
+    }${data.category ? ` Category: ${data.category}. Every scene setting, prop, wardrobe and shot MUST stay consistent with this category.` : ""}
 
 For each scene output this exact markdown structure, separated by a blank line:
 
@@ -206,6 +210,7 @@ const MediaPackInput = z.object({
   ageGroup: z.string().optional(),
   language: z.string().optional(),
   style: z.string().optional(),
+  category: z.string().optional(),
 });
 
 function extractSection(text: string, tag: string): string {
@@ -224,7 +229,7 @@ export const generateMediaPack = createServerFn({ method: "POST" })
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
     }${data.language ? ` Write in ${data.language}.` : ""}${
       data.style ? ` Animation style: ${data.style}.` : ""
-    }
+    }${data.category ? ` Category: ${data.category}. Narration voice, song lyrics, image prompts and SEO metadata MUST all reflect this category.` : ""}
 
 Output format (use these exact delimiter lines, in this exact order):
 

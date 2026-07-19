@@ -87,6 +87,7 @@ const GenerateInput = z.object({
   ageGroup: z.string().optional(),
   artStyle: z.string().optional(),
   language: z.string().optional(),
+  category: z.string().optional(),
 });
 
 export const generateScenePlan = createServerFn({ method: "POST" })
@@ -107,8 +108,12 @@ export const generateScenePlan = createServerFn({ method: "POST" })
         ageGroup: data.ageGroup ?? "children",
         artStyle: data.artStyle ?? "warm cinematic 3D animation, Pixar-inspired",
         language: data.language ?? "en",
+        category: data.category ?? null,
       });
-      const raw = await callQwenJson(PLAN_SYSTEM, user);
+      const categorySuffix = data.category
+        ? `\n\nCategory: ${data.category}. Every character, environment, prop, wardrobe, camera choice, narration line and dialogue MUST clearly belong to this category. Reject any framing that conflicts with it.`
+        : "";
+      const raw = await callQwenJson(PLAN_SYSTEM + categorySuffix, user);
       const plan = parseScenePlan(raw);
       if (!plan) throw new Error("Scene Plan generation returned invalid structure.");
       const validation = validateScenePlan(plan);
