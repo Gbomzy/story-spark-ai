@@ -115,7 +115,16 @@ function CreateMoviePage() {
                 {PROJECT_TEMPLATES.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => { setTemplateId(t.id); if (!prompt) setPrompt(t.prompt); }}
+                    onClick={() => {
+                      setTemplateId(t.id);
+                      // Category/template switching must always update the
+                      // active prompt — otherwise picking a new category
+                      // silently keeps the previous one. If the user has
+                      // typed something custom (not matching any template
+                      // preset), preserve it; otherwise overwrite.
+                      const isPreset = PROJECT_TEMPLATES.some((x) => x.prompt === prompt);
+                      if (!prompt || isPreset) setPrompt(t.prompt);
+                    }}
                     className={`rounded-xl border p-3 text-left text-sm hover:bg-muted/50 ${templateId === t.id ? "border-primary bg-primary/5" : ""}`}
                   >
                     <div className="font-semibold">{t.name}</div>
