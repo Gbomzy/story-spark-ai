@@ -188,6 +188,13 @@ function VideoDetail({ project, configured }: { project: ProjectRow; configured:
       } else if (primary === "resume" && renderState?.status === "paused") {
         await doControl({ data: { projectId: project.id, action: "resume" } }).catch(() => {});
       }
+      // Belt-and-braces: if a stale control signal (pause/cancel) is
+      // lingering from a prior session it would abort the pipeline on the
+      // very first server call and the render would halt after just one
+      // clip. Clear it before we start.
+      if (renderState?.control) {
+        await doControl({ data: { projectId: project.id, action: "resume" } }).catch(() => {});
+      }
       // Loop until the server reports the queue is fully drained.
       // Each invocation generates one clip → avoids Worker timeouts and
       // gives resume-from-interruption for free.
