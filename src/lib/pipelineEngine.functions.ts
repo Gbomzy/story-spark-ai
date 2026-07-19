@@ -92,10 +92,20 @@ export const runFullMoviePipeline = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: proj, error } = await context.supabase
       .from("projects")
-      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control,story_bible")
+      .select("id,name,story,voice,images,storyboard,generated_images,voice_audio,video_file,media_pipeline,render_control,story_bible,settings")
       .eq("id", data.projectId)
       .single();
     if (error || !proj) throw new Error(error?.message ?? "Project not found.");
+
+    // Movie category — threaded into every downstream AI call (image
+    // prompts, video prompts) so no stage drifts from the user's choice.
+    const category = (() => {
+      const s = proj.settings as Record<string, unknown> | null;
+      const c = s && typeof s.category === "string" ? s.category.trim() : "";
+      return c || null;
+    })();
+    const categoryTag = category ? `[Category: ${category}] ` : "";
+    const categorySuffix = category ? ` Category: ${category}.` : "";
 
     // Honor control signals (pause/cancel) from the Render Dashboard.
     const control = (proj as { render_control?: string | null }).render_control ?? null;
