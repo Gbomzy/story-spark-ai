@@ -77,6 +77,7 @@ const StoryInput = z.object({
   language: z.string().optional(),
   length: z.string().optional(),
   learningGoal: z.string().optional(),
+  category: z.string().optional(),
 });
 
 export const generateStory = createServerFn({ method: "POST" })
@@ -89,7 +90,9 @@ export const generateStory = createServerFn({ method: "POST" })
       data.ageGroup ? ` Target age: ${data.ageGroup}.` : ""
     }${data.language ? ` Language: ${data.language}.` : ""}${
       data.length ? ` Length: ${data.length}.` : ""
-    }${data.learningGoal ? ` Learning goal: ${data.learningGoal}.` : ""}`;
+    }${data.learningGoal ? ` Learning goal: ${data.learningGoal}.` : ""}${
+      data.category ? ` Category: ${data.category}. The story MUST clearly belong to this category — reject any prior template framing that conflicts with it.` : ""
+    }`;
     try {
       const content = await callQwen([
         { role: "system", content: system },
